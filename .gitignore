@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.env
+
+# 렌더 결과물 / 생성 캐시 (용량 큼, 저장소에 올리지 않음)
+out/
+.cache/
+*.mp4
+*.wav
+
+# 개인 폰트 파일은 각자 넣어 사용 (라이선스 파일만 함께 두기)
+fonts/*.ttf
+fonts/*.otf
+fonts/*.ttc
+
+.DS_Store
+Thumbs.db

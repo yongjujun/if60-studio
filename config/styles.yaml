@@ -1,0 +1,35 @@
+# IF 60 Studio 스타일 프리셋
+# resolution: 도트 원본 해상도(9:16). scale을 곱하면 최종 1080x1920.
+# palette: 색 목록이면 고정 팔레트, auto면 이미지마다 대표색 n_colors개를 뽑음.
+# final_quantize: true면 합성된 프레임 전체를 팔레트에 다시 맞춤 → 모든 레이어 톤이 통일됨.
+# hold: AI 영상 후처리 시 플리커 억제 강도 (클수록 안정적, 너무 크면 움직임이 끊김)
+
+cinematic_pixel:
+  label: 시네마틱 픽셀아트
+  resolution: [180, 320]
+  scale: 6
+  fps: 12
+  palette: auto
+  n_colors: 32
+  dither: 0
+  hold: 20
+  final_quantize: false
+  text_canvas: [360, 640]
+  caption_size: 22
+  title_size: 30
+
+retro_dot:
+  label: 레트로 도트 (16비트 게임 감성)
+  resolution: [135, 240]
+  scale: 8
+  fps: 10
+  palette:
+    ["#0d0b1e", "#221c47", "#3b3a8c", "#2f6fd6", "#6fc3ff", "#e8f4ff",
+     "#2d5a3a", "#4fa05a", "#b9e07a", "#5a3b2e", "#a8673e", "#ff9f43",
+     "#ffe07a", "#c8384a", "#7a2448", "#8a8aa8"]
+  dither: 18
+  hold: 26
+  final_quantize: true
+  text_canvas: [270, 480]
+  caption_size: 17
+  title_size: 23
