@@ -10,7 +10,6 @@
 #   - 질소 충전 포장의 일반적 목표: 남은 산소 3% 미만 (포장기계 업체 Levapack 가이드) https://www.levapack.com/?p=75094
 title: 과자 봉지엔 왜 하필 질소일까?
 style: voxel
-music: {mood: wonder, bpm: 118, seed: 21, volume: 0.18}
 
 scenes:
   # 1. 훅 — 식탁 위 빵빵한 과자 봉지

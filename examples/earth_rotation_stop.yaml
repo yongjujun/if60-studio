@@ -5,7 +5,6 @@
 #   - 해수면 음속 약 1,225 km/h
 title: 지구의 자전이 1초 동안 멈춘다면?
 style: cinematic_pixel
-music: {mood: tense, bpm: 118, seed: 60}
 
 scenes:
   - duration: 4

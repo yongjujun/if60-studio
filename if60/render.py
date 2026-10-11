@@ -18,7 +18,7 @@ import numpy as np
 import yaml
 from PIL import Image
 
-from . import chiptune, procedural, text
+from . import overlay, procedural, text
 from .media import Encoder, read_frames, require_ffmpeg
 from .pixelate import (TemporalPixelator, auto_palette, downscale, indices_to_rgb, palette_array,
                        quantize)
@@ -149,6 +149,14 @@ class Scene:
     seed: int = 0
     props: list = field(default_factory=list)    # 장면에 놓는 사물 (model 또는 box/sphere/cylinder)
     labels: list = field(default_factory=list)   # 3D 위치에 붙는 화면 라벨 {text, at: [x,y,z], from, to}
+    # --- 방송형 연출
+    vfx: list = field(default_factory=list)      # 충격파·불덩이·버섯구름·불티 {type, at, from, to, radius...}
+    panel: dict | None = None                    # 데이터 대시보드 {title, value, stats, bars, status}
+    big_text: list = field(default_factory=list) # 빛나는 큰 글자 {text, from, to, pos | at, color, size}
+    markers: list = field(default_factory=list)  # 빛나는 표적 링 {at: [x,y,z], from, to, text, color}
+    card: dict | None = None                     # 마무리 카드 {question, options, cta}
+    look: str = "voxel"                          # voxel | smooth
+    bloom: float = 0.45                          # 빛 번짐 세기 (0이면 끔)
 
 
 # ------------------------------------------------------------------ HUD
@@ -202,7 +210,7 @@ def _ease(x: float) -> float:
     return 0.5 - 0.5 * math.cos(math.pi * min(max(x, 0.0), 1.0))
 
 
-EFFECTS = ("shake", "flash", "tint")
+EFFECTS = ("shake", "flash", "tint", "whiteout", "rewind")
 
 
 def normalize_effects(raw) -> list[tuple[str, dict]]:
@@ -322,16 +330,27 @@ def load_project(path: str, style_override: str | None = None,
             captions=s.get("captions"), hud=s.get("hud"),
             world=s.get("world"), crowds=s.get("crowds", []) or [], shot=s.get("shot"),
             time=s.get("time"), seed=int(s.get("seed", (s.get("world") or {}).get("seed", i))),
-            props=s.get("props", []) or [], labels=s.get("labels", []) or []))
+            props=s.get("props", []) or [], labels=s.get("labels", []) or [],
+            vfx=s.get("vfx", []) or [], panel=s.get("panel"), big_text=_as_list(s.get("big_text")),
+            markers=_as_list(s.get("markers")), card=s.get("card"),
+            look=str(s.get("look", spec.get("look", "voxel"))),
+            bloom=float(s.get("bloom", spec.get("bloom", 0.7 if spec.get("look") == "smooth" else 0.45)))))
     return spec, style, scenes
 
 
-def _text_layer(scene: Scene, t: float, style: Style, font: str) -> np.ndarray | None:
+def _as_list(v) -> list:
+    if not v:
+        return []
+    return [v] if isinstance(v, dict) else list(v)
+
+
+def _text_layer(scene: Scene, t: float, style: Style, font: str, layout: bool = False) -> np.ndarray | None:
+    """도트 자막·장면 제목·HUD 배지. layout(방송형)이면 상단 띠를 피해 아래로 내린다."""
     tw, th = style.text_canvas
     out = None
     if scene.title:
         out = text.render_text((tw, th), scene.title, font_path=font, size=style.title_size,
-                               y=0.2, color=(255, 236, 160), box=(16, 12, 40))
+                               y=0.3 if layout else 0.2, color=(255, 236, 160), box=(16, 12, 40))
     def merge(layer: np.ndarray) -> None:
         nonlocal out
         if out is None:
@@ -340,7 +359,7 @@ def _text_layer(scene: Scene, t: float, style: Style, font: str) -> np.ndarray |
             m = layer[..., 3] == 255
             out[m] = layer[m]
 
-    cap_text = caption_at(scene, t) if (scene.caption or scene.captions) else ""
+    cap_text = caption_at(scene, t) if (scene.caption or scene.captions) and not scene.card else ""
     if cap_text:
         vis = None
         if scene.typewriter or scene.caption_mode == "typewriter":
@@ -351,14 +370,88 @@ def _text_layer(scene: Scene, t: float, style: Style, font: str) -> np.ndarray |
                                visible_chars=vis))
     label = hud_label(scene.hud, t, scene.duration)
     if label:
-        merge(text.render_badge((tw, th), label, font_path=font,
+        merge(text.render_badge((tw, th), label, font_path=font, y=0.185 if layout else 0.075,
                                 size=int(style.caption_size * 0.8)))
     return out
+
+
+class Composer:
+    """장면 한 프레임을 최종 화면으로: 3D/2D 바탕 → 빛 번짐 → 표적·큰 글자·대시보드·카드 → 자막 → 전환 효과 → 방송 레이아웃.
+    렌더링·시험 렌더·감독 검수 시트가 모두 이 순서를 그대로 쓴다."""
+
+    def __init__(self, spec: dict, style: Style, font: str, size: tuple[int, int], vr=None):
+        self.spec, self.style, self.font = spec, style, font
+        self.w, self.h = size
+        self.u = self.w / 1080
+        self.vr = vr
+        lay = spec.get("layout")
+        self.layout = overlay.Layout(lay, spec.get("title", ""), font, size) if lay else None
+        self.prev: np.ndarray | None = None
+        self._card_bg: dict = {}
+
+    def viewport(self) -> tuple[int, int]:
+        return self.layout.viewport if self.layout else (0, self.h)
+
+    def frame(self, sc: Scene, t: float, prep=None, cam=None) -> np.ndarray:
+        W, H = self.w, self.h
+        if prep is not None:
+            big = render_3d_frame(self.vr, prep, cam, sc, t, self.font)
+        elif sc.card is not None and not sc.layers:
+            key = id(sc)
+            if key not in self._card_bg:
+                self._card_bg[key] = (overlay.darken(self.prev, 0.35, blur=True) if self.prev is not None
+                                      else overlay.gradient_bg(W, H))
+            big = self._card_bg[key].copy()
+        else:
+            small, _ = compose_frame(sc, t, self.style)
+            fp = self.style.palette if (self.style.final_quantize and self.style.palette is not None) else None
+            if fp is not None:
+                small = indices_to_rgb(quantize(small.astype(np.float32), fp), fp)
+            sh, sw = small.shape[:2]
+            if W % sw == 0 and H % sh == 0 and W // sw == H // sh:
+                big = small.repeat(W // sw, 0).repeat(W // sw, 1)
+            else:
+                big = np.asarray(Image.fromarray(small).resize((W, H), Image.Resampling.NEAREST)).copy()
+        big = np.ascontiguousarray(big)
+        top, bottom = self.viewport()
+        if prep is not None:
+            for mk in sc.markers:
+                pt = self.vr.project([mk["at"]])[0] if mk.get("at") is not None else None
+                overlay.draw_marker(big, mk, t, sc.duration, pt, self.font, self.u)
+        for bt in sc.big_text:
+            pt = self.vr.project([bt["at"]])[0] if (prep is not None and bt.get("at") is not None) else None
+            overlay.draw_big_text(big, bt, t, sc.duration, self.font, self.u, pt)
+        if sc.panel:
+            overlay.draw_panel(big, sc.panel, t, sc.duration, self.font, top + int(28 * self.u), self.u)
+        if sc.card is not None:
+            if prep is not None:
+                big = overlay.darken(big, 0.45)
+            overlay.draw_card(big, sc.card, t, sc.duration, self.font, self.u, (top, bottom))
+        tl = _text_layer(sc, t, self.style, self.font, layout=self.layout is not None)
+        if tl is not None:
+            th, tw = tl.shape[:2]
+            if W % tw == 0 and H % th == 0:
+                k = W // tw
+                tl_big = tl.repeat(k, 0).repeat(k, 1)
+            else:
+                tl_big = np.asarray(Image.fromarray(tl).resize((W, H), Image.Resampling.NEAREST))
+            m = tl_big[..., 3] == 255
+            big[m] = tl_big[..., :3][m]
+        for name, prm in sc.effects:
+            if name == "whiteout":
+                big = overlay.whiteout(big, overlay.whiteout_level(prm, t))
+            elif name == "rewind":
+                big = overlay.rewind(big, t, prm, self.font, self.u, top)
+        if self.layout is not None:
+            big = self.layout.apply(big, t)
+        self.prev = big
+        return big
 
 
 def render(project_path: str, out_path: str, *, style_override: str | None = None,
            length: float | None = None, provider: str | None = None, preview: bool = False,
            stills_dir: str | None = None, fps: int | None = None) -> str:
+    """장면 YAML → 무음 mp4 (배경음악·효과음 없음 — 음악·목소리는 편집 앱에서 자유롭게 입히기)"""
     require_ffmpeg()
     print("▶ 프로젝트 불러오는 중")
     spec, style, scenes = load_project(project_path, style_override, length, provider)
@@ -371,65 +464,25 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
     w, h = style.resolution
     out_scale = max(1, style.scale // 3) if preview else style.scale
     ow, oh = w * out_scale, h * out_scale
-    tw, th = style.text_canvas
-    text_scale = ow // tw if ow % tw == 0 else None
     total = sum(s.duration for s in scenes)
 
-    # ---- 오디오: 칩튠 BGM + 장면 효과음
-    music = spec.get("music", {}) or {}
-    audio = chiptune.bgm(total, mood=music.get("mood", "wonder"), bpm=int(music.get("bpm", 112)),
-                         seed=int(music.get("seed", 0)), volume=float(music.get("volume", 0.22)))
-    t0 = 0.0
-    for sc in scenes:
-        for e in sc.effects:
-            name, prm = _effect_params(e)
-            if name == "shake":
-                chiptune.mix(audio, chiptune.sfx_boom(prm.get("length", 1.2)), t0 + prm.get("at", 0))
-            if name == "flash":
-                chiptune.mix(audio, chiptune.sfx_blip(1320, 0.12), t0 + prm.get("at", 0))
-        t0 += sc.duration
-
-    tmp = tempfile.mkdtemp(prefix="if60_")
-    wav = str(Path(tmp) / "bgm.wav")
-    chiptune.write_wav(wav, audio)
-
-    # ---- 영상
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-    enc = Encoder(out_path, ow, oh, style.fps, audio=wav)
+    enc = Encoder(out_path, ow, oh, style.fps)
     vr = None
     if has_3d:
         from .voxel.renderer import VoxelRenderer
         vr = VoxelRenderer(ow, oh, samples=2 if preview else 4)
     if stills_dir:
         Path(stills_dir).mkdir(parents=True, exist_ok=True)
-    final_pal = style.palette if (style.final_quantize and style.palette is not None) else None
+    comp = Composer(spec, style, font, (ow, oh), vr)
     n_frames_total = 0
     for si, sc in enumerate(scenes):
         n = max(1, int(round(sc.duration * style.fps)))
         print(f"▶ 장면 {si + 1}/{len(scenes)} 렌더링 ({n}프레임{', 3D' if sc.world else ''})")
-        prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot, props=sc.props) if sc.world else None
-        cam = None
-        if prep is not None:
-            cam = sc.shot if isinstance(sc.shot, dict) else prep.shots.get(sc.shot or next(iter(prep.shots)))
-            if cam is None:
-                raise ValueError(f"장면 {si + 1}: 샷 '{sc.shot}' 없음 (가능: {', '.join(prep.shots)})")
+        prep, cam = prepare_scene(vr, sc, si)
         for fi in range(n):
             t = fi / style.fps
-            if prep is not None:
-                big = render_3d_frame(vr, prep, cam, sc, t, font)
-            else:
-                frame, _ = compose_frame(sc, t, style)
-                if final_pal is not None:
-                    frame = indices_to_rgb(quantize(frame.astype(np.float32), final_pal), final_pal)
-                big = frame.repeat(out_scale, 0).repeat(out_scale, 1)
-            tl = _text_layer(sc, t, style, font)
-            if tl is not None:
-                if text_scale:
-                    tl_big = tl.repeat(text_scale, 0).repeat(text_scale, 1)
-                else:
-                    tl_big = np.asarray(Image.fromarray(tl).resize((ow, oh), Image.Resampling.NEAREST))
-                m = tl_big[..., 3] == 255
-                big[m] = tl_big[..., :3][m]
+            big = comp.frame(sc, t, prep, cam)
             enc.write(big)
             if stills_dir and fi == n // 2:
                 Image.fromarray(big).save(Path(stills_dir) / f"scene_{si + 1:02d}.png")
@@ -439,8 +492,20 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
     enc.close()
     if vr is not None:
         vr.close()
-    print(f"✔ 완료: {out_path}  ({total:.1f}초, {n_frames_total}프레임, {ow}x{oh})")
+    print(f"✔ 완료: {out_path}  ({total:.1f}초, {n_frames_total}프레임, {ow}x{oh}, 무음)")
     return out_path
+
+
+def prepare_scene(vr, sc: Scene, si: int = 0):
+    """3D 장면 준비 → (prep, 카메라). 3D가 아니면 (None, None)"""
+    if not sc.world or vr is None:
+        return None, None
+    prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot, props=sc.props, vfx=sc.vfx, look=sc.look)
+    cam = sc.shot if isinstance(sc.shot, dict) else prep.shots.get(sc.shot or next(iter(prep.shots)))
+    if cam is None:
+        vr.release(prep)
+        raise ValueError(f"장면 {si + 1}: 샷 '{sc.shot}' 없음 (가능: {', '.join(prep.shots)})")
+    return prep, cam
 
 
 def draw_labels(img: np.ndarray, vr, labels: list, t: float, font_path: str | None) -> np.ndarray:
@@ -502,6 +567,9 @@ def render_3d_frame(vr, prep, cam: dict, sc: Scene, t: float, font: str | None =
     if fade_out and t > sc.duration - fade_out:
         level = min(level, (sc.duration - t) / fade_out)
     out = np.clip(img, 0, 255).astype(np.uint8)
+    out = overlay.bloom(out, sc.bloom)
+    if sc.look == "smooth":
+        out = overlay.grade_smooth(out)
     if sc.labels:
         out = draw_labels(out, vr, sc.labels, t, font)
     if level < 1.0:

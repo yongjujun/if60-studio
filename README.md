@@ -1,10 +1,11 @@
 # IF 60 Studio
 
-**"만약 ~라면?" 상상 쇼츠를 3D 복셀 애니메이션으로 만드는 제작 도구** (v0.3)
+**"만약 ~라면?" 상상 쇼츠를 3D 복셀 애니메이션으로 만드는 제작 도구** (v0.4 — 방송형 연출)
 
 장면 구성 YAML 하나로 9:16 · 1080×1920 · 30fps 쇼츠를 렌더링합니다.
 블록으로 지은 3D 도시에 수천 명의 군중을 세우고, 시계 HUD에 맞춰 새벽→낮→밤으로 하늘이 바뀌며, 2~5단어씩 끊어 읽는 자막이 올라갑니다.
 AI 영상 생성 크레딧 없이 컴퓨터에서 직접 렌더링하므로 편당 추가 비용이 거의 없습니다.
+영상은 **무음**으로 나옵니다 (배경음악·효과음 생성 없음 — 음악은 업로드할 때 앱에서 고르세요).
 
 ![3D 복셀 예제](docs/voxel_scenes.png)
 *예제 `examples/seoul_moon_gravity.yaml` — "서울 중력이 1시간 동안 달처럼 약해진다면?" (1분 51초, 18장면)*
@@ -129,6 +130,51 @@ python -m if60 render examples/seoul_moon_gravity.yaml --length 60
     - shake: {at: 1.0, length: 1.4, amp: 5}
 ```
 
+### 방송형 연출 (만물제작소 스타일)
+`make`로 만든 영상은 기본으로 이 구조를 씁니다. 예시: `scenes/lightning_power.yaml` ("번개 한 방, 얼마나 셀까?")
+
+![방송형 연출](docs/broadcast.png)
+
+**영상 전체 설정 (맨 위)**
+```yaml
+layout:                                  # 상단: 채널(만물제작소) + 시리즈 + 두 줄 제목(흰색/노란색), 하단: 경고 줄무늬
+  title: ["번개 한 방,", "얼마나 셀까?"]
+  series: 만물 실험 1편                   # (선택)
+look: voxel                              # voxel(픽셀 복셀, 기본) | smooth(매끈한 질감 + 부드러운 색감)
+bloom: 0.45                              # 빛 번짐 세기 (0이면 끔) — 불빛·번개·불티만 번지고 밝은 배경은 번지지 않음
+```
+**장면에 쓰는 것**
+```yaml
+panel:                                   # 데이터 대시보드 (왼쪽 위): 숫자가 0부터 굴러 올라감
+  title: 번개 한 줄기
+  value: {from: 0, to: 300000000, format: kr, unit: V}   # kr → "3억", 큰 차이는 자동 로그 스케일
+  stats: ["전류 약 3만 A"]
+  bars: [{label: 번개, from: 0, to: 1, color: red, text: 3억 V}]
+  status: ×0.001 슬로모션                 # 깜빡이는 상태 배지
+big_text: [{text: "3억 V", from: 2.4, pos: [0.5, 0.56]}]   # 크고 빛나는 글자 (팝업 등장)
+markers: [{at: [0, 0.5, 60], from: 1.1, text: 낙뢰 지점}]   # 3D 지점의 빛나는 표적 링
+vfx:                                     # 3D 특수효과
+  - {type: shockwave, at: [0, 0, 60], from: 0.4, to: 2.4, radius: [0, 45]}   # 반투명 충격파 돔
+  - {type: fireball, at: [0, 1, 0], from: 0.5, to: 4, radius: [0.05, 0.4]}   # 커지는 불덩이
+  - {type: mushroom, at: [0, 0, 170], from: 0.2, to: 4.5, radius: 22, height: 60}   # 버섯구름
+  - {type: orb, at: [0, 10, 100], radius: [6, 8], color: "#7fdcff"}           # 반투명 빛 구
+  - {type: embers, at: [0, 0, 60], radius: 10, height: 18, count: 260}        # 솟아오르는 불티
+props:
+  - {model: bolt, at: [0, 0, 60], scale: 3.2, grow: {from: 0.3, to: 0.4}}    # grow: 그 시간에 커지며 나타남
+effects:
+  - whiteout: {at: 2.2, length: 0.8, hold: true}   # 하얗게 날아감 (hold: 끝까지 유지)
+  - rewind: {at: 0, length: 1.1}                   # 되감기 화면 (◀◀ 되감기)
+card:                                    # 마무리 카드 (world 없이도 됨 — 앞 장면을 흐리게 깔아 줌)
+  question: 번개 에너지를 모을 수 있다면?
+  options: [스마트폰 무한 충전, 전기차 전국 일주, 치킨 튀기기]
+  cta: 댓글로 번호를 남겨주세요
+```
+**구성 공식 (대본 작성 AI가 따르는 규칙)**
+1. **콜드 오픈** — 1번 장면(2~3초)에 가장 센 순간을 먼저: 큰 숫자 + VFX + 하얗게 날아감
+2. **되감기** — 2번 장면을 `rewind`로 시작해 "처음부터 볼게요"
+3. **본편** — 숫자는 대시보드 카운터로, 핵심 수치는 빛나는 큰 글자로, 지점은 표적 링으로
+4. **반전 비교** 한 번 → **마무리 카드**로 댓글 유도
+
 ### 사물·원리를 직접 보여주기 (자유 주제)
 과자 봉지, 분자, 음식, 물건처럼 **장소가 아닌 대상**은 `studio`(단색 무대)나 `tabletop`(식탁 위) 세트에 소품을 놓고,
 움직이는 입자는 군중으로, 이름표는 라벨로 붙입니다. 예시: `scenes/nitrogen_snack.yaml`
@@ -146,7 +192,7 @@ python -m if60 render examples/seoul_moon_gravity.yaml --length 60
   labels:                                  # 3D 위치에 붙는 이름표 (카메라가 움직여도 따라감)
     - {text: "질소 N2", at: [0, 0.7, -0.05], from: 1.0}
 ```
-- 소품 모델: `snack_bag` `snack_bag_cut`(단면) `chip` `molecule_n2` `molecule_o2` `molecule_co2` `molecule_h2o` `bottle` `cup` `phone` `book` `parcel` `rocket` `coin` `lightbulb` `flame` `cloud` `ball` `germ` `table` (+ 사람·동물·차 등 군중 모델 모두)
+- 소품 모델: `snack_bag` `snack_bag_cut`(단면) `chip` `molecule_n2` `molecule_o2` `molecule_co2` `molecule_h2o` `bottle` `cup` `phone` `book` `parcel` `rocket` `coin` `lightbulb` `flame` `cloud` `ball` `germ` `table` `bolt`(번개) `spark`(빛 입자) (+ 사람·동물·차 등 군중 모델 모두)
 - 도형: `{shape: box, size: [w,h,d]}` `{shape: sphere, r}` `{shape: cylinder, r, h}` + `color`, `mat: flat|stone|glass|glow`
 - 입자 움직임: `wander`(제각각 떠다님), `y_range`(공중 높이 범위), `spin`(회전), `velocity: [vx, vy, vz]`, `wrap: false`(밖으로 빠져나감)
 
@@ -204,8 +250,7 @@ shot: {type: topdown, center: [0, 0, 0], height: 90, height_to: 75}
 | AI 이미지·영상 도트 후처리 | `python -m if60 pixelate 입력.mp4 -o out/결과.mp4` |
 | 주제 → 영상 한 번에 | `python -m if60 make "주제"` (위 '가장 쉬운 사용법') |
 | 주제로 장면 파일만 만들기 | `python -m if60 plan "주제" -o scenes/초안.yaml` |
-| 칩튠 배경음악 | `music: {mood: wonder, bpm: 104, seed: 16}` (wonder/tense/calm/epic) |
-| 효과 | `shake`(카메라 흔들림+효과음) `flash` `tint` / `camera: {fade_in: 0.5, fade_out: 0.8}` |
+| 효과 | `shake`(카메라 흔들림) `flash` `tint` `whiteout` `rewind` / `camera: {fade_in: 0.5, fade_out: 0.8}` |
 
 ### API 키 (선택 — Claude Code를 쓰면 필요 없음)
 키는 **절대 YAML이나 코드에 적지 말고** 환경변수로만 넣으세요. `.env` 파일은 `.gitignore`로 저장소에서 제외됩니다.
@@ -222,16 +267,16 @@ export OPENAI_API_KEY=...         # AI 이미지 레이어 (2D 스타일)
 ```
 if60/
   voxel/
-    renderer.py   3D 렌더러 (그림자, MSAA, 하늘, 군중 인스턴싱, 카메라 경로 비우기)
+    renderer.py   3D 렌더러 (그림자, MSAA, 하늘, 군중 인스턴싱, VFX 돔·불덩이·버섯구름, 자라나는 소품)
     templates.py  장소 템플릿 8종 + 샷 + 군중 구역
     models.py     블록 모델 (사람, 고양이, 강아지, 자동차, 지하철, 우주비행사, 나무, 침대)
     shaders.py    픽셀 질감 재질, 밤에 켜지는 창문, 물결, 픽셀 해·별
     sky.py        시간대별 하늘·조명
     camera.py     카메라 경로 (이동, 궤도, 부감)
     geometry.py   상자 기반 지오메트리
-  render.py      장면 → 영상 파이프라인 (자막, HUD, 효과, 오디오)
+  render.py      장면 → 영상 파이프라인 (자막, HUD, 효과) — 무음 mp4
+  overlay.py     방송형 화면: 레이아웃, 대시보드, 빛나는 글자, 표적 링, 마무리 카드, 빛 번짐, 전환 효과
   text.py        자막·HUD 배지
-  chiptune.py    배경음악·효과음
   pixelate.py    2D 도트 후처리
 config/styles.yaml   스타일 프리셋 (voxel, cinematic_pixel, retro_dot)
 examples/            예제 장면
@@ -245,7 +290,8 @@ examples/            예제 장면
 ## 로드맵
 - [x] 3D 복셀 렌더러, 장소 템플릿 8종, 시간대 조명, 군중 인스턴싱
 - [x] 시계·카운터 HUD, 끊어 읽는 자막
-- [ ] 한국어 TTS 내레이션 + 음성에 맞춘 자막 타이밍 + 배경음악 자동 볼륨 조절
+- [x] 방송형 연출: 고정 레이아웃, 대시보드 카운터, 빛 번짐, 충격파·불덩이·불티 VFX, 빛나는 큰 글자, 마무리 카드, 콜드 오픈
+- [ ] 한국어 TTS 내레이션 + 음성에 맞춘 자막 타이밍
 - [ ] 걷기 애니메이션(다리 움직임), 군중 모이기·흩어지기 동작
 - [x] 주제 입력 → 웹 조사 → 대본·장면 자동 생성 → 렌더링 (`make`, 더블클릭 실행)
 - [ ] 커버(썸네일) 템플릿 자동 생성

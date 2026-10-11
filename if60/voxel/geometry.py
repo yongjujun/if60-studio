@@ -25,6 +25,9 @@ _CORNERS = _FACES[:, 1:]         # (6,4,3)
 _TRI = np.array([0, 1, 2, 0, 2, 3])
 _TRI_CORNERS = _CORNERS[:, _TRI]  # (6,6,3)
 
+# 구·원기둥을 쪼개는 촘촘함 배율. 매끈한 룩(look: smooth)에서는 크게 해 둥근 면을 부드럽게 만든다.
+DETAIL = 1.0
+
 MAT = {"flat": 0, "stone": 1, "facade": 2, "water": 3, "asphalt": 4, "glow": 5, "grass": 6, "glass": 7}
 
 
@@ -186,7 +189,7 @@ def _add_mesh(model: "Model", pos, nrm, color, mat):
 def _sphere(self, center, r, color, voxel=None, mat="flat"):
     """복셀 구 (r은 숫자 또는 [rx, ry, rz] 타원체)"""
     rr = max(np.atleast_1d(r))
-    voxel = voxel or max(rr / 4.5, 0.004)
+    voxel = (voxel or max(rr / 4.5, 0.004)) / DETAIL
     occ, origin = sphere_occ(center, r, voxel)
     _add_mesh(self, *voxel_faces(occ, origin, voxel), color, mat)
     return self
@@ -194,7 +197,7 @@ def _sphere(self, center, r, color, voxel=None, mat="flat"):
 
 def _cylinder(self, base, r, h, color, voxel=None, mat="flat", axis="y"):
     """복셀 원기둥 (base는 밑면 중심)"""
-    voxel = voxel or max(r / 4.0, 0.004)
+    voxel = (voxel or max(r / 4.0, 0.004)) / DETAIL
     occ, origin = cylinder_occ(base, r, h, voxel, axis)
     _add_mesh(self, *voxel_faces(occ, origin, voxel), color, mat)
     return self

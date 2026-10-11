@@ -1,0 +1,159 @@
+# 번개 한 방, 얼마나 셀까? (약 42초, 9장면) — 방송형 연출 예시
+# 콜드 오픈(절정 먼저) → 되감기 → 설명(대시보드·빛나는 큰 글자·표적) → 반전 비교 → 마무리 카드
+#
+# facts_to_check
+#   - 번개 한 줄기: 약 3억 V, 약 3만 A — NWS https://www.weather.gov/safety/lightning-power
+#   - 번개가 지나가는 공기 온도 약 50,000°F(≈27,700℃), 태양 표면의 약 5배 — NWS https://www.weather.gov/safety/lightning-temperature
+#   - 3억 V ÷ 한국 가정용 220V ≈ 136만 배 (계산)
+#   - 천둥 = 번개에 데워진 공기의 급격한 팽창으로 생기는 소리 — NWS https://www.weather.gov/safety/lightning-science-thunder
+title: 번개 한 방, 얼마나 셀까?
+style: voxel
+layout:
+  title: ["번개 한 방,", "얼마나 셀까?"]
+  series: 만물 실험 1편
+facts_to_check:
+  - "번개 약 3억 V, 3만 A — https://www.weather.gov/safety/lightning-power"
+  - "공기 온도 약 27,700℃(50,000°F), 태양 표면의 5배 — https://www.weather.gov/safety/lightning-temperature"
+  - "220V 대비 약 136만 배 (300,000,000 ÷ 220 계산)"
+
+scenes:
+  # 1. 콜드 오픈 — 가장 센 장면부터: 들판에 번개가 꽂히며 하얗게 날아감
+  - duration: 3
+    visual: 밤 들판 한가운데 거대한 번개가 꽂히고, 빛의 돔이 퍼지며 화면이 하얗게 날아감
+    caption: 이 한 방의 온도, 무려…
+    world: {template: field, seed: 3}
+    time: "22:00"
+    shot: {from: [0, 4, -12], to: [0, 4.5, -8], target: [0, 14, 60], fov: 55}
+    props:
+      - {model: bolt, at: [0, 0, 60], scale: 3.2, grow: {from: 0.3, to: 0.4}}
+    vfx:
+      - {type: shockwave, at: [0, 0, 60], from: 0.4, to: 2.4, radius: [0, 45]}
+      - {type: embers, at: [0, 0, 60], radius: 10, height: 18, count: 260, from: 0.4}
+    big_text:
+      - {text: "27,700℃", from: 0.9, pos: [0.5, 0.45]}
+    effects:
+      - shake: {at: 0.4, length: 1.4, amp: 6}
+      - whiteout: {at: 2.2, length: 0.8, hold: true}
+
+  # 2. 되감기 — 조용한 밤하늘의 먹구름으로
+  - duration: 3.5
+    visual: 되감기 효과와 함께, 번개 치기 전 조용한 밤 들판과 하늘의 먹구름
+    caption: 어떻게 이런 일이? 처음부터 볼게요.
+    world: {template: field, seed: 3}
+    time: "22:00"
+    shot: {from: [0, 4, -12], to: [0, 6, -14], target: [0, 22, 60], fov: 55}
+    props:
+      - {model: cloud, at: [-8, 34, 70], scale: 14, color: "#3a3f52"}
+      - {model: cloud, at: [14, 38, 90], scale: 12, color: "#2e3344"}
+    effects:
+      - rewind: {at: 0, length: 1.1}
+
+  # 3. 구름 속 — 전기가 쌓이는 원리 (대시보드 카운터)
+  - duration: 5
+    visual: 어두운 무대 위 먹구름 모형, 그 속에서 빛나는 전기 알갱이들이 부딪히며 떠다님
+    caption: 구름 속 얼음 알갱이들이 부딪히며 전기가 쌓여요.
+    world: {template: studio, seed: 4, params: {color: "#141a33"}}
+    shot: wide
+    props:
+      - {model: cloud, at: [0, 0.6, 0], scale: 1.6, color: "#4a5068"}
+    crowds:
+      - {agent: spark, count: 70, area: [-1.0, -0.4, 1.0, 0.4], y_range: [0.9, 2.0], wander: 0.45, spin: 3, colors: ["#bfe6ff", "#ffffff"]}
+    labels:
+      - {text: "얼음 알갱이 충돌", at: [0.3, 1.7, -0.3], from: 1.2}
+    panel:
+      title: 쌓이는 전압
+      value: {from: 0, to: 300000000, format: kr, unit: V}
+      status: 충전 중
+      status_color: orange
+
+  # 4. 낙뢰 — 한 줄기의 세기
+  - duration: 5
+    visual: 밤 들판 멀리 번개 한 줄기가 내리꽂히고, 꽂힌 지점에 노란 표적 링
+    caption: 한 줄기에 약 3억 볼트, 3만 암페어.
+    world: {template: field, seed: 3}
+    time: "22:00"
+    shot: {from: [-6, 3, -6], to: [-4, 3, -2], target: [0, 12, 60], fov: 55}
+    props:
+      - {model: bolt, at: [0, 0, 60], scale: 3.2, grow: {from: 1.0, to: 1.08}}
+    markers:
+      - {at: [0, 0.5, 60], from: 1.1, text: 낙뢰 지점}
+    panel:
+      title: 번개 한 줄기
+      value: {from: 0, to: 300000000, format: kr, unit: V, at: 1.0, length: 1.6}
+      stats: ["전류 약 3만 A"]
+    big_text:
+      - {text: "3억 V", from: 2.4, pos: [0.5, 0.56]}
+    effects:
+      - flash: {at: 1.0, length: 0.12}
+
+  # 5. 비교 — 우리 집 콘센트 vs 번개 (막대)
+  - duration: 5
+    visual: 무대 위 흰 콘센트 하나와 그 옆에 높이 솟은 빛나는 번개 모형, 막대 그래프 비교
+    caption: 우리 집 콘센트 220볼트의 약 136만 배예요.
+    world: {template: studio, seed: 5, params: {color: "#141a33"}}
+    shot: front
+    props:
+      - {shape: box, size: [0.32, 0.32, 0.08], at: [-0.45, 0, 0], color: "#f2f2f2"}
+      - {shape: box, size: [0.04, 0.09, 0.02], at: [-0.5, 0.12, -0.05], color: "#333333"}
+      - {shape: box, size: [0.04, 0.09, 0.02], at: [-0.4, 0.12, -0.05], color: "#333333"}
+      - {model: bolt, at: [0.35, 0, 0.2], scale: 0.2}
+    labels:
+      - {text: "콘센트 220V", at: [-0.45, 0.33, 0], from: 0.6}
+    panel:
+      title: 전압 비교
+      bars:
+        - {label: 우리 집 콘센트, from: 0, to: 0.01, color: blue, text: 220V}
+        - {label: 번개, from: 0, to: 1, color: red, text: 3억 V, at: 0.8}
+    big_text:
+      - {text: "×136만", from: 2.6, pos: [0.5, 0.6]}
+
+  # 6. 온도 — 태양 표면의 5배 (슬로모션 배지)
+  - duration: 5
+    visual: 무대 위 빛나는 번개 모형을 감싸며 뜨거운 공기 불덩이가 부풀어 오름
+    caption: 번개가 지나간 공기는 약 2만 7천℃, 태양 표면의 5배!
+    world: {template: studio, seed: 6, params: {color: "#1a1420"}}
+    shot: front
+    props:
+      - {model: bolt, at: [0, 0, 0.4], scale: 0.2}
+    vfx:
+      - {type: fireball, at: [0, 1.0, 0.4], from: 0.5, to: 4.0, radius: [0.05, 0.38], color: "#e8541a", core: "#ffc860", cool: false}
+    panel:
+      title: 공기 온도
+      value: {from: 20, to: 27700, unit: "℃", scale: linear}
+      status: ×0.001 슬로모션
+    big_text:
+      - {text: "태양 표면 ×5", from: 3.0, pos: [0.5, 0.64], size: 0.8}
+
+  # 7. 천둥 — 팽창하는 공기 (충격파 돔)
+  - duration: 5
+    visual: 들판의 낙뢰 지점에서 투명한 공기 돔이 빠르게 부풀며 불티가 튐
+    caption: 뜨거워진 공기가 한순간에 팽창하며 '쾅!' 그게 천둥이에요.
+    world: {template: field, seed: 3}
+    time: "22:00"
+    shot: {from: [10, 6, 10], to: [8, 6, 16], target: [0, 4, 60], fov: 55}
+    vfx:
+      - {type: shockwave, at: [0, 0, 60], from: 0.6, to: 3.6, radius: [0, 38]}
+      - {type: embers, at: [0, 0, 60], radius: 6, height: 12, count: 160, from: 0.6}
+    big_text:
+      - {text: "쾅!", from: 0.7, to: 2.4, pos: [0.5, 0.42], size: 1.3}
+    effects:
+      - shake: {at: 0.6, length: 1.6, amp: 7}
+
+  # 8. 안전 팁 — 넓은 들판 대신 건물 안으로
+  - duration: 4.5
+    visual: 비 오는 밤 들판에서 사람들이 멀리 보이는 건물 쪽으로 걸어감
+    caption: 그래서 번개 칠 땐 넓은 들판 대신 건물 안으로!
+    world: {template: field, seed: 7}
+    time: "21:00"
+    shot: low
+    crowds:
+      - {agent: person, count: 40, area: [-12, 18, 12, 50], velocity: [0, 1.4], wrap: false}
+
+  # 9. 마무리 카드 — 댓글 유도
+  - duration: 6
+    visual: 어두운 배경 위 질문과 번호 선택지 3개가 차례로 등장
+    caption: 번개 에너지를 모을 수 있다면, 어디에 쓰고 싶나요?
+    card:
+      question: 번개 에너지를 모을 수 있다면?
+      options: [스마트폰 무한 충전, 전기차 전국 일주, 치킨 튀기기]
+      cta: 댓글로 번호를 남겨주세요

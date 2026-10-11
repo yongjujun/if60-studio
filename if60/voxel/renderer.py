@@ -14,7 +14,7 @@ import numpy as np
 from . import models
 from .camera import camera_at, gl_bytes, look_at, ortho, perspective
 from .geometry import rgb
-from .shaders import COMMON_FS, DEPTH_FS, INSTANCE_VS, SKY_FS, SKY_VS, WORLD_VS
+from .shaders import COMMON_FS, DEPTH_FS, INSTANCE_VS, SKY_FS, SKY_VS, VFX_FS, VFX_VS, WORLD_VS
 from .sky import Lighting, parse_time, preset
 
 INSTANCE_FMT = "3f 1f 3f 3f 1f 3f 1f/i"   # off yaw c1 c2 phase vel scale
@@ -41,6 +41,29 @@ class Crowd:
     wrap_min: tuple = (0.0, 0.0, 0.0)
     wrap_size: tuple = (0.0, 0.0, 0.0)
     spin: float = 0.0
+    grow: object = None                    # {from, to, scale: [0, 1], until} — 시간에 따라 커지기/나타나기
+    mdl: object = None                     # 이름 대신 직접 만든 모델 (자라나는 소품)
+
+
+def _ease_out(x: float) -> float:
+    x = min(max(x, 0.0), 1.0)
+    return 1 - (1 - x) ** 3
+
+
+def grow_factor(g, t: float) -> float:
+    """grow 설정 → 현재 크기 배율. 숫자 하나면 0초부터 그 시간 동안 0→1로 자란다."""
+    if not g:
+        return 1.0
+    if isinstance(g, (int, float)):
+        g = {"from": 0.0, "to": float(g)}
+    a = float(g.get("from", 0.0))
+    b = float(g.get("to", a + 1.0))
+    if "until" in g and t > float(g["until"]):
+        return 0.0
+    s0, s1 = (g.get("scale") or [0.0, 1.0])[:2]
+    if t < a:
+        return float(s0)
+    return float(s0) + (float(s1) - float(s0)) * _ease_out((t - a) / max(b - a, 1e-6))
 
 
 def make_crowd(spec: dict, areas: dict, rng: np.random.Generator, avoid: np.ndarray | None = None) -> Crowd:
@@ -132,50 +155,154 @@ def make_crowd(spec: dict, areas: dict, rng: np.random.Generator, avoid: np.ndar
     wrap = spec.get("wrap", "velocity" in spec or "wander" in spec)
     if len(inst) == 0:
         return Crowd(name, inst)
+    grow = spec.get("grow")
     v = inst[:, 11:14]
     ylo, yhi = (float(y_range[0]), float(y_range[1])) if y_range else (0.0, 0.0)
     wsize = (x1 - x0 if (wrap and abs(v[:, 0]).max() > 0) else 0,
              yhi - ylo if (wrap and y_range and abs(v[:, 1]).max() > 0) else 0,
              z1 - z0 if (wrap and abs(v[:, 2]).max() > 0) else 0)
     return Crowd(name, inst, bob=float(spec.get("bob", 0.0)), bob_freq=float(spec.get("bob_freq", 6.0)),
-                 wrap_min=(x0, ylo, z0), wrap_size=wsize, spin=float(spec.get("spin", 0.0)))
+                 wrap_min=(x0, ylo, z0), wrap_size=wsize, spin=float(spec.get("spin", 0.0)), grow=grow)
 
 
-def add_props(builder, props: list, rng) -> None:
-    """장면 YAML의 props → 정적 세계에 박아 넣기.
+def prop_model(pr: dict, rng):
+    """소품 하나 → (모델, 주색, 보조색)"""
+    from .geometry import Model
+    scale = float(pr.get("scale", 1.0))
+    mat = pr.get("mat", "flat")
+    if "model" in pr:
+        mdl = models.get(pr["model"])
+        c1 = pr.get("color", mdl.palette1[rng.integers(len(mdl.palette1))])
+        c2 = pr.get("color2", mdl.palette2[rng.integers(len(mdl.palette2))])
+        return mdl, c1, c2
+    shape = pr.get("shape", "box")
+    color = pr.get("color", "#cccccc")
+    m = Model("prop", [color], [color])
+    if shape == "box":
+        w, h, d = (np.asarray(pr.get("size", [1, 1, 1]), np.float32) * scale)
+        m.part((-w / 2, 0, -d / 2), (w / 2, h, d / 2), color, mat)
+    elif shape == "sphere":
+        r = np.asarray(pr.get("r", 0.5), np.float32) * scale
+        m.sphere((0, 0, 0), r if r.size > 1 else float(r), color, mat=mat)
+    elif shape == "cylinder":
+        m.cylinder((0, 0, 0), float(pr.get("r", 0.5)) * scale, float(pr.get("h", 1.0)) * scale, color,
+                   mat=mat, axis=pr.get("axis", "y"))
+    else:
+        raise ValueError(f"알 수 없는 소품 shape: {shape} (box/sphere/cylinder 또는 model)")
+    return m, color, color
+
+
+def add_props(builder, props: list, rng) -> list:
+    """장면 YAML의 props → 정적 세계에 박아 넣기. grow가 있는 소품은 움직이는 개체(Crowd)로 돌려준다.
       - {model: snack_bag, at: [x,y,z], yaw: 도, scale: 배율, color: "#hex", color2: "#hex"}
       - {shape: box, size: [w,h,d], at: [x,y,z](밑면 중심), color, mat, yaw}
       - {shape: sphere, r: 반지름 또는 [rx,ry,rz], at: [x,y,z](중심), color, mat}
       - {shape: cylinder, r, h, at: [x,y,z](밑면 중심), color, mat, axis: y|x|z}
+      - 공통 grow: {from: 초, to: 초, scale: [0, 1], until: 초} — 그 시간 동안 커지며 나타남
     """
     import math as _m
-    from .geometry import Model, rgb as _rgb
+    from .geometry import rgb as _rgb
+    dynamic = []
     for pr in props or []:
         at = np.asarray(pr.get("at", [0, 0, 0]), np.float32)
         yaw = _m.radians(float(pr.get("yaw", 0)))
-        scale = float(pr.get("scale", 1.0))
-        mat = pr.get("mat", "flat")
-        if "model" in pr:
-            mdl = models.get(pr["model"])
-            c1 = pr.get("color", mdl.palette1[rng.integers(len(mdl.palette1))])
-            c2 = pr.get("color2", mdl.palette2[rng.integers(len(mdl.palette2))])
-            builder.stamp(mdl, at, yaw, c1=c1, c2=c2, scale=scale)
-            continue
-        shape = pr.get("shape", "box")
-        color = pr.get("color", "#cccccc")
-        m = Model("prop", [color], [color])
-        if shape == "box":
-            w, h, d = (np.asarray(pr.get("size", [1, 1, 1]), np.float32) * scale)
-            m.part((-w / 2, 0, -d / 2), (w / 2, h, d / 2), color, mat)
-        elif shape == "sphere":
-            r = np.asarray(pr.get("r", 0.5), np.float32) * scale
-            m.sphere((0, 0, 0), r if r.size > 1 else float(r), color, mat=mat)
-        elif shape == "cylinder":
-            m.cylinder((0, 0, 0), float(pr.get("r", 0.5)) * scale, float(pr.get("h", 1.0)) * scale, color,
-                       mat=mat, axis=pr.get("axis", "y"))
+        mdl, c1, c2 = prop_model(pr, rng)
+        scale = float(pr.get("scale", 1.0)) if "model" in pr else 1.0
+        if pr.get("grow"):
+            inst = np.zeros((1, 15), np.float32)
+            inst[0, 0:3] = at
+            inst[0, 3] = yaw
+            inst[0, 4:7], inst[0, 7:10] = _rgb(c1), _rgb(c2)
+            inst[0, 14] = scale
+            dynamic.append(Crowd(mdl.name, inst, grow=pr["grow"], mdl=mdl))
         else:
-            raise ValueError(f"알 수 없는 소품 shape: {shape} (box/sphere/cylinder 또는 model)")
-        builder.stamp(m, at, yaw)
+            builder.stamp(mdl, at, yaw, c1=c1, c2=c2, scale=scale)
+    return dynamic
+
+
+# ------------------------------------------------------------------ VFX
+VFX_TYPES = ("shockwave", "orb", "fireball", "mushroom", "embers")
+
+
+def _sphere_mesh(lat: int = 24, lon: int = 48) -> np.ndarray:
+    th = np.linspace(0, math.pi, lat + 1)
+    ph = np.linspace(0, 2 * math.pi, lon + 1)
+    P = np.stack([np.sin(th)[:, None] * np.cos(ph)[None], np.cos(th)[:, None] * np.ones_like(ph)[None],
+                  np.sin(th)[:, None] * np.sin(ph)[None]], -1)
+    a, b, c, d = P[:-1, :-1], P[1:, :-1], P[1:, 1:], P[:-1, 1:]
+    tris = np.stack([a, b, c, a, c, d], 2).reshape(-1, 3)
+    return tris.astype(np.float32)
+
+
+def vfx_crowds(vfx: list) -> list[dict]:
+    """embers(불티) 같은 입자 VFX → 군중 설정으로 바꿔 인스턴싱으로 그린다."""
+    out = []
+    for v in vfx or []:
+        if v.get("type") != "embers":
+            continue
+        x, y, z = v.get("at", [0, 0, 0])
+        r = float(v.get("radius", 3.0))
+        hgt = float(v.get("height", r * 2))
+        col = v.get("color", "#ffb347")
+        spec = {"agent": "spark", "count": int(v.get("count", 220)), "area": [x - r, z - r, x + r, z + r],
+                "y_range": [y, y + hgt], "velocity": [0, float(v.get("rise", hgt / 3)), 0],
+                "speed_jitter": 0.45, "spin": 2.0, "colors": [col] if isinstance(col, str) else list(col),
+                "scale": [0.6 * float(v.get("size", 1.0)), 1.5 * float(v.get("size", 1.0))]}
+        if "from" in v or "to" in v:
+            a = float(v.get("from", 0.0))
+            spec["grow"] = {"from": a, "to": a + 0.4, **({"until": float(v["to"])} if "to" in v else {})}
+        out.append(spec)
+    return out
+
+
+def vfx_draws(v: dict, t: float) -> list[dict]:
+    """VFX 한 개 → 이번 프레임에 그릴 구(들)의 위치·크기·색"""
+    from .geometry import rgb as _rgb
+    kind = v.get("type")
+    a, b = float(v.get("from", 0.0)), float(v.get("to", float(v.get("from", 0.0)) + 2.0))
+    if t < a or kind == "embers":
+        return []
+    p = min(1.0, (t - a) / max(b - a, 1e-6))
+    hold = v.get("hold", True)
+    if t > b and not hold:
+        return []
+    at = np.asarray(v.get("at", [0, 0, 0]), np.float32)
+    col = _rgb(v.get("color", {"shockwave": "#9fd8ff", "orb": "#7fc8ff"}.get(kind, "#ff7a2a")))
+    col2 = _rgb(v.get("core", {"shockwave": "#ffffff", "orb": "#e8f6ff"}.get(kind, "#fff1b0")))
+    alpha = float(v.get("opacity", 0.55 if kind in ("shockwave", "orb") else 1.0))
+    r = v.get("radius", [0.0, 10.0])
+    r0, r1 = (float(r[0]), float(r[1])) if isinstance(r, list) else (0.0, float(r))
+    e = _ease_out(p)
+    rad = max(r0 + (r1 - r0) * e, 1e-3)
+    if kind == "shockwave":
+        fade = 1.0 - max(0.0, (p - 0.55) / 0.45) if v.get("fade", True) else 1.0
+        return [dict(center=at, scale=(rad, rad * float(v.get("squash", 0.8)), rad), col=col, col2=col2,
+                     alpha=alpha * fade, mode=0, floor=float(at[1]) - 0.01, cell=6.0 / rad)]
+    if kind == "orb":
+        return [dict(center=at, scale=(rad, rad, rad), col=col, col2=col2, alpha=alpha, mode=0,
+                     floor=-1e9, cell=6.0 / rad)]
+    if kind == "fireball":
+        smoke = _rgb(v.get("smoke", "#5a5560"))
+        k = max(0.0, (p - 0.6) / 0.4) if v.get("cool", True) else 0.0
+        c_out, c_in = col * (1 - k) + smoke * k, col2 * (1 - k) + col * k
+        return [dict(center=at + np.array([0, rad * float(v.get("lift", 0.0)), 0], np.float32),
+                     scale=(rad, rad, rad), col=c_out, col2=c_in, alpha=alpha, mode=1, floor=-1e9, cell=7.0 / rad)]
+    if kind == "mushroom":
+        H = float(v.get("height", r1 * 3))
+        smoke = _rgb(v.get("smoke", "#6a6068"))
+        k = max(0.0, (p - 0.45) / 0.55)
+        c_out, c_in = col * (1 - k) + smoke * k, col2 * (1 - k) + (col * 0.5 + smoke * 0.5) * k
+        cap_y = at[1] + H * e
+        stem_h = max(H * e, 1e-3)
+        return [
+            dict(center=at + np.array([0, stem_h / 2, 0], np.float32), scale=(rad * 0.3, stem_h / 2, rad * 0.3),
+                 col=c_out, col2=c_in, alpha=1.0, mode=1, floor=-1e9, cell=7.0 / rad),
+            dict(center=np.array([at[0], cap_y, at[2]], np.float32), scale=(rad, rad * 0.55, rad),
+                 col=c_out, col2=c_in, alpha=1.0, mode=1, floor=-1e9, cell=7.0 / rad),
+            dict(center=at, scale=(rad * 1.25, rad * 0.18, rad * 1.25), col=c_out * 0.8 + smoke * 0.2, col2=c_in,
+                 alpha=1.0, mode=1, floor=float(at[1]) - 0.01, cell=7.0 / rad),
+        ]
+    return []
 
 
 # ------------------------------------------------------------------ renderer
@@ -191,6 +318,8 @@ class Prepared:
     sun_azimuth: float = 35.0
     lighting_override: dict = field(default_factory=dict)
     texel: float = 8.0
+    vfx: list = field(default_factory=list)
+    smooth: bool = False
 
 
 class VoxelRenderer:
@@ -203,6 +332,9 @@ class VoxelRenderer:
         self.world_depth = ctx.program(vertex_shader=WORLD_VS, fragment_shader=DEPTH_FS)
         self.inst_depth = ctx.program(vertex_shader=INSTANCE_VS, fragment_shader=DEPTH_FS)
         self.sky_prog = ctx.program(vertex_shader=SKY_VS, fragment_shader=SKY_FS)
+        self.vfx_prog = ctx.program(vertex_shader=VFX_VS, fragment_shader=VFX_FS)
+        self.vfx_vbo = ctx.buffer(_sphere_mesh().tobytes())
+        self.vfx_vao = ctx.vertex_array(self.vfx_prog, [(self.vfx_vbo, "3f", "in_pos")])
         tri = np.array([-1, -1, 3, -1, -1, 3], np.float32)
         self.sky_vao = ctx.vertex_array(self.sky_prog, [(ctx.buffer(tri.tobytes()), "2f", "in_pos")])
 
@@ -220,11 +352,21 @@ class VoxelRenderer:
         self.out_fbo = ctx.framebuffer(color_attachments=[ctx.renderbuffer((width, height))])
 
     # -------------------------------------------------------------- scene setup
-    def prepare(self, world: dict, crowds: list[dict], seed: int = 0, shot=None, props=None) -> Prepared:
+    def prepare(self, world: dict, crowds: list[dict], seed: int = 0, shot=None, props=None,
+                vfx=None, look: str | None = None) -> Prepared:
+        from . import geometry
+        old_detail = geometry.DETAIL
+        geometry.DETAIL = 2.5 if look == "smooth" else 1.0
+        try:
+            return self._prepare(world, crowds, seed, shot, props, vfx, look)
+        finally:
+            geometry.DETAIL = old_detail
+
+    def _prepare(self, world, crowds, seed, shot, props, vfx, look) -> Prepared:
         from .templates import build_template
         rng = np.random.default_rng(seed)
         built = build_template(world, rng)
-        add_props(built.builder, list(built.props) + list(props or []), rng)
+        dynamic = add_props(built.builder, list(built.props) + list(props or []), rng)
         ctx = self.ctx
         data = built.builder.build()
         vbo = ctx.buffer(data.tobytes())
@@ -234,7 +376,8 @@ class VoxelRenderer:
             world_depth_vao=ctx.vertex_array(self.world_depth, [(vbo, "3f 12x 12x 4x", "in_pos")]),
             world_vbo=vbo, shots=built.shots, shadow_radius=built.shadow_radius,
             sky=world.get("sky", built.sky), sun_azimuth=built.sun_azimuth,
-            lighting_override=built.lighting, texel=built.texel)
+            lighting_override=built.lighting, texel=built.texel,
+            vfx=[v for v in (vfx or []) if v.get("type") != "embers"], smooth=look == "smooth")
         cam = shot if isinstance(shot, dict) else built.shots.get(shot or next(iter(built.shots)))
         avoid = None
         if cam is not None and cam.get("type", "dolly") == "dolly":
@@ -242,11 +385,12 @@ class VoxelRenderer:
             eye = np.asarray(cam["from"], np.float32) * (1 - ps) + np.asarray(cam.get("to", cam["from"]), np.float32) * ps
             if eye[:, 1].min() < 6:          # 땅 가까이 있는 카메라만
                 avoid = eye[:, [0, 2]]
-        for spec in list(built.crowds) + list(crowds or []):
-            cr = make_crowd(spec, built.areas, rng, avoid)
+        made = [make_crowd(spec, built.areas, rng, avoid) for spec in
+                list(built.crowds) + list(crowds or []) + vfx_crowds(vfx)]
+        for cr in made + dynamic:
             if len(cr.instances) == 0:
                 continue
-            mdata = models.get(cr.model).data
+            mdata = (cr.mdl or models.get(cr.model)).data
             mvbo = ctx.buffer(mdata.tobytes())
             ivbo = ctx.buffer(cr.instances.tobytes())
             vao = ctx.vertex_array(self.inst_prog, [
@@ -264,6 +408,7 @@ class VoxelRenderer:
         for cr, vao, dvao, mvbo, ivbo in prep.crowds:
             for obj in (vao, dvao, mvbo, ivbo):
                 obj.release()
+        prep.crowds.clear()
 
     # -------------------------------------------------------------- frame
     def lighting(self, prep: Prepared, hours: float) -> Lighting:
@@ -305,8 +450,8 @@ class VoxelRenderer:
             prep.world_depth_vao.render()
             self.inst_depth["u_vp"].write(gl_bytes(light_vp))
             for cr, _, dvao, _, _ in prep.crowds:
-                self._crowd_uniforms(self.inst_depth, cr, t)
-                dvao.render(instances=len(cr.instances))
+                if self._crowd_uniforms(self.inst_depth, cr, t) and cr.model != "spark":
+                    dvao.render(instances=len(cr.instances))
 
         self.ms_fbo.use()
         ctx.viewport = (0, 0, self.w, self.h)
@@ -320,7 +465,7 @@ class VoxelRenderer:
                   u_night=light.night,
                   u_planet_dir=light.planet_dir if light.planet_dir is not None else np.array([0, 1, 0], np.float32),
                   u_planet_col=light.planet_col if light.planet_col is not None else np.zeros(3, np.float32),
-                  u_planet_size=light.planet_size)
+                  u_planet_size=light.planet_size, u_skyq=2400.0 if prep.smooth else 260.0)
         self.sky_vao.render()
         ctx.enable(ctx.DEPTH_TEST)
 
@@ -330,13 +475,16 @@ class VoxelRenderer:
             prog["u_light_vp"].write(gl_bytes(light_vp))
             self._set(prog, u_cam=eye, u_sun_dir=sun, u_sun_col=light.sun_col, u_amb_sky=light.amb_sky,
                       u_amb_ground=light.amb_ground, u_fog_col=light.horizon, u_fog_density=light.fog_density,
-                      u_time=t, u_night=light.night, u_texel=prep.texel, u_shadow_on=shadow_on)
+                      u_time=t, u_night=light.night, u_texel=0.01 if prep.smooth else prep.texel,
+                      u_shadow_on=shadow_on)
             if prog.get("u_shadow", None) is not None:
                 prog["u_shadow"].value = 0
         prep.world_vao.render()
         for cr, vao, _, _, _ in prep.crowds:
-            self._crowd_uniforms(self.inst_prog, cr, t)
-            vao.render(instances=len(cr.instances))
+            if self._crowd_uniforms(self.inst_prog, cr, t):
+                vao.render(instances=len(cr.instances))
+        if prep.vfx:
+            self._draw_vfx(prep, vp, eye, t)
 
         ctx.copy_framebuffer(self.out_fbo, self.ms_fbo)
         raw = self.out_fbo.read(components=3)
@@ -354,9 +502,37 @@ class VoxelRenderer:
             else:
                 u.value = float(v)
 
-    def _crowd_uniforms(self, prog, cr: Crowd, t: float):
-        self._set(prog, u_time=t, u_bob=cr.bob, u_bob_freq=cr.bob_freq, u_spin=cr.spin,
+    def _crowd_uniforms(self, prog, cr: Crowd, t: float) -> bool:
+        """군중 uniform 설정. 크기 배율이 0(아직 안 나타남)이면 False → 그리지 않음"""
+        g = grow_factor(cr.grow, t)
+        self._set(prog, u_time=t, u_bob=cr.bob, u_bob_freq=cr.bob_freq, u_spin=cr.spin, u_gscale=g,
                   u_wrap_min=np.asarray(cr.wrap_min, np.float32), u_wrap_size=np.asarray(cr.wrap_size, np.float32))
+        return g > 1e-4
+
+    def _draw_vfx(self, prep: Prepared, vp, eye, t: float) -> None:
+        """불덩이(불투명)를 먼저, 충격파·구(반투명 가산)를 나중에 그린다."""
+        ctx = self.ctx
+        draws = [d for v in prep.vfx for d in vfx_draws(v, t)]
+        if not draws:
+            return
+        prog = self.vfx_prog
+        prog["u_vp"].write(gl_bytes(vp))
+        self._set(prog, u_cam=eye, u_time=t)
+        fbo = self.ms_fbo
+        ctx.enable(ctx.BLEND)
+        for d in sorted(draws, key=lambda d: -d["mode"]):
+            shell = d["mode"] == 0
+            ctx.blend_func = (ctx.SRC_ALPHA, ctx.ONE) if shell else (ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA)
+            fbo.depth_mask = not shell
+            self._set(prog, u_center=np.asarray(d["center"], np.float32), u_scale=np.asarray(d["scale"], np.float32),
+                      u_col=np.asarray(d["col"], np.float32), u_col2=np.asarray(d["col2"], np.float32),
+                      u_alpha=d["alpha"], u_mode=d["mode"], u_floor=d["floor"], u_cell=d["cell"])
+            if shell:
+                ctx.disable(ctx.CULL_FACE)
+            self.vfx_vao.render()
+        fbo.depth_mask = True
+        ctx.blend_func = (ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA)
+        ctx.disable(ctx.BLEND)
 
     def project(self, points) -> list:
         """마지막으로 그린 프레임 기준, 3D 점 → 화면 픽셀 좌표 (카메라 뒤면 None)"""

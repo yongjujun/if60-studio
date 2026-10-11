@@ -142,6 +142,7 @@ uniform vec3 u_wrap_size;
 uniform float u_bob;
 uniform float u_bob_freq;
 uniform float u_spin;
+uniform float u_gscale;         // 자라나기(grow) 배율 — 0이면 안 보임
 in vec3 in_pos;
 in vec3 in_norm;
 in vec3 in_col;
@@ -162,7 +163,7 @@ out vec4 v_light;
 void main() {
     float yaw = i_yaw + u_spin * u_time * (i_phase > 3.14159 ? 1.0 : -1.0);
     float c = cos(yaw), s = sin(yaw);
-    vec3 p = in_pos * i_scale;
+    vec3 p = in_pos * i_scale * u_gscale;
     p = vec3(c * p.x + s * p.z, p.y, -s * p.x + c * p.z);
     vec3 n = vec3(c * in_norm.x + s * in_norm.z, in_norm.y, -s * in_norm.x + c * in_norm.z);
     vec3 base = i_off + i_vel * u_time;
@@ -207,6 +208,7 @@ uniform float u_night;
 uniform vec3 u_planet_dir;
 uniform vec3 u_planet_col;
 uniform float u_planet_size;
+uniform float u_skyq;           // 하늘 픽셀 격자 (복셀 260, 매끈한 룩은 크게)
 out vec4 f_color;
 float hash(vec3 p) {
     p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
@@ -217,7 +219,7 @@ void main() {
     vec4 w = u_inv_vp * vec4(v_ndc, 1.0, 1.0);
     vec3 d = normalize(w.xyz / w.w - u_cam);
     // 픽셀 느낌을 위해 방향을 격자로 양자화
-    vec3 q = floor(d * 260.0) / 260.0;
+    vec3 q = floor(d * u_skyq) / u_skyq;
     float h = max(q.y, 0.0);
     vec3 col = mix(u_horizon, u_zenith, pow(h, 0.55));
     if (q.y < 0.0) col = u_horizon * 0.92;
@@ -236,5 +238,57 @@ void main() {
         if (st > 0.9965) col = mix(col, vec3(1.0), u_night * (0.5 + 0.5 * fract(st * 91.0)));
     }
     f_color = vec4(col, 1.0);
+}
+"""
+
+# VFX: 반투명 충격파 돔·구, 커지는 불덩이·버섯구름. 매끈한 단위 구 메시를 크기·위치만 바꿔 그린다.
+VFX_VS = """
+#version 330
+uniform mat4 u_vp;
+uniform vec3 u_center;
+uniform vec3 u_scale;
+in vec3 in_pos;
+out vec3 v_world;
+out vec3 v_n;
+void main() {
+    vec3 w = u_center + in_pos * u_scale;
+    v_world = w;
+    v_n = normalize(in_pos / max(u_scale, vec3(1e-4)));
+    gl_Position = u_vp * vec4(w, 1.0);
+}
+"""
+
+VFX_FS = """
+#version 330
+in vec3 v_world;
+in vec3 v_n;
+uniform vec3 u_cam;
+uniform vec3 u_col;      // 바깥 색
+uniform vec3 u_col2;     // 안쪽(뜨거운 중심) 색
+uniform float u_alpha;
+uniform float u_mode;    // 0 = 껍질(돔·구, 가산 합성)  1 = 불덩이(불투명 발광)
+uniform float u_time;
+uniform float u_floor;   // 이 높이 아래는 그리지 않음 (반구 돔)
+uniform float u_cell;    // 픽셀 노이즈 밀도
+out vec4 f_color;
+float hash(vec3 p) {
+    p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
+    p *= 17.0;
+    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+void main() {
+    if (v_world.y < u_floor) discard;
+    vec3 v = normalize(u_cam - v_world);
+    vec3 n = normalize(v_n);
+    float rim = pow(1.0 - abs(dot(n, v)), 2.0);
+    float h = hash(floor(v_world * u_cell + vec3(0.0, -u_time * 3.0, 0.0)));
+    if (u_mode < 0.5) {
+        vec3 c = mix(u_col2, u_col, rim) * (0.8 + 0.35 * h);
+        f_color = vec4(c, u_alpha * (0.10 + 0.9 * rim));
+    } else {
+        float k = smoothstep(0.15, 0.95, rim + 0.35 * (h - 0.5));
+        vec3 c = mix(u_col2, u_col, k) * (0.88 + 0.28 * h);
+        f_color = vec4(c, u_alpha);
+    }
 }
 """

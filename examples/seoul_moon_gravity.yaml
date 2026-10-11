@@ -14,7 +14,6 @@
 #   - 지표 기압 = 공기 기둥의 무게 → 중력이 1/6이면 이론상 약 170hPa, 에베레스트 정상(약 330hPa)보다 낮음
 title: 서울 중력이 1시간 동안 달처럼 약해진다면?
 style: voxel
-music: {mood: wonder, bpm: 104, seed: 16, volume: 0.18}
 
 scenes:
   # 1. 훅

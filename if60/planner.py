@@ -116,8 +116,12 @@ def system_prompt(cat: dict) -> str:
                          f"    shots: {', '.join(info['shots'])}\n"
                          f"    areas: {', '.join(info['areas'])}")
     model_lines = [f"  {n}: {DESCRIPTIONS.get(n, '')}" for n in cat["agents"]]
-    example = ROOT / "scenes" / "nitrogen_snack.yaml"
-    example_txt = example.read_text(encoding="utf-8") if example.exists() else ""
+    ex1 = ROOT / "scenes" / "lightning_power.yaml"
+    ex2 = ROOT / "scenes" / "nitrogen_snack.yaml"
+    example_txt = "\n".join(
+        f"### {label}\n```yaml\n{p.read_text(encoding='utf-8')}```" for label, p in
+        (("예시 1 — 방송형 전체 구조 (콜드 오픈·대시보드·VFX·마무리 카드)", ex1),
+         ("예시 2 — 사물을 화면에 직접 만들어 보여주기", ex2)) if p.exists())
     return f"""너는 유튜브 과학·상식 쇼츠 채널 'IF 60'의 작가 겸 연출가다. 주제는 무엇이든 올 수 있다(사물, 음식, 몸, 동물, 우주, 사회, 상상).
 주제를 받으면 (1) 웹 검색으로 핵심 사실과 수치를 확인하고 (2) 3D 복셀 렌더러용 장면 YAML을 쓴다.
 
@@ -131,11 +135,16 @@ def system_prompt(cat: dict) -> str:
 - 화면은 세로 9:16이라 좁다. 카메라와 거리 d일 때 보이는 가로 폭은 약 0.45×d, 세로 높이는 약 0.9×d (fov 50 기준). 주인공 물체가 화면 가운데 크게 보이게 거리·scale을 정한다.
 - 좌표: 미터, x는 화면 오른쪽(+z를 바라볼 때), y 위, z 앞(카메라 반대쪽). 템플릿 샷들은 대부분 +z를 바라본다.
 
-## 콘텐츠 공식 (조회수가 검증된 구조)
-- 0~4초 훅: 상단 title(18자 이내 질문) + 궁금증을 만드는 caption
-- 본편: 한 장면 = 한 가지 사실. 4~7초씩. 비유는 한국인에게 익숙한 장소·상황으로.
-- HUD(우측 상단 배지)로 진행감: 시계 {{from: "05:00", to: "05:30", step: 1}}, 카운터 {{from: 21, to: 3, format: "남은 산소 {{:.0f}}%", ease: false}}, 고정 문구 "공기 = 질소 78%"
-- 후반 반전 1회(의외의 사실), 마지막 장면은 title + 댓글을 부르는 질문(양자택일이면 더 좋음)
+## 콘텐츠 공식 (조회수가 검증된 방송형 구조 — 채널 '만물제작소')
+- 화면 틀: 최상위 layout으로 상단에 두 줄 제목(첫 줄 흰색, 둘째 줄 노란색 — 각 10자 안팎)이 영상 내내 고정된다.
+  그래서 장면별 title은 쓰지 않는다(필요하면 짧게 한 번만). 채널명은 레이아웃이 알아서 작게 넣는다.
+- ★콜드 오픈: 1번 장면(2~3초)은 영상에서 가장 센 순간(절정·결과)을 먼저 보여준다 — big_text로 핵심 숫자,
+  vfx·shake·whiteout(hold: true)로 강하게 끝낸다. 2번 장면은 effects에 rewind {{at: 0}}를 넣고
+  "어떻게 이렇게 됐을까요? 처음부터 볼게요." 같은 caption으로 시작점부터 다시 보여준다.
+- 본편: 한 장면 = 한 가지 사실. 4~6초씩. 숫자가 나오면 panel(대시보드)의 카운터가 0부터 굴러 올라가게,
+  핵심 수치는 big_text로 크게 빛나게, 가리키는 지점은 markers로 표시한다. 비유는 한국인에게 익숙한 것으로.
+- 후반 반전 1회(의외의 사실이나 비교), 마지막 장면은 card(질문 + 번호 선택지 3개 + "댓글로 번호를 남겨주세요").
+- HUD(우측 상단 배지)는 시계·짧은 문구에만: 시계 {{from: "05:00", to: "05:30", step: 1}}, 고정 문구 "공기 = 질소 78%"
 - 말투: 친근한 존댓말. caption은 한 장면 45자 이내, 숫자는 구체적으로.
 - 사실은 검색으로 확인된 것만. 불확실하면 쓰지 않는다. 출처를 facts_to_check에 URL과 함께.
 - 위험한 행동을 따라 하게 만드는 내용, 실존 인물·상표·저작권 캐릭터는 넣지 않는다.
@@ -167,16 +176,39 @@ def system_prompt(cat: dict) -> str:
     분자·입자는 y_range + wander + spin. 탁자 위 물건은 area: table (y 자동 0.9).
     광장 군중 1000~3000, 동물은 넓은 샷에서 scale [1.6, 2.0].
 - labels: [{{text: "이름표", at: [x,y,z](가리킬 지점), from: 초, to: 초, color: "#hex"}}]  — 대상 바로 위에 말풍선으로 붙는다
-- effects: shake {{at, length, amp}}, flash {{at, length}}, tint {{color, at, length}}  (한 항목에 하나씩)
-- camera: {{fade_out: 0.6}}  — 마지막 장면
+- props·crowds 공통 grow: {{from: 초, to: 초, scale: [0, 1], until: 초}} — 그 시간에 커지며 나타남(번개가 꽂힘, 건물이 솟음)
+- effects (한 항목에 하나씩):
+    shake {{at, length, amp}}, flash {{at, length}}, tint {{color, at, length}},
+    whiteout {{at, length, hold: true면 끝까지 하얗게}}, rewind {{at: 0, length: 1}} (되감기 화면 — 콜드 오픈 다음 장면)
+- vfx (3D 특수효과, 좌표는 미터):
+    {{type: shockwave, at: [x,y,z], from: 초, to: 초, radius: [0, 40]}}   반투명 충격파 돔(땅 위 반구)
+    {{type: orb, at, from, to, radius: [시작, 끝], color, opacity}}       반투명 빛 구 (자기장·보호막·대기)
+    {{type: fireball, at, from, to, radius: [0.1, 8], color, core, cool: false면 식지 않음}}  커지는 불덩이
+    {{type: mushroom, at, from, to, radius: 15, height: 45}}             솟아오르는 버섯구름
+    {{type: embers, at, radius, height, count: 200, color, from}}       빛나는 불티·입자가 솟아오름
+- big_text: [{{text: "×1억", from: 초, to: 초, pos: [0.5, 0.42](화면 비율) 또는 at: [x,y,z], color: "#ffd23f", size: 1.0}}]
+    — 장면 속에 크고 빛나는 글자. 한 장면에 1개, 6자 이내. caption(자막, 화면 74% 높이)과 겹치지 않게 pos y는 0.35~0.62
+- markers: [{{at: [x,y,z], from: 초, text: "낙뢰 지점", color}}]  — 3D 지점에 빛나는 표적 링
+- panel (데이터 대시보드, 화면 왼쪽 위):
+    {{title: "중심 온도", value: {{from: 0, to: 15000000, unit: "℃", format: kr|"{{:,.0f}}", scale: log|linear, at: 초, length: 초}},
+      stats: ["반지름 3km", "시간 0.001초"], bars: [{{label: "에너지", from: 0, to: 0.9(0~1), color: blue|red|green|yellow, text: "90%"}}],
+      status: "×0.4 슬로모션" 또는 "일시정지", status_color: red|orange|blue}}
+    format: kr이면 "1억 5,000만"처럼 한국식. 큰 수(1000배 이상 차이)는 자동으로 log — 자릿수가 고르게 올라간다
+- card (마무리 장면 전용, world 없이 써도 됨 — 앞 장면을 흐리게 깔아 줌):
+    {{question: "당신의 선택은?", options: ["선택지1", "선택지2", "선택지3"], cta: "댓글로 번호를 남겨주세요"}}
+    card가 있는 장면은 caption이 화면에 표시되지 않는다(질문·선택지가 자막 역할)
+- camera: {{fade_out: 0.6}}
 
 ## 출력 형식
 설명 없이 ```yaml 코드블록 하나만 출력한다. 문자열에 콜론(:)이 있으면 큰따옴표로 감싼다. 최상위 키:
-title, style: voxel, music: {{mood: wonder|tense|calm|epic, bpm: 90~130, seed: 정수, volume: 0.18}},
+title, style: voxel,
+layout: {{title: ["첫 줄(흰색)", "둘째 줄(노란색)"], series: "시리즈명 N편"(선택)}},
+look: voxel (기본, 픽셀 복셀) 또는 smooth (매끈한 질감 — 우주·과학 실험처럼 깔끔한 느낌이 어울릴 때),
 facts_to_check: ["사실 한 줄 — 출처 URL", ...],
 scenes: [...]
+배경음악·효과음은 만들지 않는다(무음 영상 — 음악은 업로드할 때 따로 넣는다).
 
-## 참고 예시 (자유 주제를 화면에 직접 보여주는 수준)
+## 참고 예시
 {example_txt}
 """
 
@@ -309,7 +341,7 @@ def choose_backend(interactive: bool = True) -> str:
         "  [별도 과금] API 키 저장:  python -m if60 key")
 
 
-_TEXT_KEY = re.compile(r"^(\s*(?:-\s+)?(?:caption|title|hud):\s+)(.+)$")
+_TEXT_KEY = re.compile(r"^(\s*(?:-\s+)?(?:caption|title|hud|question|cta|status|series):\s+)(.+)$")
 
 
 def quote_text_values(ytxt: str) -> str:
@@ -359,7 +391,10 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
             total += float(s.get("duration", 0))
         except (TypeError, ValueError):
             errs.append(f"장면 {i}: duration이 숫자가 아님")
+        errs += _validate_broadcast(s, i)
         w = s.get("world")
+        if w is None and isinstance(s.get("card"), dict):
+            continue   # 마무리 카드 장면은 3D 세계 없이도 됨 (앞 장면을 흐리게 깔아 줌)
         if not isinstance(w, dict) or w.get("template") not in cat["templates"]:
             errs.append(f"장면 {i}: world.template이 없거나 지원하지 않음 ({(w or {}).get('template') if isinstance(w, dict) else w})")
             continue
@@ -388,8 +423,8 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
                      (e.get("type") or e.get("name") or e.get("effect")) else
                      list(e) if isinstance(e, dict) else [str(e)])
             for n in names:
-                if n not in ("shake", "flash", "tint"):
-                    errs.append(f"장면 {i}: 효과 '{n}' 지원 안 함 (shake/flash/tint만 가능, 형식: - shake: {{at: 1, length: 1.2, amp: 4}})")
+                if n not in EFFECTS:
+                    errs.append(f"장면 {i}: 효과 '{n}' 지원 안 함 ({'/'.join(EFFECTS)}만 가능, 형식: - shake: {{at: 1, length: 1.2, amp: 4}})")
         for j, pr in enumerate(s.get("props") or [], 1):
             if not isinstance(pr, dict):
                 errs.append(f"장면 {i} 소품 {j}: 형식 오류"); continue
@@ -423,8 +458,56 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
                     errs.append(f"장면 {i} 군중 {j}: count가 너무 많음 (8000 이하)")
             except (TypeError, ValueError):
                 errs.append(f"장면 {i} 군중 {j}: count가 숫자가 아님")
+    lay = spec.get("layout")
+    if lay is not None and not isinstance(lay, (dict, bool)):
+        errs.append("layout은 {title: [첫 줄, 둘째 줄], series: 시리즈명} 형식")
+    if spec.get("look", "voxel") not in ("voxel", "smooth"):
+        errs.append(f"look '{spec.get('look')}' 지원 안 함 (voxel 또는 smooth)")
     if target_len and not (target_len * 0.75 <= total <= target_len * 1.3):
         errs.append(f"전체 길이 {total:.0f}초 — 목표 {target_len:.0f}초에 맞춰 장면 길이를 조정")
+    return errs
+
+
+EFFECTS = ("shake", "flash", "tint", "whiteout", "rewind")
+VFX_TYPES = ("shockwave", "orb", "fireball", "mushroom", "embers")
+
+
+def _validate_broadcast(s: dict, i: int) -> list[str]:
+    """방송형 연출 필드(vfx, big_text, markers, panel, card) 형식 검사"""
+    errs = []
+    xyz = lambda v: isinstance(v, list) and len(v) == 3
+    for j, v in enumerate(s.get("vfx") or [], 1):
+        if not isinstance(v, dict) or v.get("type") not in VFX_TYPES:
+            errs.append(f"장면 {i} vfx {j}: type은 {'/'.join(VFX_TYPES)} 중 하나")
+        elif not xyz(v.get("at", [0, 0, 0])):
+            errs.append(f"장면 {i} vfx {j}: at은 [x, y, z]")
+        elif "radius" in v and not (isinstance(v["radius"], (int, float)) or
+                                    (isinstance(v["radius"], list) and len(v["radius"]) == 2)):
+            errs.append(f"장면 {i} vfx {j}: radius는 숫자 또는 [시작, 끝]")
+    bts = s.get("big_text") or []
+    for j, b in enumerate([bts] if isinstance(bts, dict) else bts, 1):
+        if not isinstance(b, dict) or not b.get("text"):
+            errs.append(f"장면 {i} big_text {j}: {{text: \"×1억\", from: 초, pos: [0.5, 0.42]}} 형식")
+        elif "at" in b and not xyz(b["at"]):
+            errs.append(f"장면 {i} big_text {j}: at은 [x, y, z]")
+    mks = s.get("markers") or []
+    for j, m in enumerate([mks] if isinstance(mks, dict) else mks, 1):
+        if not isinstance(m, dict) or not xyz(m.get("at")):
+            errs.append(f"장면 {i} marker {j}: {{at: [x, y, z], from: 초, text: 이름}} 형식")
+    pn = s.get("panel")
+    if pn is not None:
+        if not isinstance(pn, dict):
+            errs.append(f"장면 {i}: panel 형식 오류")
+        else:
+            for b in pn.get("bars") or []:
+                if not isinstance(b, dict) or "to" not in b:
+                    errs.append(f"장면 {i}: panel.bars 항목은 {{label, from: 0, to: 0~1, color}}")
+            if isinstance(pn.get("stats"), str):
+                errs.append(f"장면 {i}: panel.stats는 문자열 목록")
+    cd = s.get("card")
+    if cd is not None:
+        if not isinstance(cd, dict) or not isinstance(cd.get("options"), list) or not 2 <= len(cd["options"]) <= 4:
+            errs.append(f"장면 {i}: card는 {{question, options: [2~4개], cta}} 형식")
     return errs
 
 
@@ -446,20 +529,18 @@ def smoke_test(ytxt: str) -> list[str]:
             vr = VoxelRenderer(36, 64, samples=0, shadow_size=256)
         except Exception:
             vr = None   # OpenGL을 못 쓰는 환경이면 3D 확인은 건너뜀
+        comp = R.Composer(spec, style, font, (36, 64), vr)
         for i, sc in enumerate(scenes, 1):
             try:
                 for t in (0.0, sc.duration * 0.5):
-                    R._text_layer(sc, t, style, font)
                     R.hud_label(sc.hud, t, sc.duration)
-                if sc.world and vr is not None:
-                    prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot, props=sc.props)
-                    cam = sc.shot if isinstance(sc.shot, dict) else prep.shots.get(sc.shot or next(iter(prep.shots)))
-                    if cam is None:
-                        raise ValueError(f"샷 '{sc.shot}' 없음")
-                    R.render_3d_frame(vr, prep, cam, sc, sc.duration * 0.5, font)
+                if sc.world and vr is None:
+                    continue
+                prep, cam = R.prepare_scene(vr, sc, i - 1)
+                for t in (0.0, sc.duration * 0.5):
+                    comp.frame(sc, t, prep, cam)
+                if prep is not None:
                     vr.release(prep)
-                elif not sc.world:
-                    R.compose_frame(sc, 0.0, style)
             except Exception as e:
                 errs.append(f"장면 {i} 렌더링 시험 중 오류: {type(e).__name__}: {e}")
         if vr is not None:
@@ -483,22 +564,14 @@ def contact_sheet(ytxt: str, cell=(180, 320), cols: int = 4) -> bytes | None:
         spec, style, scenes = R.load_project(str(path), quiet=True)
         font = R.text.find_font(style.font)
         tiles = []
-        for sc in scenes:
-            t = sc.duration * 0.55
-            if sc.world:
-                prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot, props=sc.props)
-                cam = sc.shot if isinstance(sc.shot, dict) else prep.shots.get(sc.shot or next(iter(prep.shots)))
-                img = R.render_3d_frame(vr, prep, cam, sc, t, font)
+        comp = R.Composer(spec, style, font, cell, vr)
+        for i, sc in enumerate(scenes):
+            t = sc.duration * (0.85 if sc.card else 0.55)
+            prep, cam = R.prepare_scene(vr, sc, i)
+            img = comp.frame(sc, t, prep, cam)
+            if prep is not None:
                 vr.release(prep)
-            else:
-                small, _ = R.compose_frame(sc, t, style)
-                img = np.asarray(Image.fromarray(small).resize(cell, Image.Resampling.NEAREST))
-            im = Image.fromarray(img).convert("RGB")
-            tl = R._text_layer(sc, t, style, font)
-            if tl is not None:
-                ov = Image.fromarray(tl).resize(cell, Image.Resampling.NEAREST)
-                im.paste(ov, (0, 0), ov)
-            tiles.append(im)
+            tiles.append(Image.fromarray(img).convert("RGB"))
     vr.close()
     rows = (len(tiles) + cols - 1) // cols
     sheet = Image.new("RGB", (cols * (cell[0] + 6), rows * (cell[1] + 6)), (20, 18, 30))
@@ -521,7 +594,7 @@ REVIEW_PROMPT = """너는 쇼츠 영상의 감독이다. 첨부한 미리보기 
 
 각 장면을 보고 판정하라: 소리 없이 화면만 봐도 자막이 말하는 대상·동작이 보이는가?
 - 대상이 화면 밖에 있거나, 너무 작거나, 다른 것에 가려졌거나, 자막과 상관없는 풍경이면 '불일치'.
-- 불일치 장면은 world/shot/props/crowds/labels/effects를 고쳐 화면이 자막을 직접 보여주게 한다.
+- 불일치 장면은 world/shot/props/crowds/labels/vfx/big_text/markers/effects를 고쳐 화면이 자막을 직접 보여주게 한다.
   (카메라 거리·scale·at 좌표를 조정하거나, studio/tabletop + props로 대상을 직접 만든다.)
   caption·title·hud·facts_to_check·duration은 바꾸지 않는다.
 - 모든 장면이 일치하면 다른 말 없이 "통과"라고만 답한다.

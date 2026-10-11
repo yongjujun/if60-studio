@@ -334,6 +334,29 @@ def germ() -> Model:
     return m
 
 
+def spark() -> Model:
+    """불티·빛 입자 (빛남, 8cm) — 블룸으로 번져 보인다"""
+    m = Model("spark", ["#ffb347", "#ff7a2a", "#ffd86a"], ["#ffffff"])
+    m.part((-0.04, -0.04, -0.04), (0.04, 0.04, 0.04), 1, "glow")
+    return m
+
+
+def bolt() -> Model:
+    """번개 줄기 (높이 10m, 빛남) — scale로 키우고 grow로 번쩍이게"""
+    m = Model("bolt", ["#e8f4ff"], ["#9fd0ff"])
+    pts = [(0, 10), (0.9, 8.4), (-0.3, 7.0), (0.8, 5.2), (-0.5, 3.6), (0.4, 1.8), (0, 0)]
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        n = 8
+        for i in range(n):
+            a = i / n
+            x, y = x0 + (x1 - x0) * a, y0 + (y1 - y0) * a
+            m.part((x - 0.12, y - 0.24, -0.12), (x + 0.12, y + 0.02, 0.12), 1, "glow")
+    for (x, y), d in (((0.8, 5.2), 1), ((-0.5, 3.6), -1)):
+        for i in range(5):
+            m.part((x + d * i * 0.25 - 0.07, y - i * 0.3 - 0.2, -0.07), (x + d * i * 0.25 + 0.07, y - i * 0.3, 0.07), 2, "glow")
+    return m
+
+
 def table() -> Model:
     """식탁 (1.6 x 0.9 높이, 0.9 깊이)"""
     m = Model("table", ["#8a5a3a", "#a8784a", "#e8e4dc"], ["#6b4228"])
@@ -351,7 +374,7 @@ MODELS = {"person": person, "cat": cat, "dog": dog, "car": car, "train": train_c
           "molecule_n2": molecule_n2, "molecule_o2": molecule_o2, "molecule_co2": molecule_co2,
           "molecule_h2o": molecule_h2o, "bottle": bottle, "cup": cup, "phone": phone, "book": book,
           "parcel": parcel, "rocket": rocket, "coin": coin, "lightbulb": lightbulb, "flame": flame,
-          "cloud": cloud, "ball": ball, "germ": germ, "table": table}
+          "cloud": cloud, "ball": ball, "germ": germ, "table": table, "spark": spark, "bolt": bolt}
 
 # 대본 작성 AI에게 보여줄 설명 (모델 이름 → 무엇인지, 기본 크기)
 DESCRIPTIONS = {
@@ -365,6 +388,7 @@ DESCRIPTIONS = {
     "parcel": "택배 상자 (0.4m)", "rocket": "로켓 모형 (1.2m)", "coin": "동전 (2.4cm, 세워진 모양)",
     "lightbulb": "전구 (빛남)", "flame": "불꽃 (빛남)", "cloud": "구름 (1.5m)", "ball": "공 (0.22m)",
     "germ": "세균·바이러스 확대 모형 (0.3m)", "table": "식탁 (윗면 높이 0.9m)",
+    "spark": "불티·빛 입자 (8cm, 빛남 — 보통 vfx embers로 씀)", "bolt": "번개 줄기 (10m, 빛남)",
 }
 
 

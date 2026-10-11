@@ -9,7 +9,6 @@ from if60 import planner
 GOOD = """```yaml
 title: 테스트 주제
 style: voxel
-music: {mood: wonder, bpm: 110, seed: 1}
 facts_to_check: ["사실 하나 — https://example.com"]
 scenes:
   - duration: 30
