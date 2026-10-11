@@ -81,16 +81,17 @@ def make_crowd(spec: dict, areas: dict, rng: np.random.Generator, avoid: np.ndar
         xs = rng.uniform(x0, x1, n)
         zs = rng.uniform(z0, z1, n)
     vel = np.zeros((n, 3), np.float32)
-    if "velocity" in spec:
-        vx, vz = spec["velocity"]
+    if "velocity" in spec:   # [vx, vz] 또는 위아래 포함 [vx, vy, vz]
+        v = list(spec["velocity"])
+        vx, vy, vz = (v[0], 0.0, v[1]) if len(v) == 2 else v
         spread = float(spec.get("speed_jitter", 0.15))
         k = 1 + rng.normal(0, spread, n)
-        vel[:, 0], vel[:, 2] = vx * k, vz * k
+        vel[:, 0], vel[:, 1], vel[:, 2] = vx * k, vy * k, vz * k
     facing = spec.get("facing", "velocity" if "velocity" in spec else "random")
     if facing == "random":
         yaw = rng.uniform(0, 2 * math.pi, n)
     elif facing == "velocity":
-        yaw = np.arctan2(vel[:, 0], vel[:, 2])
+        yaw = np.arctan2(vel[:, 0], vel[:, 2]) if np.any(vel[:, [0, 2]]) else np.zeros(n)
     elif isinstance(facing, (list, tuple)):
         yaw = np.arctan2(facing[0] - xs, facing[1] - zs)
     else:
@@ -110,7 +111,8 @@ def make_crowd(spec: dict, areas: dict, rng: np.random.Generator, avoid: np.ndar
     inst[:, 10] = rng.uniform(0, 2 * math.pi, n)
     inst[:, 11:14] = vel
     inst[:, 14] = rng.uniform(smin, smax, n)
-    if avoid is not None and len(avoid) and not np.any(vel) and spec.get("avoid_camera", True):
+    # 소수의 주인공 개체(파리, 우주비행사 등)는 일부러 카메라 가까이 두므로 비우지 않음
+    if avoid is not None and len(avoid) and not np.any(vel) and spec.get("avoid_camera", n > 20):
         # 카메라가 지나가는 길 주변(반경 clearance m)에 서 있는 개체는 빼서 렌즈를 가리지 않게
         clr = float(spec.get("clearance", 3.0))
         d2 = (inst[:, None, 0] - avoid[None, :, 0]) ** 2 + (inst[:, None, 2] - avoid[None, :, 1]) ** 2

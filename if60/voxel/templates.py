@@ -321,7 +321,7 @@ def room(rng, wall: str = "#d8cfbf", floor: str = "#9a6a40", window_sky: str = "
     b.box((-W, wy0, D), (wx0, wy1, D + 0.1), wall, "stone")
     b.box((wx1, wy0, D), (W, wy1, D + 0.1), wall, "stone")
     b.box((wx0, wy0, D + 0.08), (wx1, wy1, D + 0.12), window_sky, "glow")
-    for k in range(9):                                                       # 창밖 별
+    for k in range(9 if rgb(window_sky).sum() < 1.2 else 0):                 # 창밖 별 (밤 하늘일 때만)
         sx, sy = rng.uniform(wx0 + 0.1, wx1 - 0.1), rng.uniform(wy0 + 0.1, wy1 - 0.1)
         b.box((sx, sy, D + 0.07), (sx + 0.04, sy + 0.04, D + 0.075), "#ffffff", "glow")
     b.box((wx0 - 0.08, wy0 - 0.08, D - 0.04), (wx1 + 0.08, wy0, D + 0.02), "#f2efe8")   # 창틀

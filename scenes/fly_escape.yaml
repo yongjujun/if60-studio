@@ -1,0 +1,150 @@
+# 파리는 어떻게 그렇게 잘 도망칠까? (약 64초, 13장면)
+#
+# facts_to_check — 근거 (올리기 전 확인)
+#   - 위협 방향을 파악하고 다리 위치를 바꾸는 탈출 준비: 약 200밀리초(0.2초).
+#     정면 위협 → 몸을 뒤로 기울여 뒤로 이륙, 옆 위협 → 반대쪽으로. 파리채는 '도망칠 경로'를 노리라는 조언.
+#     (Card & Dickinson, Caltech, Current Biology 2008 — 초파리 고속촬영 연구)
+#   - 공중 급회전: 0.01초 미만, 날갯짓 약 한 번 만에 몸을 틂. 날갯짓 초당 약 200회.
+#     (Muijres·Dickinson 등, Science 2014 — 초파리)
+#   - 깜빡임 구분 능력: 사람 약 60Hz, 파리 약 250Hz. 여러 파리 종이 사람 눈보다 4배 이상 빠르게 반응.
+#     (Healy·Jackson·Ruxton, Animal Behaviour 2013)
+#   - 겹눈: 수천 개의 낱눈(ommatidia), 거의 파노라마에 가까운 시야
+#   - 평균곤(halteres): 뒷날개가 변한 작은 기관, 자이로스코프처럼 몸의 회전을 감지해 균형 유지 (UC Berkeley)
+#   ※ 탈출·급회전 연구는 초파리 대상 → 자막에서 '파리'로 통칭했으니 필요하면 '초파리 연구에선'으로 바꾸세요.
+title: 파리는 어떻게 그렇게 잘 도망칠까?
+style: voxel
+music: {mood: wonder, bpm: 124, seed: 7, volume: 0.18}
+
+scenes:
+  # 1. 훅 — 파리채가 내려오는데 파리는 태연
+  - duration: 4
+    title: 파리는 왜 이렇게 안 잡힐까?
+    caption: 파리채를 휘둘러도 매번 허탕. 대체 왜일까요?
+    time: "14:00"
+    world: {template: room, seed: 1, params: {window_sky: "#a9cbe8"}}
+    shot: {from: [0.62, 0.30, -0.78], to: [0.50, 0.26, -0.62], target: [0.0, 0.06, 0.05], fov: 50}
+    crowds:
+      - {agent: fly, count: 1, area: [0, 0, 0, 0], facing: 200, scale: 0.22, bob: 0.004, bob_freq: 30}
+      - {agent: swatter, colors: ["#2fa04a"], count: 1, area: [0.02, 0.06, 0.02, 0.06], y: 0.62, velocity: [0, -0.13, 0], facing: 160, speed_jitter: 0}
+
+  # 2. 예고
+  - duration: 4
+    caption: 비밀은 눈, 뇌, 그리고 날개에 있어요.
+    time: "14:00"
+    world: {template: room, seed: 1, params: {window_sky: "#a9cbe8"}}
+    shot: {type: orbit, center: [0, 0.02, 0], radius: 0.62, height: 0.22, from_deg: 20, to_deg: 80, look_height: 0.06, fov: 45}
+    crowds:
+      - {agent: fly, count: 1, area: [0, 0, 0, 0], facing: 0, scale: 0.22, bob: 0.004, bob_freq: 30}
+
+  # 3. 겹눈
+  - duration: 6
+    caption: 파리 눈은 수천 개의 작은 눈이 모인 겹눈. 거의 모든 방향을 한 번에 봐요.
+    time: "14:00"
+    world: {template: room, seed: 1, params: {window_sky: "#a9cbe8"}}
+    shot: {type: orbit, center: [0, 0.02, 0], radius: 0.30, height: 0.07, from_deg: -50, to_deg: 50, look_height: 0.035, fov: 45}
+    crowds:
+      - {agent: fly, count: 1, area: [0, 0, 0, 0], facing: 0, scale: 0.22}
+
+  # 4~5. 시간 해상도 → 우리 세상이 슬로 모션
+  - duration: 5
+    caption: 게다가 파리는 1초를 훨씬 잘게 쪼개서 봐요.
+    hud: "사람 60Hz · 파리 250Hz"
+    time: "16:00"
+    world: {template: boulevard, seed: 5}
+    shot: forward
+    crowds:
+      - {agent: person, count: 260, area: sidewalk_l, velocity: [0, 0.35], bob: 0.02, bob_freq: 1.5}
+      - {agent: person, count: 260, area: sidewalk_r, velocity: [0, -0.35], bob: 0.02, bob_freq: 1.5}
+      - {agent: car, count: 24, area: road, velocity: [0, 1.2]}
+
+  - duration: 5
+    caption: 사람이 1초에 약 60번 깜빡임을 구분할 때 파리는 약 250번.
+    hud: "슬로 모션 ×4"
+    time: "16:00"
+    world: {template: boulevard, seed: 5}
+    shot: sidewalk
+    crowds:
+      - {agent: person, count: 200, area: sidewalk_r, velocity: [0, -0.3], bob: 0.02, bob_freq: 1.2}
+      - {agent: car, count: 24, area: road, velocity: [0, 1.0]}
+
+  # 6. 느릿느릿 다가오는 파리채
+  - duration: 5
+    caption: 그래서 파리 눈엔 파리채가 느릿느릿 다가오는 벽처럼 보여요.
+    time: "14:00"
+    world: {template: room, seed: 1, params: {window_sky: "#a9cbe8"}}
+    shot: {from: [0.0, 0.08, -0.55], to: [0.0, 0.08, -0.5], target: [0.0, 0.25, 0.2], fov: 60}
+    crowds:
+      - {agent: fly, count: 1, area: [0, 0, 0, 0], facing: 180, scale: 0.22}
+      - {agent: swatter, colors: ["#2fa04a"], count: 1, area: [0, 0.12, 0, 0.12], y: 0.62, velocity: [0, -0.09, 0], facing: 0, speed_jitter: 0}
+
+  # 7. 0.2초의 탈출 계획
+  - duration: 6
+    caption: 위협을 본 순간 약 0.2초 안에 도망칠 방향을 계산하고 다리 위치까지 바꿔요.
+    hud: {from: 0, to: 0.2, format: "{:.2f}초", ease: false}
+    time: "14:00"
+    world: {template: room, seed: 1, params: {window_sky: "#a9cbe8"}}
+    shot: {from: [0.55, 0.12, 0.05], to: [0.5, 0.11, 0.0], target: [0.0, 0.04, 0.0], fov: 45}
+    crowds:
+      - {agent: fly, count: 1, area: [0, 0, 0, 0], facing: 0, scale: 0.22, bob: 0.006, bob_freq: 3}
+      - {agent: swatter, colors: ["#2fa04a"], count: 1, area: [0, 0.2, 0, 0.2], y: 0.36, velocity: [0, -0.03, 0], facing: 180, speed_jitter: 0}
+
+  # 8. 반대쪽으로 점프
+  - duration: 5
+    caption: 그리고 위협 반대쪽으로 점프! 정면에서 오면 뒤로 뛰어올라요.
+    hud: "0.20초"
+    time: "14:00"
+    world: {template: room, seed: 1, params: {window_sky: "#a9cbe8"}}
+    shot: {from: [1.4, 0.35, -0.3], to: [1.4, 0.45, -0.45], target: [0.0, 0.12, -0.15], target_to: [0.0, 0.4, -0.7], fov: 50}
+    crowds:
+      - {agent: fly, count: 1, area: [0, 0, 0, 0], facing: 0, scale: 0.22, velocity: [0, 0.12, -0.25], speed_jitter: 0, bob: 0.01, bob_freq: 40}
+      - {agent: swatter, colors: ["#2fa04a"], count: 1, area: [0, 0.2, 0, 0.2], y: 0.3, velocity: [0, -0.05, 0], facing: 180, speed_jitter: 0}
+
+  # 9. 날갯짓
+  - duration: 5
+    caption: 공중에선 날개를 1초에 약 200번 쳐요.
+    time: "14:00"
+    world: {template: room, seed: 1, params: {window_sky: "#a9cbe8"}}
+    shot: inside
+    crowds:
+      - {agent: fly, count: 6, area: [-2.2, -1.5, 2.2, 1.6], y: 1.2, velocity: [0.6, 0, 0.2], scale: 0.22, bob: 0.03, bob_freq: 40}
+      - {agent: fly, count: 5, area: [-2.2, -1.5, 2.2, 1.6], y: 1.7, velocity: [-0.5, 0, -0.3], scale: 0.22, bob: 0.03, bob_freq: 40}
+
+  # 10. 전투기 같은 급회전 (스케일을 키운 '상상' 장면)
+  - duration: 5
+    caption: 방향을 트는 데는 100분의 1초도 안 걸려요. 전투기처럼 몸을 기울여 휙!
+    time: "12:00"
+    world: {template: plaza, seed: 3}
+    shot: low
+    crowds:
+      - {agent: person, count: 1200, area: plaza, facing: 90}
+      - {agent: fly, count: 1, area: [-30, 60, -30, 60], y: 14, velocity: [12, 2, 8], scale: 16, speed_jitter: 0}
+
+  # 11. 평균곤
+  - duration: 5
+    caption: 뒷날개가 변한 작은 기관 '평균곤'이 자이로스코프처럼 균형을 잡아줘요.
+    time: "14:00"
+    world: {template: room, seed: 1, params: {window_sky: "#a9cbe8"}}
+    shot: {type: orbit, center: [0, 0.02, 0], radius: 0.24, height: 0.13, from_deg: 140, to_deg: 200, look_height: 0.05, fov: 45}
+    crowds:
+      - {agent: fly, count: 1, area: [0, 0, 0, 0], facing: 0, scale: 0.22}
+
+  # 12. 잡는 법
+  - duration: 5
+    caption: 그러니 잡고 싶다면 파리가 아니라 파리가 도망칠 곳을 노리세요.
+    time: "14:00"
+    world: {template: room, seed: 1, params: {window_sky: "#a9cbe8"}}
+    shot: {from: [0.6, 0.45, 0.2], to: [0.55, 0.5, 0.1], target: [0.0, 0.05, -0.15], fov: 50}
+    crowds:
+      - {agent: fly, count: 1, area: [0, 0, 0, 0], facing: 0, scale: 0.22}
+      - {agent: swatter, colors: ["#2fa04a"], count: 1, area: [0, -0.28, 0, -0.28], y: 0.42, velocity: [0, -0.07, 0], facing: 180, speed_jitter: 0}
+
+  # 13. 질문으로 마무리
+  - duration: 5
+    title: 파리 잡기, 몇 번 만에 성공하세요?
+    caption: 여러분의 파리 잡기 성공률은 몇 퍼센트인가요?
+    time: "14:00"
+    world: {template: room, seed: 1, params: {window_sky: "#a9cbe8"}}
+    shot: inside
+    camera: {fade_out: 0.6}
+    crowds:
+      - {agent: fly, count: 8, area: [-2.2, -1.5, 2.2, 1.6], y: 1.4, velocity: [0.4, 0, -0.3], scale: 0.22, bob: 0.03, bob_freq: 40}
