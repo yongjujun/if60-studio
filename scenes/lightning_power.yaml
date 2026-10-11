@@ -70,6 +70,7 @@ scenes:
   - duration: 5
     visual: 밤 들판 멀리 번개 한 줄기가 내리꽂히고, 꽂힌 지점에 노란 표적 링
     caption: 한 줄기에 약 3억 볼트, 3만 암페어.
+    narration: 한 줄기에 약 삼억 볼트, 삼만 암페어.
     world: {template: field, seed: 3}
     time: "22:00"
     shot: {from: [-6, 3, -6], to: [-4, 3, -2], target: [0, 12, 60], fov: 55}
@@ -90,6 +91,7 @@ scenes:
   - duration: 5
     visual: 무대 위 흰 콘센트 하나와 그 옆에 높이 솟은 빛나는 번개 모형, 막대 그래프 비교
     caption: 우리 집 콘센트 220볼트의 약 136만 배예요.
+    narration: 우리 집 콘센트 이백이십 볼트의 약 백삼십육만 배예요.
     world: {template: studio, seed: 5, params: {color: "#141a33"}}
     shot: front
     props:
@@ -111,6 +113,7 @@ scenes:
   - duration: 5
     visual: 무대 위 빛나는 번개 모형을 감싸며 뜨거운 공기 불덩이가 부풀어 오름
     caption: 번개가 지나간 공기는 약 2만 7천℃, 태양 표면의 5배!
+    narration: 번개가 지나간 공기는 약 이만 칠천 도, 태양 표면의 다섯 배!
     world: {template: studio, seed: 6, params: {color: "#1a1420"}}
     shot: front
     props:

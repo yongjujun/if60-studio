@@ -80,7 +80,7 @@ def test_layout_frame_and_card(tmp_path):
 
 
 @pytest.mark.skipif(not shutil.which("ffprobe"), reason="ffmpeg 필요")
-def test_render_has_no_background_music(tmp_path):
+def test_render_without_voice_is_silent(tmp_path):
     src = tmp_path / "s.yaml"
     src.write_text(
         "title: 무음 테스트\nstyle: voxel\nlayout: {title: [무음, 테스트]}\nscenes:\n"
@@ -88,7 +88,7 @@ def test_render_has_no_background_music(tmp_path):
         "    big_text: [{text: \"×1억\"}]\n    panel: {title: 값, value: {from: 0, to: 100}}\n"
         "  - duration: 1\n    card: {question: 골라요, options: [하나, 둘]}\n", encoding="utf-8")
     out = tmp_path / "o.mp4"
-    R.render(str(src), str(out), preview=True, fps=4)
+    R.render(str(src), str(out), preview=True, fps=4, narrate=False)
     info = json.loads(subprocess.run(["ffprobe", "-v", "error", "-show_streams", "-of", "json", str(out)],
                                      capture_output=True, text=True).stdout)
     kinds = [s["codec_type"] for s in info["streams"]]

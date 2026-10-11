@@ -156,6 +156,10 @@ class Scene:
     markers: list = field(default_factory=list)  # 빛나는 표적 링 {at: [x,y,z], from, to, text, color}
     card: dict | None = None                     # 마무리 카드 {question, options, cta}
     look: str = "voxel"                          # voxel | smooth
+    # --- 내레이션 (TTS)
+    narration: str | None = None                 # 읽을 문장 (없으면 caption). 숫자·기호를 읽는 그대로 쓸 때
+    audio_start: float | None = None             # 이 장면 안에서 목소리가 시작하는 시각
+    audio_len: float | None = None               # 목소리 길이 — 자막 덩어리가 이 구간에 맞춰 나온다
     bloom: float = 0.45                          # 빛 번짐 세기 (0이면 끔)
 
 
@@ -198,8 +202,11 @@ def caption_at(scene: "Scene", t: float) -> str:
         chunks = text.chunk_caption(scene.caption)
     else:
         return scene.caption
-    lead, tail = 0.15, 0.25
-    span = max(0.1, scene.duration - lead - tail)
+    if scene.audio_len:                     # 목소리가 있으면 말하는 구간에 맞춰 자막을 넘긴다
+        lead, span = scene.audio_start or 0.0, scene.audio_len
+    else:
+        lead, tail = 0.15, 0.25
+        span = max(0.1, scene.duration - lead - tail)
     weights = np.array([len(c) + 3 for c in chunks], float)
     edges = lead + np.cumsum(weights) / weights.sum() * span
     i = int(np.searchsorted(edges, t, side="right"))
@@ -332,7 +339,7 @@ def load_project(path: str, style_override: str | None = None,
             time=s.get("time"), seed=int(s.get("seed", (s.get("world") or {}).get("seed", i))),
             props=s.get("props", []) or [], labels=s.get("labels", []) or [],
             vfx=s.get("vfx", []) or [], panel=s.get("panel"), big_text=_as_list(s.get("big_text")),
-            markers=_as_list(s.get("markers")), card=s.get("card"),
+            markers=_as_list(s.get("markers")), card=s.get("card"), narration=s.get("narration"),
             look=str(s.get("look", spec.get("look", "voxel"))),
             bloom=float(s.get("bloom", spec.get("bloom", 0.7 if spec.get("look") == "smooth" else 0.45)))))
     return spec, style, scenes
@@ -448,13 +455,99 @@ class Composer:
         return big
 
 
+# ------------------------------------------------------------------ 내레이션 싱크
+LEAD, TAIL, GAP_MIN = 0.2, 0.35, 1.2
+
+
+def scale_times(sc: Scene, k: float) -> None:
+    """장면 길이가 k배가 될 때 연출 시각(효과·VFX·글자·표적·라벨·대시보드·자라나기)도 k배로 옮긴다."""
+    if abs(k - 1) < 1e-6:
+        return
+
+    def mul(d: dict, keys=("at", "length", "from", "to", "until")) -> None:
+        for key in keys:
+            if isinstance(d.get(key), (int, float)) and not isinstance(d.get(key), bool):
+                d[key] = d[key] * k
+
+    for _, prm in sc.effects:
+        mul(prm)
+    for v in sc.vfx:
+        mul(v, ("from", "to"))
+    for item in sc.big_text + sc.markers + sc.labels:
+        mul(item, ("from", "to"))
+    for g in [p.get("grow") for p in sc.props] + [c.get("grow") for c in sc.crowds]:
+        if isinstance(g, dict):
+            mul(g, ("from", "to", "until"))
+    if isinstance(sc.panel, dict):
+        if isinstance(sc.panel.get("value"), dict):
+            mul(sc.panel["value"], ("at", "length"))
+        for b in sc.panel.get("bars") or []:
+            if isinstance(b, dict):
+                mul(b, ("at", "length"))
+
+
+def narration_of(sc: Scene) -> str:
+    if sc.narration is not None:
+        return str(sc.narration)
+    if sc.card and not sc.caption:
+        return str(sc.card.get("question", ""))
+    return sc.caption or " ".join(sc.captions or [])
+
+
+def apply_voice(scenes: list[Scene], voice, log=print) -> np.ndarray:
+    """장면마다 목소리를 만들고 장면 길이를 목소리에 맞춘다 → 영상 전체 길이의 음성 트랙(48kHz)."""
+    from . import tts
+    texts = [narration_of(sc).strip() for sc in scenes]
+    clips = []
+    for i, (sc, txt) in enumerate(zip(scenes, texts)):
+        if not txt:
+            clips.append(None)
+            continue
+        log(f"  · 목소리 {i + 1}/{len(scenes)}: {txt[:24]}{'…' if len(txt) > 24 else ''}")
+        ctx = {"prev": texts[i - 1] if i else "", "next": texts[i + 1] if i + 1 < len(texts) else ""}
+        clips.append(tts.synthesize(txt, voice, ctx))
+    for i, (sc, clip) in enumerate(zip(scenes, clips)):
+        if clip is None or len(clip) == 0:
+            continue
+        sec = len(clip) / tts.SR
+        lead = 0.08 if i == 0 else LEAD
+        need = lead + sec + TAIL
+        if sc.card:                                   # 선택지가 다 나올 시간은 남긴다
+            need = max(need, 1.6 + 0.35 * len(sc.card.get("options") or []))
+        new = max(need, GAP_MIN)
+        scale_times(sc, new / sc.duration)
+        sc.duration = new
+        sc.audio_start, sc.audio_len = lead, sec
+    total = sum(sc.duration for sc in scenes)
+    track = np.zeros(int(total * tts.SR) + tts.SR, np.float32)
+    t0 = 0.0
+    for sc, clip in zip(scenes, clips):
+        if clip is not None and len(clip):
+            a = int((t0 + sc.audio_start) * tts.SR)
+            track[a:a + len(clip)] += clip[:len(track) - a]
+        t0 += sc.duration
+    return track[:int(total * tts.SR)]
+
+
 def render(project_path: str, out_path: str, *, style_override: str | None = None,
            length: float | None = None, provider: str | None = None, preview: bool = False,
-           stills_dir: str | None = None, fps: int | None = None) -> str:
-    """장면 YAML → 무음 mp4 (배경음악·효과음 없음 — 음악·목소리는 편집 앱에서 자유롭게 입히기)"""
+           stills_dir: str | None = None, fps: int | None = None, voice=None, narrate: bool = True) -> str:
+    """장면 YAML → mp4. 내레이션을 켜면 목소리를 먼저 만들고 그 길이에 맞춰 장면·자막을 맞춘다.
+    목소리만 따로 담은 _voice.wav도 함께 저장한다 (편집 앱에서 쓰기 좋게)."""
     require_ffmpeg()
     print("▶ 프로젝트 불러오는 중")
     spec, style, scenes = load_project(project_path, style_override, length, provider)
+    audio_path = None
+    v = None
+    if narrate and spec.get("voice", True) is not False:
+        from . import tts
+        chosen = voice or (spec.get("voice") if isinstance(spec.get("voice"), (str, dict)) else None)
+        v = tts.parse_voice(chosen or tts.default_voice())
+        print(f"▶ 내레이션 생성 ({v.label}) — 목소리 길이에 맞춰 장면·자막 타이밍을 맞춥니다")
+        track = apply_voice(scenes, v)
+        audio_path = str(Path(out_path).with_name(Path(out_path).stem + "_voice.wav"))
+        Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(audio_path).write_bytes(tts.encode_wav(track, tts.SR))
     has_3d = any(sc.world for sc in scenes)
     if fps:
         style.fps = int(fps)
@@ -467,7 +560,7 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
     total = sum(s.duration for s in scenes)
 
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-    enc = Encoder(out_path, ow, oh, style.fps)
+    enc = Encoder(out_path, ow, oh, style.fps, audio=audio_path)
     vr = None
     if has_3d:
         from .voxel.renderer import VoxelRenderer
@@ -492,7 +585,21 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
     enc.close()
     if vr is not None:
         vr.close()
-    print(f"✔ 완료: {out_path}  ({total:.1f}초, {n_frames_total}프레임, {ow}x{oh}, 무음)")
+    print(f"✔ 완료: {out_path}  ({total:.1f}초, {n_frames_total}프레임, {ow}x{oh}, "
+          f"{'목소리 ' + v.label if audio_path else '무음'})")
+    if audio_path:
+        print(f"  · 목소리만 따로: {audio_path}")
+        from . import tts
+        credit = tts.credit_text(v)
+        if credit:
+            cpath = Path(out_path).with_name(Path(out_path).stem + "_출처표기.txt")
+            cpath.write_text(credit + "\n", encoding="utf-8")
+            why = ("타입캐스트 무료 플랜은 출처 표기가 필수예요" if v.provider == "typecast"
+                   else "AI 음성임을 밝혀야 해요 (Supertonic 라이선스)")
+            print(f"  · {why}. 아래를 게시물 설명란에 붙여넣으세요 (인스타 'AI 정보' 표시도 켜 두면 좋아요):")
+            for line in credit.splitlines():
+                print(f"      {line}")
+            print(f"    (같은 내용: {cpath})")
     return out_path
 
 

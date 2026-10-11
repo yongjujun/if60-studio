@@ -42,12 +42,14 @@ def load_env() -> None:
             os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
-def save_key(key: str) -> None:
+def save_key(key: str, var: str = "ANTHROPIC_API_KEY") -> None:
+    """.env에 KEY=값 저장 (같은 이름이 있으면 바꿈). .env는 GitHub에 올라가지 않는다."""
     env = ROOT / ".env"
     lines = []
     if env.exists():
-        lines = [l for l in env.read_text(encoding="utf-8").splitlines() if not l.startswith("ANTHROPIC_API_KEY=")]
-    lines.append(f"ANTHROPIC_API_KEY={key.strip()}")
+        lines = [l for l in env.read_text(encoding="utf-8").splitlines() if not l.startswith(f"{var}=")]
+    lines.append(f"{var}={key.strip()}")
+    os.environ[var] = key.strip()
     env.write_text("\n".join(lines) + "\n", encoding="utf-8")
     try:
         os.chmod(env, 0o600)   # 내 계정만 읽을 수 있게
@@ -157,7 +159,7 @@ def system_prompt(cat: dict) -> str:
 {chr(10).join(model_lines)}
 
 장면 필드:
-- duration(초), visual(화면 설명 한 줄, 필수), caption, title(선택), hud(선택), time(선택: 조명 시각 "14:00")
+- duration(초), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
 - world: {{template: 이름, seed: 정수, params: {{...}}}}
 - shot: 템플릿 샷 이름, 또는 직접 카메라:
     {{from: [x,y,z], to: [x,y,z], target: [x,y,z], target_to: [x,y,z], fov: 50}}
@@ -206,7 +208,13 @@ layout: {{title: ["첫 줄(흰색)", "둘째 줄(노란색)"], series: "시리�
 look: voxel (기본, 픽셀 복셀) 또는 smooth (매끈한 질감 — 우주·과학 실험처럼 깔끔한 느낌이 어울릴 때),
 facts_to_check: ["사실 한 줄 — 출처 URL", ...],
 scenes: [...]
-배경음악·효과음은 만들지 않는다(무음 영상 — 음악은 업로드할 때 따로 넣는다).
+배경음악·효과음은 만들지 않는다. 대신 caption을 AI 목소리(TTS)가 그대로 읽는다:
+- caption은 소리 내어 읽었을 때 자연스러운 구어체 한두 문장으로 쓴다.
+- caption에 기호·영문 단위·특이한 표기가 있으면 장면에 narration을 따로 써서 읽는 그대로 적는다.
+  예: caption "약 27,700℃, 태양 표면의 5배!" → narration "약 이만 칠천 도, 태양 표면의 다섯 배!"
+  예: caption "3억 V, 3만 A" → narration "삼억 볼트, 삼만 암페어"
+- 장면 길이는 목소리 길이에 맞춰 자동으로 늘거나 줄어든다(연출 시각도 같은 비율로 이동). duration은 대략 잡으면 된다.
+  한국어 내레이션은 1초에 약 6~7글자이므로 caption 글자 수 ÷ 6.5 + 0.6초 정도로 잡는다.
 
 ## 참고 예시
 {example_txt}

@@ -6,6 +6,10 @@
   python -m if60 make "파리는 어떻게 그렇게 잘 도망칠까?"     # 주제 → 영상 한 번에
   python -m if60 plan "달이 사라진다면?" -o scenes/moon.yaml
   python -m if60 styles
+  python -m if60 voice list supertonic        # 목소리 목록 (supertonic | typecast | google)
+  python -m if60 voice test typecast:tc_xxx   # 목소리 들어보기
+  python -m if60 voice use typecast:tc_xxx    # 기본 목소리로 정하기
+  python -m if60 key typecast                 # API 키 저장 (anthropic | typecast | google)
 """
 from __future__ import annotations
 
@@ -27,6 +31,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--preview", action="store_true", help="1/3 해상도로 빠르게 확인")
     r.add_argument("--stills", help="장면별 대표 프레임 PNG를 저장할 폴더")
     r.add_argument("--fps", type=int, help="초당 프레임 수 (기본: 스타일 설정, 3D 미리보기는 15)")
+    r.add_argument("--voice", help="목소리 (예: supertonic:F3, typecast:tc_xxx, google:Charon)")
+    r.add_argument("--no-voice", action="store_true", help="내레이션 없이 무음으로")
 
     x = sub.add_parser("pixelate", help="AI 이미지/영상 하나를 도트로 후처리")
     x.add_argument("src")
@@ -41,8 +47,16 @@ def main(argv: list[str] | None = None) -> int:
     mk.add_argument("--no-open", action="store_true", help="완성 후 영상을 자동으로 열지 않기")
     mk.add_argument("--no-search", action="store_true", help="웹 검색 없이 작성 (비추천)")
     mk.add_argument("--no-review", action="store_true", help="감독 검수(미리보기로 화면·자막 일치 확인) 건너뛰기")
+    mk.add_argument("--voice", help="이번 영상의 목소리 (기본: voice use로 정한 것)")
+    mk.add_argument("--no-voice", action="store_true", help="내레이션 없이 무음으로")
 
-    sub.add_parser("key", help="Anthropic API 키 저장/변경")
+    k = sub.add_parser("key", help="API 키 저장/변경 (anthropic | typecast | google)")
+    k.add_argument("service", nargs="?", default="anthropic", choices=["anthropic", "typecast", "google"])
+
+    vo = sub.add_parser("voice", help="내레이션 목소리: list(목록) / test(들어보기) / use(기본으로 정하기)")
+    vo.add_argument("action", choices=["list", "test", "use"])
+    vo.add_argument("target", nargs="?", help="list: supertonic|typecast|google / test·use: 제공자:목소리")
+    vo.add_argument("text", nargs="?", default="안녕하세요, 만물제작소입니다. 오늘은 번개 한 방이 얼마나 센지 알아볼게요.")
 
     pl = sub.add_parser("plan", help="주제로 장면 YAML 초안 만들기 (Claude API)")
     pl.add_argument("topic")
@@ -57,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
         from .render import render
         out = a.out or f"out/{Path(a.scenes).stem}{'_preview' if a.preview else ''}.mp4"
         render(a.scenes, out, style_override=a.style, length=a.length, provider=a.provider,
-               preview=a.preview, stills_dir=a.stills, fps=a.fps)
+               preview=a.preview, stills_dir=a.stills, fps=a.fps, voice=a.voice, narrate=not a.no_voice)
     elif a.cmd == "pixelate":
         from .render import pixelate_file
         pixelate_file(a.src, a.out, a.style, a.preview)
@@ -70,12 +84,16 @@ def main(argv: list[str] | None = None) -> int:
     elif a.cmd == "key":
         import getpass
         from .planner import save_key
-        k = getpass.getpass("새 Anthropic API 키 (화면에 표시되지 않음): ").strip()
-        if not k.startswith("sk-"):
-            print("API 키 형식이 아니에요 (sk-ant-…).")
+        var, label = {"anthropic": ("ANTHROPIC_API_KEY", "Anthropic"), "typecast": ("TYPECAST_API_KEY", "타입캐스트"),
+                      "google": ("GOOGLE_TTS_API_KEY", "구글 Cloud")}[a.service]
+        k = getpass.getpass(f"새 {label} API 키를 붙여넣고 Enter (화면에 표시되지 않음): ").strip()
+        if len(k) < 16 or (a.service == "anthropic" and not k.startswith("sk-")):
+            print("API 키 형식이 아닌 것 같아요. 다시 복사해서 붙여넣어 주세요.")
             return 1
-        save_key(k)
+        save_key(k, var)
         print("✔ 저장했어요 (.env — GitHub에는 올라가지 않아요)")
+    elif a.cmd == "voice":
+        return voice_cmd(a)
     elif a.cmd == "make":
         return make(a)
     elif a.cmd == "styles":
@@ -107,7 +125,7 @@ def make(a) -> int:
     print("\n▶ 2/3 영상 렌더링 중")
     out = Path("out") / f"{scene_path.stem}{'_preview' if a.preview else ''}.mp4"
     try:
-        render(str(scene_path), str(out), preview=a.preview)
+        render(str(scene_path), str(out), preview=a.preview, voice=a.voice, narrate=not a.no_voice)
     except Exception as e:
         rel = scene_path.relative_to(Path.cwd()) if scene_path.is_relative_to(Path.cwd()) else scene_path
         print(f"\n✖ 렌더링 중 오류: {type(e).__name__}: {e}")
@@ -123,6 +141,40 @@ def make(a) -> int:
     if not a.no_open:
         open_file(out)
     return 0
+
+
+def voice_cmd(a) -> int:
+    from . import tts
+    from .planner import save_key
+    try:
+        if a.action == "list":
+            prov = (a.target or "supertonic").split(":")[0]
+            voices = tts.list_voices(prov)
+            if prov == "typecast":
+                voices = [v for v in voices if v["name"]]
+            print(f"\n{prov} 목소리 {len(voices)}개  (들어보기: python -m if60 voice test {prov}:<ID>)\n")
+            for v in voices:
+                print(f"  {prov}:{v['id']:<28} {v['name']:<12} {v.get('info', '')}")
+            if prov == "typecast":
+                print("\n  목소리 미리듣기는 타입캐스트 웹사이트(typecast.ai)에서 캐릭터 이름으로 찾아보면 편해요.")
+            return 0
+        v = tts.parse_voice(a.target or tts.default_voice())
+        if a.action == "test":
+            x = tts.synthesize(a.text, v)
+            out = Path("out") / f"voice_test_{v.provider}_{v.name}.wav"
+            out.parent.mkdir(exist_ok=True)
+            out.write_bytes(tts.encode_wav(x, tts.SR))
+            print(f"✔ {v.label} ({len(x) / tts.SR:.1f}초): {out}")
+            open_file(out)
+            return 0
+        save_key(v.label, "IF60_VOICE")
+        print(f"✔ 기본 목소리를 {v.label}(으)로 정했어요. 이제 make·render가 이 목소리로 읽어요.")
+        if v.provider == "typecast":
+            print("  타입캐스트 무료 플랜: 월 15,000자 · 상업적 이용 불가 · 출처 표기 필수 (렌더링 후 문구를 알려드려요)")
+        return 0
+    except (RuntimeError, ValueError) as e:
+        print(f"✖ {e}")
+        return 1
 
 
 def open_file(path: Path) -> None:
