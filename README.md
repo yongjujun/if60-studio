@@ -11,6 +11,34 @@ AI 영상 생성 크레딧 없이 컴퓨터에서 직접 렌더링하므로 편�
 
 ---
 
+## ⚡ 가장 쉬운 사용법: 주제만 입력하기
+
+1. 저장소 폴더에서 **`IF60 만들기.command`** 를 더블클릭 (Windows는 `IF60 만들기.bat`)
+2. 터미널 창에 주제를 입력하고 Enter — 예: `파리는 어떻게 그렇게 잘 도망칠까?`
+3. 기다리면 끝: **웹 조사 → 대본·연출 작성 → 렌더링 → 영상 자동 재생**
+   (조사·작성 1~3분 + 렌더링 수 분)
+
+- 처음 한 번은 Anthropic API 키를 물어봅니다. https://console.anthropic.com → API Keys → Create Key로 만든 키를 붙여넣으면
+  이 컴퓨터의 `.env` 파일에만 저장되고 GitHub에는 올라가지 않아요. (바꾸려면 `python -m if60 key`)
+- 비용: 편당 조사·대본 작성에 대략 수백 원 수준 (Sonnet 5.5 + 웹 검색 기준 추정). 렌더링은 무료.
+- 완성되면 터미널에 **확인할 사실 목록과 출처**가 나옵니다. 올리기 전에 꼭 확인하세요.
+- Mac에서 "확인되지 않은 개발자" 경고가 뜨면: 파일을 우클릭 → 열기 → 열기.
+
+터미널에서 직접 하려면:
+```bash
+python -m if60 make "파리는 어떻게 그렇게 잘 도망칠까?"            # 1080×1920 완성본
+python -m if60 make "파리는 어떻게 그렇게 잘 도망칠까?" --preview  # 빠른 저화질 확인
+python -m if60 make "주제" --length 90                               # 길이 지정
+```
+
+### 만든 영상은 어디에?
+저장소 폴더 안의 **`out`** 폴더에 쌓입니다. 장면 파일(대본)은 **`scenes`** 폴더에 저장돼요.
+```bash
+open out        # Mac: Finder로 out 폴더 열기 (Windows: explorer out)
+```
+
+---
+
 ## 1. 설치 (처음 한 번)
 
 **필요한 것:** Python 3.10 이상, ffmpeg
@@ -144,16 +172,18 @@ shot: {type: topdown, center: [0, 0, 0], height: 90, height_to: 75}
 |---|---|
 | 2D 도트 스타일 (이전 방식) | `style: cinematic_pixel` 또는 `retro_dot` — `examples/earth_rotation_stop.yaml` |
 | AI 이미지·영상 도트 후처리 | `python -m if60 pixelate 입력.mp4 -o out/결과.mp4` |
-| 주제로 장면 초안 (Claude API) | `python -m if60 plan "주제" -o scenes/초안.yaml` |
+| 주제 → 영상 한 번에 | `python -m if60 make "주제"` (위 '가장 쉬운 사용법') |
+| 주제로 장면 파일만 만들기 | `python -m if60 plan "주제" -o scenes/초안.yaml` |
 | 칩튠 배경음악 | `music: {mood: wonder, bpm: 104, seed: 16}` (wonder/tense/calm/epic) |
 | 효과 | `shake`(카메라 흔들림+효과음) `flash` `tint` / `camera: {fade_in: 0.5, fade_out: 0.8}` |
 
 ### API 키 (선택 기능에만 필요)
 키는 **절대 YAML이나 코드에 적지 말고** 환경변수로만 넣으세요. `.env` 파일은 `.gitignore`로 저장소에서 제외됩니다.
 ```bash
-export ANTHROPIC_API_KEY=...      # plan 명령 (Windows: $env:ANTHROPIC_API_KEY="...")
+python -m if60 key                # Anthropic 키 저장/변경 (make·plan용, .env에 저장)
 export OPENAI_API_KEY=...         # AI 이미지 레이어 (2D 스타일)
 ```
+대본 작성 모델은 기본 `claude-sonnet-5-5`이고, `.env`에 `IF60_PLANNER_MODEL=claude-opus-5-5`를 넣으면 더 높은 품질(비용 약 2배)로 바꿀 수 있어요.
 
 ---
 
@@ -187,7 +217,7 @@ examples/            예제 장면
 - [x] 시계·카운터 HUD, 끊어 읽는 자막
 - [ ] 한국어 TTS 내레이션 + 음성에 맞춘 자막 타이밍 + 배경음악 자동 볼륨 조절
 - [ ] 걷기 애니메이션(다리 움직임), 군중 모이기·흩어지기 동작
-- [ ] 대본 → 장면 YAML 자동 생성 (템플릿·샷 자동 선택)
+- [x] 주제 입력 → 웹 조사 → 대본·장면 자동 생성 → 렌더링 (`make`, 더블클릭 실행)
 - [ ] 커버(썸네일) 템플릿 자동 생성
 
 ## 라이선스
