@@ -1,0 +1,188 @@
+# 3D 복셀 예제: 만약 서울의 중력이 1시간 동안 달과 같아진다면? (약 1분 50초)
+#
+# 구조 (분석한 레퍼런스 쇼츠의 공식)
+#   훅 질문 → 시계 HUD가 흘러가는 타임라인 → '실제 과학 사실 × 익숙한 장소' 비트들 → 반전 → 양자택일/질문으로 마무리
+#
+# facts_to_check — 올리기 전 사람이 꼭 확인하세요
+#   - 달 표면 중력 ≈ 1.62 m/s², 지구(9.8)의 약 1/6 (16.5%)
+#   - 몸무게(체중계 숫자)는 중력에 비례 → 60kg → 약 10kg
+#   - 같은 힘으로 뛰면 점프 높이 ∝ 1/g → 약 6배 (공기 저항 무시)
+#   - 같은 높이를 떨어지는 시간 ∝ 1/√g → 약 2.45배
+#   - 제동거리 = v²/(2μg) → 약 6배. 시속 50km·마른 노면(μ≈0.7) 기준 약 14m → 약 84m
+#   - 공 비거리(공기 저항 무시) ∝ 1/g → 약 6배
+#   - 아폴로 우주비행사들은 달에서 깡충깡충 뛰는 방식으로 이동했음
+#   - 지표 기압 = 공기 기둥의 무게 → 중력이 1/6이면 이론상 약 170hPa, 에베레스트 정상(약 330hPa)보다 낮음
+title: 서울 중력이 1시간 동안 달처럼 약해진다면?
+style: voxel
+music: {mood: wonder, bpm: 104, seed: 16, volume: 0.18}
+
+scenes:
+  # 1. 훅
+  - duration: 5
+    title: 서울 중력이 1시간 달만큼 약해진다면?
+    caption: 만약 서울의 중력이 딱 한 시간 동안 달과 같아진다면?
+    hud: {from: "05:30", to: "05:32", step: 1}
+    world: {template: plaza, seed: 3}
+    shot: rise
+    crowds:
+      - {agent: person, count: 2500, area: plaza, facing: 180, bob: 1.6, bob_freq: 1.5, scale: [1.0, 1.15]}
+
+  - duration: 6
+    caption: 새벽 5시 30분 광화문 광장. 중력이 6분의 1로 줄었어요.
+    hud: {from: "05:32", to: "05:35", step: 1}
+    world: {template: plaza, seed: 3}
+    shot: forward
+    crowds:
+      - {agent: person, count: 1800, area: plaza, facing: 0, bob: 0.9, bob_freq: 1.8}
+      - {agent: cat, count: 300, area: plaza, bob: 1.2, bob_freq: 2.2, scale: [1.6, 2.0]}
+
+  # 2. 몸무게
+  - duration: 6
+    caption: 체중계 숫자도 6분의 1. 60kg인 사람은 약 10kg이 돼요.
+    hud: {from: "05:35", to: "05:39", step: 1}
+    world: {template: room, seed: 1, params: {window_sky: "#d9a4a0"}}
+    shot: inside
+    crowds:
+      - {agent: person, count: 1, area: [0.2, 0.2, 0.2, 0.2], facing: 200, bob: 0.25, bob_freq: 1.4}
+
+  - duration: 5
+    caption: 고양이는 살짝만 뛰어도 천장까지 닿아요.
+    hud: {from: "05:39", to: "05:41", step: 1}
+    world: {template: room, seed: 1, params: {window_sky: "#e0aa98"}}
+    shot: close
+    crowds:
+      - {agent: cat, count: 1, area: [1.5, 1.0, 1.5, 1.0], y: 0.65, facing: 200, bob: 1.5, bob_freq: 1.3}
+
+  # 3. 출근길
+  - duration: 7
+    caption: 출근길엔 걷는 것보다 깡충깡충 뛰는 게 편해요. 달에 간 우주비행사들도 그렇게 다녔죠.
+    hud: {from: "05:41", to: "05:45", step: 1}
+    world: {template: boulevard, seed: 5}
+    shot: forward
+    crowds:
+      - {agent: person, count: 260, area: sidewalk_l, velocity: [0, 1.8], bob: 0.8, bob_freq: 2.6}
+      - {agent: person, count: 260, area: sidewalk_r, velocity: [0, -1.8], bob: 0.8, bob_freq: 2.6}
+      - {agent: car, count: 24, area: road, velocity: [0, 5], bob: 0.05, bob_freq: 3}
+
+  - duration: 6
+    caption: 같은 힘으로 뛰면 약 6배 높이. 제자리 점프 50cm가 3m가 돼요.
+    hud: {from: "05:45", to: "05:48", step: 1}
+    world: {template: boulevard, seed: 5}
+    shot: sidewalk
+    crowds:
+      - {agent: person, count: 200, area: sidewalk_l, facing: 0, bob: 3.0, bob_freq: 1.1}
+      - {agent: person, count: 200, area: sidewalk_r, facing: 0, bob: 3.0, bob_freq: 1.1}
+
+  # 4. 도로
+  - duration: 7
+    caption: 도로는 비상이에요. 바퀴를 누르는 힘이 줄어 제동거리가 약 6배 길어지거든요.
+    hud: {from: "05:48", to: "05:52", step: 1}
+    world: {template: crossroad, seed: 2}
+    shot: top
+    crowds:
+      - {agent: car, count: 14, area: lane_s, layout: queue, gap: 7, facing: 180}
+      - {agent: car, count: 14, area: lane_n, layout: queue, gap: 7, facing: 0}
+      - {agent: car, count: 10, area: [22, 2, 150, 12], velocity: [-3, 0]}
+      - {agent: person, count: 60, area: crosswalk_s, velocity: [0.9, 0], bob: 0.7, bob_freq: 2.4, scale: [1.3, 1.5]}
+      - {agent: person, count: 60, area: crosswalk_n, velocity: [-0.9, 0], bob: 0.7, bob_freq: 2.4, scale: [1.3, 1.5]}
+
+  - duration: 6
+    caption: 시속 50km로 달리던 차가 멈추려면 약 14m 대신 84m가 필요해요.
+    hud: {from: "05:52", to: "05:55", step: 1}
+    world: {template: crossroad, seed: 2}
+    shot: street
+    crowds:
+      - {agent: car, count: 8, area: [-12, -40, -2, 120], velocity: [0, 2], facing: 0}
+
+  # 5. 한강 철교
+  - duration: 6
+    caption: 그래서 2호선은 거북이 운행. 멈추기 어려우니 속도를 확 낮췄어요.
+    hud: {from: "05:55", to: "05:59", step: 1}
+    world: {template: river_bridge, seed: 4}
+    shot: side
+    crowds:
+      - {agent: train, count: 8, area: [-90, 104, 400, 104], layout: queue, axis: x, gap: 18.6, velocity: [4, 0], y: 15, speed_jitter: 0}
+
+  - duration: 6
+    caption: 한강 공원에선 너도나도 슈퍼 점프 놀이.
+    hud: {from: "05:59", to: "06:02", step: 1}
+    world: {template: river_bridge, seed: 4}
+    shot: bank
+    crowds:
+      - {agent: person, count: 400, area: bank, facing: 0, bob: 2.4, bob_freq: 1.2, y: 2.0}
+      - {agent: dog, count: 60, area: bank, bob: 1.6, bob_freq: 1.6, y: 2.0, scale: [1.4, 1.6]}
+      - {agent: train, count: 8, area: [-60, 104, 400, 104], layout: queue, axis: x, gap: 18.6, velocity: [4, 0], y: 15, speed_jitter: 0}
+
+  # 6. 아파트
+  - duration: 6
+    caption: 베란다에서 떨어진 물건도 천천히. 같은 높이를 떨어지는 데 약 2.5배 오래 걸려요.
+    hud: {from: "06:02", to: "06:05", step: 1}
+    world: {template: apartments, seed: 8}
+    shot: aerial
+
+  # 7. 공원
+  - duration: 6
+    caption: 공을 차면 약 6배 멀리 날아가요. 축구장이 좁게 느껴지겠죠?
+    hud: {from: "06:05", to: "06:08", step: 1}
+    world: {template: field, seed: 6}
+    shot: forward
+    crowds:
+      - {agent: person, count: 900, area: field, facing: 0, bob: 1.2, bob_freq: 1.4}
+
+  # 8. IF 60 연결고리: 진짜 달
+  - duration: 7
+    caption: 사실 이게 달의 일상이에요. 아폴로 우주비행사들이 겪은 바로 그 중력이죠.
+    hud: {from: "06:08", to: "06:12", step: 1}
+    world: {template: planet, seed: 9, params: {surface: moon}}
+    shot: lander
+    crowds:
+      - {agent: astronaut, count: 3, area: front_of_lander, facing: 180, bob: 0.7, bob_freq: 1.6, scale: 1.1}
+
+  # 9. 반전
+  - duration: 7
+    caption: 그런데 진짜 문제는 공기예요.
+    hud: {from: "06:12", to: "06:16", step: 1}
+    world: {template: plaza, seed: 3}
+    shot: low
+    crowds:
+      - {agent: person, count: 1500, area: plaza, facing: 0, bob: 0.3, bob_freq: 1.0}
+
+  - duration: 7
+    caption: 공기를 누르는 무게도 6분의 1. 이론상 기압이 에베레스트 꼭대기보다 낮아져요.
+    hud: {from: "06:16", to: "06:20", step: 1}
+    world: {template: plaza, seed: 3}
+    shot: aerial
+    effects:
+      - tint: {color: "#c8384a", at: 1.5, length: 3}
+    crowds:
+      - {agent: person, count: 3000, area: plaza, facing: 180, scale: [2.2, 2.6]}
+
+  - duration: 5
+    caption: 다행히 딱 한 시간뿐이에요.
+    hud: {from: "06:20", to: "06:22", step: 1}
+    world: {template: boulevard, seed: 5}
+    shot: up
+
+  - duration: 6
+    caption: 6시 30분, 중력이 돌아오자 모두 쿵! 하고 착지해요.
+    hud: "06:30"
+    time: "06:30"
+    world: {template: plaza, seed: 3}
+    shot: forward
+    effects:
+      - shake: {at: 1.0, length: 1.4, amp: 5}
+    crowds:
+      - {agent: person, count: 1800, area: plaza, facing: 0}
+      - {agent: cat, count: 300, area: plaza, scale: [1.6, 2.0]}
+
+  # 10. 질문으로 마무리 (댓글 유도)
+  - duration: 7
+    title: 달 중력 서울 1시간, 뭐부터 해볼래요?
+    caption: 여러분이라면 그 한 시간 동안 뭘 제일 먼저 해볼래요?
+    hud: "+1시간"
+    time: "06:40"
+    world: {template: field, seed: 6}
+    shot: low
+    camera: {fade_out: 0.8}
+    crowds:
+      - {agent: person, count: 700, area: field, facing: 0}

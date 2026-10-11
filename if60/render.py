@@ -141,6 +141,12 @@ class Scene:
     caption_mode: str = "chunk"           # chunk | full | typewriter
     captions: list[str] | None = None     # 직접 나눈 자막 덩어리 (있으면 caption보다 우선)
     hud: object = None                    # "+1년" 같은 고정 문구 또는 {from, to, format, step}
+    # --- 3D 복셀 장면 (world가 있으면 layers 대신 3D로 렌더링)
+    world: dict | None = None             # {template: plaza, seed: 3, params: {...}, sky: auto|mars|space}
+    crowds: list = field(default_factory=list)
+    shot: object = None                   # 템플릿 샷 이름 또는 카메라 dict
+    time: object = None                   # 조명 시각 "05:00" 또는 {from, to} (없으면 HUD 시계를 따름)
+    seed: int = 0
 
 
 # ------------------------------------------------------------------ HUD
@@ -272,13 +278,16 @@ def load_project(path: str, style_override: str | None = None,
     scenes = []
     for i, s in enumerate(scenes_spec):
         print(f"  · 장면 {i + 1}/{len(scenes_spec)} 레이어 준비")
-        layers = [build_layer(l, style, provider, path_p.parent) for l in s.get("layers", [])]
+        layers = [] if s.get("world") else [build_layer(l, style, provider, path_p.parent)
+                                             for l in s.get("layers", [])]
         scenes.append(Scene(
             duration=float(s["duration"]) * ratio, layers=layers, caption=s.get("caption", ""),
             title=s.get("title", ""), camera=s.get("camera", {}) or {},
             effects=s.get("effects", []) or [], typewriter=bool(s.get("typewriter", False)),
             caption_mode=s.get("caption_mode", spec.get("caption_mode", "chunk")),
-            captions=s.get("captions"), hud=s.get("hud")))
+            captions=s.get("captions"), hud=s.get("hud"),
+            world=s.get("world"), crowds=s.get("crowds", []) or [], shot=s.get("shot"),
+            time=s.get("time"), seed=int(s.get("seed", (s.get("world") or {}).get("seed", i)))))
     return spec, style, scenes
 
 
@@ -314,10 +323,15 @@ def _text_layer(scene: Scene, t: float, style: Style, font: str) -> np.ndarray |
 
 def render(project_path: str, out_path: str, *, style_override: str | None = None,
            length: float | None = None, provider: str | None = None, preview: bool = False,
-           stills_dir: str | None = None) -> str:
+           stills_dir: str | None = None, fps: int | None = None) -> str:
     require_ffmpeg()
     print("▶ 프로젝트 불러오는 중")
     spec, style, scenes = load_project(project_path, style_override, length, provider)
+    has_3d = any(sc.world for sc in scenes)
+    if fps:
+        style.fps = int(fps)
+    elif preview and has_3d:
+        style.fps = min(style.fps, 15)   # 3D 미리보기는 프레임 수를 줄여 빠르게
     font = text.find_font(style.font)
     w, h = style.resolution
     out_scale = max(1, style.scale // 3) if preview else style.scale
@@ -347,19 +361,32 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
     # ---- 영상
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     enc = Encoder(out_path, ow, oh, style.fps, audio=wav)
+    vr = None
+    if has_3d:
+        from .voxel.renderer import VoxelRenderer
+        vr = VoxelRenderer(ow, oh, samples=2 if preview else 4)
     if stills_dir:
         Path(stills_dir).mkdir(parents=True, exist_ok=True)
     final_pal = style.palette if (style.final_quantize and style.palette is not None) else None
     n_frames_total = 0
     for si, sc in enumerate(scenes):
         n = max(1, int(round(sc.duration * style.fps)))
-        print(f"▶ 장면 {si + 1}/{len(scenes)} 렌더링 ({n}프레임)")
+        print(f"▶ 장면 {si + 1}/{len(scenes)} 렌더링 ({n}프레임{', 3D' if sc.world else ''})")
+        prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot) if sc.world else None
+        cam = None
+        if prep is not None:
+            cam = sc.shot if isinstance(sc.shot, dict) else prep.shots.get(sc.shot or next(iter(prep.shots)))
+            if cam is None:
+                raise ValueError(f"장면 {si + 1}: 샷 '{sc.shot}' 없음 (가능: {', '.join(prep.shots)})")
         for fi in range(n):
             t = fi / style.fps
-            frame, _ = compose_frame(sc, t, style)
-            if final_pal is not None:
-                frame = indices_to_rgb(quantize(frame.astype(np.float32), final_pal), final_pal)
-            big = frame.repeat(out_scale, 0).repeat(out_scale, 1)
+            if prep is not None:
+                big = render_3d_frame(vr, prep, cam, sc, t)
+            else:
+                frame, _ = compose_frame(sc, t, style)
+                if final_pal is not None:
+                    frame = indices_to_rgb(quantize(frame.astype(np.float32), final_pal), final_pal)
+                big = frame.repeat(out_scale, 0).repeat(out_scale, 1)
             tl = _text_layer(sc, t, style, font)
             if tl is not None:
                 if text_scale:
@@ -372,9 +399,44 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
             if stills_dir and fi == n // 2:
                 Image.fromarray(big).save(Path(stills_dir) / f"scene_{si + 1:02d}.png")
             n_frames_total += 1
+        if prep is not None:
+            vr.release(prep)
     enc.close()
+    if vr is not None:
+        vr.close()
     print(f"✔ 완료: {out_path}  ({total:.1f}초, {n_frames_total}프레임, {ow}x{oh})")
     return out_path
+
+
+def render_3d_frame(vr, prep, cam: dict, sc: Scene, t: float) -> np.ndarray:
+    """3D 장면 한 프레임. 흔들림은 카메라를 실제로 흔들고, 플래시·틴트·페이드는 화면에 입힌다."""
+    from .voxel.renderer import scene_hours
+    shake = (0.0, 0.0)
+    for e in sc.effects:
+        name, prm = _effect_params(e)
+        if name == "shake":
+            at, length, amp = prm.get("at", 0.0), prm.get("length", 1.2), prm.get("amp", 4)
+            if at <= t < at + length:
+                k = (1 - (t - at) / length) * amp * 0.06
+                shake = (math.sin(t * 61) * k, math.cos(t * 47) * k)
+    hours = scene_hours(sc.time, sc.hud, t, sc.duration)
+    img = vr.render(prep, cam, t, sc.duration, hours, shake).astype(np.float32)
+    for e in sc.effects:
+        name, prm = _effect_params(e)
+        at, length = prm.get("at", 0.0), prm.get("length", 0.25 if name == "flash" else sc.duration)
+        if name == "flash" and at <= t < at + length:
+            img[:] = 255
+        if name == "tint" and at <= t < at + length and int(t * 4) % 2 == 0:
+            img = img * 0.6 + np.array(text_color(prm.get("color", "#c8384a")), np.float32) * 0.4
+    fade_in, fade_out = sc.camera.get("fade_in", 0.0), sc.camera.get("fade_out", 0.0)
+    level = 1.0
+    if fade_in and t < fade_in:
+        level = t / fade_in
+    if fade_out and t > sc.duration - fade_out:
+        level = min(level, (sc.duration - t) / fade_out)
+    if level < 1.0:
+        img *= level
+    return np.clip(img, 0, 255).astype(np.uint8)
 
 
 def pixelate_file(src: str, out: str, style_name: str = "cinematic_pixel",

@@ -33,3 +33,18 @@ retro_dot:
   text_canvas: [270, 480]
   caption_size: 17
   title_size: 23
+
+voxel:
+  label: 3D 복셀 (시뮬레이션 감성)
+  # 3D 장면은 최종 해상도(360x640 × 3 = 1080x1920)로 직접 렌더링한다. 2D 장면을 섞으면 이 해상도의 도트로 그려짐.
+  resolution: [360, 640]
+  scale: 3
+  fps: 30
+  palette: auto
+  n_colors: 32
+  dither: 0
+  hold: 20
+  final_quantize: false
+  text_canvas: [360, 640]
+  caption_size: 21
+  title_size: 28

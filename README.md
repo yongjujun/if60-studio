@@ -1,158 +1,194 @@
 # IF 60 Studio
 
-**"만약 ~라면?" 과학 상상 쇼츠를 도트 애니메이션으로 만드는 제작 도구** (프로토타입 v0.1)
+**"만약 ~라면?" 상상 쇼츠를 3D 복셀 애니메이션으로 만드는 제작 도구** (v0.3)
 
-장면 구성 YAML 하나로 9:16 · 1080×1920 · 최대 60초 쇼츠를 렌더링합니다.
-AI가 만든 이미지·영상을 '도트풍'이 아닌 **진짜 도트**로 바꾸는 후처리가 핵심입니다.
+장면 구성 YAML 하나로 9:16 · 1080×1920 · 30fps 쇼츠를 렌더링합니다.
+블록으로 지은 3D 도시에 수천 명의 군중을 세우고, 시계 HUD에 맞춰 새벽→낮→밤으로 하늘이 바뀌며, 2~5단어씩 끊어 읽는 자막이 올라갑니다.
+AI 영상 생성 크레딧 없이 컴퓨터에서 직접 렌더링하므로 편당 추가 비용이 거의 없습니다.
 
-![예제 장면](docs/example_scenes.png)
-*예제 `examples/earth_rotation_stop.yaml` — API 키 없이 렌더링한 결과*
+![3D 복셀 예제](docs/voxel_scenes.png)
+*예제 `examples/seoul_moon_gravity.yaml` — "서울 중력이 1시간 동안 달처럼 약해진다면?" (1분 51초, 18장면)*
 
-## 할 수 있는 것
+---
 
-| 기능 | 설명 |
-|---|---|
-| **도트 후처리** | 9:16 크롭 → 저해상도 축소 → 팔레트 양자화(+Bayer 디더) → 정수배 확대. 픽셀 격자가 정확히 맞음 |
-| **AI 영상 안정화** | 프레임 간 미세 노이즈 무시(hold) + 색 경계 히스테리시스로 AI 영상의 지글거림 제거 |
-| **레이어 패럴랙스** | 배경·중경·전경을 다른 속도로 움직이는 '하이브리드 카메라 효과'. AI 영상 비용 0원 |
-| **절차적 레이어** | 별, 자전하는 행성, 산맥, 바다, 태양, 마스코트를 코드로 생성 → 키 없이 전 과정 테스트 |
-| **군중 레이어** | 사람·고양이·강아지·자동차 미니 스프라이트 수백~수천 개를 원근감 있게 배치·이동 ('시뮬레이션' 느낌, AI 비용 0원) |
-| **시계·카운터 HUD** | `05:00 → 23:30`, `1,670 → 0km/h`, `+1년` 같은 진행 배지 — 끝까지 보게 만드는 장치 |
-| **도트 한글 자막** | 내레이션처럼 2~5단어씩 끊어 보여주는 자막(기본), 타이틀 카드, 타자기 효과 |
-| **칩튠 BGM·효과음** | 분위기(wonder/tense/calm/epic)별 8비트 음악을 코드로 생성 → 저작권 걱정 없음 |
-| **효과** | 흔들림(+폭발음), 플래시, 경보 틴트, 디더 페이드 인/아웃 |
-| **장면 초안 생성** | 주제 → 장면 YAML 초안 (Claude API, 선택) |
+## 1. 설치 (처음 한 번)
 
-### 안정화 효과 (시뮬레이션 측정값)
+**필요한 것:** Python 3.10 이상, ffmpeg
 
-AI 영상처럼 노이즈가 낀 클립을 180×320 도트로 바꿨을 때 **프레임마다 색이 바뀌는 픽셀 비율**:
-
-| 장면 | 후처리 없음 | 안정화 적용 |
-|---|---|---|
-| 정지 장면 | 20.2% | **1.2%** |
-| 느린 패닝 | 45.1% | 30.4% (남은 변화는 대부분 실제 움직임) |
-
-## 설치
-
+### macOS
 ```bash
-# 1) ffmpeg 설치
-brew install ffmpeg            # macOS
-winget install ffmpeg          # Windows
-
-# 2) 파이썬 패키지 (Python 3.10+)
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+brew install python ffmpeg          # Homebrew가 없으면 https://brew.sh 먼저 설치
+git clone https://github.com/yongjujun/if60-studio.git
+cd if60-studio
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-
-# 3) (권장) 갈무리체를 fonts/ 폴더에 넣기 — fonts/README.md 참고
 ```
 
-## 사용법
+### Windows (PowerShell)
+```powershell
+winget install Python.Python.3.12
+winget install Gyan.FFmpeg
+git clone https://github.com/yongjujun/if60-studio.git
+cd if60-studio
+py -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+설치 후 PowerShell을 새로 열어야 `ffmpeg` 명령이 인식됩니다.
+
+### 설치 확인
+```bash
+python -m if60 styles     # 스타일 목록이 나오면 성공
+```
+
+> 비공개 저장소라 `git clone` 할 때 GitHub 로그인을 요구할 수 있어요. 브라우저 로그인 창이 뜨면 로그인하면 됩니다.
+
+---
+
+## 2. 영상 만들기
+
+`.venv`를 켠 상태(`source .venv/bin/activate` 또는 `.venv\Scripts\activate`)에서 실행합니다.
 
 ```bash
-# 예제 렌더링 (빠른 미리보기 → 최종본)
-python -m if60 render examples/earth_rotation_stop.yaml --preview
-python -m if60 render examples/earth_rotation_stop.yaml --stills out/stills
+# ① 빠른 미리보기 (360×640, 15fps) — 구성과 타이밍 확인용
+python -m if60 render examples/seoul_moon_gravity.yaml --preview
 
-# 스타일·길이 바꾸기 (UI의 '영상 스타일', '영상 길이' 옵션)
-python -m if60 render examples/earth_rotation_stop.yaml --style retro_dot --length 30
-python -m if60 render examples/earth_rotation_stop.yaml --length 120   # 2분짜리로 늘리기
+# ② 최종본 (1080×1920, 30fps) — 업로드용
+python -m if60 render examples/seoul_moon_gravity.yaml
 
-# AI로 만든 이미지/영상 하나만 도트로 후처리
-python -m if60 pixelate kling_clip.mp4 -o out/clip_dot.mp4 --style retro_dot
-python -m if60 pixelate midjourney.png -o out/still_dot.png
+# 장면별 대표 프레임을 PNG로도 저장 (썸네일 고를 때)
+python -m if60 render examples/seoul_moon_gravity.yaml --stills out/stills
 
-# 주제로 장면 초안 만들기 (ANTHROPIC_API_KEY 필요) → 사람이 검토 후 render
-python -m if60 plan "달이 사라진다면?" -o scenes/moon.yaml
-
-python -m if60 styles
+# 길이 맞추기 (모든 장면 길이를 비례 조정)
+python -m if60 render examples/seoul_moon_gravity.yaml --length 60
 ```
+결과물은 `out/` 폴더에 저장됩니다.
 
-결과물은 `out/`에 저장됩니다.
-
-## 장면 YAML 구조
-
-```yaml
-title: 지구의 자전이 1초 동안 멈춘다면?
-style: cinematic_pixel            # config/styles.yaml 의 프리셋
-music: {mood: tense, bpm: 118, seed: 60}
-scenes:
-  - duration: 7
-    title: 지구 자전이 1초 멈춘다면?   # 상단 타이틀 카드 (선택)
-    caption: 그런데 땅이 갑자기 멈춘다면?
-    typewriter: true
-    layers:                          # 아래에서 위 순서로 쌓임
-      - {kind: starfield}                          # 절차적 레이어
-      - {kind: planet, params: {spin: 0}}          # spin 0 = 자전 정지
-      - {source: ai, prompt: "a lone astronaut on a cliff", speed: 0.6}
-      - {source: image, path: assets/city.png, speed: 0.3}
-      - {source: video, path: clips/tsunami.mp4}   # AI 영상 클립 → 자동 도트 후처리
-      - {kind: crowd, params: {mix: {cat: 0.8, person: 0.2}, count: 1200, top: 0.6, vx: 20}}
-    hud: {from: "05:00", to: "06:30"}           # 또는 hud: "+1년" / {from: 1670, to: 0, format: "{:,.0f}km/h"}
-    camera: {pan: [40, 0], fade_in: 0.35, fade_out: 0.35}
-    effects:
-      - flash: {at: 1.5, length: 0.17}
-      - shake: {at: 1.5, length: 1.6, amp: 5}
-```
-
-- `speed`: 카메라 이동에 대한 패럴랙스 배율 (0 = 고정, 1 = 카메라와 같이 이동)
-- `camera.pan`: 장면 동안 이동할 거리 (저해상도 픽셀 단위, 부드럽게 가감속)
-- 절차적 `kind`: `sky`, `starfield`, `planet`, `sun`, `mountains`, `ground`, `ocean`, `mascot`, `crowd`
-- 자막: 기본은 `caption`을 2~5단어 덩어리로 자동 분할. 직접 나누려면 `captions: [..]`, 문장 통째로는 `caption_mode: full`
-- `crowd` 옵션: `agent`(person/cat/dog/car) 또는 `mix`, `count`, `top`/`bottom`(세로 범위), `vx`(흐르는 속도), `grid`(0~1, 줄 맞춘 대열)
-
-## 스타일 프리셋
-
-| 프리셋 | 원본 해상도 | 배율 | fps | 팔레트 |
-|---|---|---|---|---|
-| `cinematic_pixel` 시네마틱 픽셀아트 | 180×320 | ×6 | 12 | 이미지별 자동 32색 (강조색 보존) |
-| `retro_dot` 레트로 도트 | 135×240 | ×8 | 10 | 고정 16색 + 디더링 |
-
-`config/styles.yaml`에서 해상도, 팔레트, 플리커 억제 강도(`hold`)를 조정할 수 있습니다.
-
-## AI 생성 API 연결
-
-| 종류 | 현재 상태 | 설정 |
+**렌더링 시간 참고** (1분 51초 예제 기준)
+| 환경 | 미리보기 | 최종본 |
 |---|---|---|
-| 이미지 | `mock`(기본, 키 불필요) / `openai` | `IF60_IMAGE_PROVIDER=openai`, `OPENAI_API_KEY`, `IF60_IMAGE_MODEL` |
-| 영상 | 외부에서 생성한 클립을 `source: video`로 넣기 | Kling·Veo 등 API 직접 호출은 다음 단계 |
-| 대본 | Claude API 초안 | `ANTHROPIC_API_KEY`, `IF60_PLANNER_MODEL` |
+| GPU 없는 서버 (CPU 소프트웨어 렌더링) | 약 5분 | 약 30분 |
+| 일반 노트북/데스크톱 GPU (Apple Silicon, 내장/외장 그래픽) | 1분 내외 | 수 분 (예상) |
 
-> ⚠️ `openai` 이미지 제공자와 `plan` 명령은 실제 키로 아직 검증하지 않았습니다. 첫 호출 결과를 확인해 주세요.
-> 같은 프롬프트는 `.cache/ai/`에 캐시되어 다시 비용이 들지 않습니다.
+---
 
-새 제공자는 `if60/providers.py`의 `ImageProvider`를 상속해 `generate()`만 구현하면 됩니다.
+## 3. 새 회차 만들기
 
-## 구조
+1. `examples/seoul_moon_gravity.yaml`을 복사해 `scenes/새주제.yaml`로 저장
+2. 장면마다 `caption`(대본), `world`(장소), `shot`(카메라), `crowds`(군중)를 고치기
+3. `--preview`로 확인 → 최종본 렌더링
+
+### 장면 하나의 구조
+```yaml
+- duration: 6                           # 초
+  caption: 새벽 5시 30분 광화문 광장. 중력이 6분의 1로 줄었어요.   # 2~5단어씩 자동으로 끊겨 나옴
+  title: 서울 중력이 1시간 달만큼 약해진다면?                       # (선택) 상단 제목 상자
+  hud: {from: "05:32", to: "05:35", step: 1}   # 우측 상단 시계. 하늘·조명도 이 시각을 따라감
+  world: {template: plaza, seed: 3}           # 장소 템플릿
+  shot: forward                               # 템플릿이 제공하는 카메라 샷
+  crowds:                                     # 군중 (여러 개 가능)
+    - {agent: person, count: 1800, area: plaza, facing: 0, bob: 0.9, bob_freq: 1.8}
+    - {agent: cat, count: 300, area: plaza, bob: 1.2, scale: [1.6, 2.0]}
+  effects:                                    # (선택) 연출 효과
+    - shake: {at: 1.0, length: 1.4, amp: 5}
+```
+
+### 장소 템플릿과 샷
+| 템플릿 | 장소 | 샷 (`shot:`) | 군중 구역 (`area:`) |
+|---|---|---|---|
+| `plaza` | 넓은 광장 + 도로 + 빌딩 + 성문 + 뒷산 | `forward` `aerial` `low` `rise` `gate` | `plaza` `road_l` `road_r` `sidewalk_l` `sidewalk_r` |
+| `boulevard` | 고층 빌딩 협곡 사이 대로 | `forward` `sidewalk` `canyon` `up` | `road` `sidewalk_l` `sidewalk_r` |
+| `crossroad` | 위에서 본 교차로 + 횡단보도 | `top` `top_drift` `street` | `lane_s` `lane_n` `lane_e` `lane_w` `crosswalk_n/s/e/w` `corner_ne/nw/se/sw` |
+| `river_bridge` | 강 + 트러스 철교 + 건너편 도시 | `side` `along` `aerial` `bank` | `track_1` `track_2` `bank` `deck` |
+| `apartments` | 아파트 단지 | `aerial` `low` `rise` | `lawn` `path` |
+| `room` | 방 안 (침대·책상·창문) | `inside` `close` | `floor` `bed` |
+| `field` | 넓은 잔디밭 + 먼 스카이라인 | `forward` `low` `aerial` | `field` `near` `path` |
+| `planet` | 화성/달 표면 + 착륙선 (`params: {surface: moon}`) | `forward` `aerial` `lander` | `surface` `near_lander` `front_of_lander` |
+
+`area`에는 구역 이름 대신 `[x0, z0, x1, z1]` 좌표를 줄 수도 있습니다.
+
+### 군중 옵션
+| 옵션 | 뜻 | 예 |
+|---|---|---|
+| `agent` | `person` `cat` `dog` `car` `train` `astronaut` `tree` `bed` | `cat` |
+| `count` | 개수 (수천 개도 빠름) | `3000` |
+| `layout` | `random` / `grid`(줄 맞춤) / `queue`(한 줄, `axis: x`로 가로) | `queue` |
+| `facing` | `random` / 각도 / `[x, z]`(그 지점을 봄) / `velocity` | `180` |
+| `velocity` | 이동 속도 m/s `[vx, vz]`, 구역 안에서 순환 | `[0, 1.8]` |
+| `bob`, `bob_freq` | 들썩임·점프 높이(m)와 빠르기 | `1.2`, `2.0` |
+| `scale` | 크기 배율 (멀리서도 보이게) | `[1.6, 2.0]` |
+| `colors`, `colors2` | 색 팔레트 직접 지정 | `["#e8913a"]` |
+| `y` | 높이 고정 (철교 위 열차 등) | `15` |
+
+카메라가 지나가는 길 위의 군중은 자동으로 비켜서 렌즈를 가리지 않습니다.
+
+### 조명 시각
+- `hud`가 시계면(`"05:00"` 형식) 하늘·햇빛·안개·창문 불빛이 자동으로 그 시각을 따라갑니다. 새벽은 분홍, 낮은 파랑, 노을, 밤에는 별과 창문 불빛이 켜져요.
+- 직접 정하려면 `time: "21:30"` 또는 `time: {from: "18:00", to: "19:30"}`을 씁니다.
+- `world: {template: planet, params: {surface: moon}}`은 검은 우주 하늘에 지구가 떠 있고, `surface: mars`는 황토색 하늘입니다.
+
+### 카메라 직접 지정
+```yaml
+shot: {from: [0, 7, -30], to: [0, 7, 40], target: [0, 5, 220], fov: 55}     # 이동 촬영
+shot: {type: orbit, center: [0, 1, 41], radius: 17, height: 3, from_deg: 150, to_deg: 195}
+shot: {type: topdown, center: [0, 0, 0], height: 90, height_to: 75}
+```
+좌표는 미터 단위이고 x는 오른쪽, y는 위, z는 앞쪽입니다.
+
+---
+
+## 4. 그 밖의 기능
+
+| 기능 | 명령 / 설정 |
+|---|---|
+| 2D 도트 스타일 (이전 방식) | `style: cinematic_pixel` 또는 `retro_dot` — `examples/earth_rotation_stop.yaml` |
+| AI 이미지·영상 도트 후처리 | `python -m if60 pixelate 입력.mp4 -o out/결과.mp4` |
+| 주제로 장면 초안 (Claude API) | `python -m if60 plan "주제" -o scenes/초안.yaml` |
+| 칩튠 배경음악 | `music: {mood: wonder, bpm: 104, seed: 16}` (wonder/tense/calm/epic) |
+| 효과 | `shake`(카메라 흔들림+효과음) `flash` `tint` / `camera: {fade_in: 0.5, fade_out: 0.8}` |
+
+### API 키 (선택 기능에만 필요)
+키는 **절대 YAML이나 코드에 적지 말고** 환경변수로만 넣으세요. `.env` 파일은 `.gitignore`로 저장소에서 제외됩니다.
+```bash
+export ANTHROPIC_API_KEY=...      # plan 명령 (Windows: $env:ANTHROPIC_API_KEY="...")
+export OPENAI_API_KEY=...         # AI 이미지 레이어 (2D 스타일)
+```
+
+---
+
+## 5. 구조
 
 ```
 if60/
-  pixelate.py    도트 후처리 · 자동 팔레트 · AI 영상 시간축 안정화
-  procedural.py  절차적 레이어 (행성, 별, 산맥, 바다, 마스코트)
-  render.py      장면 합성 · 패럴랙스 · 효과 · 렌더 파이프라인
-  text.py        도트 한글 자막
-  chiptune.py    칩튠 BGM · 효과음
-  providers.py   AI 이미지 생성 연결부 (+캐시)
-  planner.py     주제 → 장면 YAML 초안
-  media.py       ffmpeg 입출력
-config/styles.yaml   스타일 프리셋
+  voxel/
+    renderer.py   3D 렌더러 (그림자, MSAA, 하늘, 군중 인스턴싱, 카메라 경로 비우기)
+    templates.py  장소 템플릿 8종 + 샷 + 군중 구역
+    models.py     블록 모델 (사람, 고양이, 강아지, 자동차, 지하철, 우주비행사, 나무, 침대)
+    shaders.py    픽셀 질감 재질, 밤에 켜지는 창문, 물결, 픽셀 해·별
+    sky.py        시간대별 하늘·조명
+    camera.py     카메라 경로 (이동, 궤도, 부감)
+    geometry.py   상자 기반 지오메트리
+  render.py      장면 → 영상 파이프라인 (자막, HUD, 효과, 오디오)
+  text.py        자막·HUD 배지
+  chiptune.py    배경음악·효과음
+  pixelate.py    2D 도트 후처리
+config/styles.yaml   스타일 프리셋 (voxel, cinematic_pixel, retro_dot)
 examples/            예제 장면
 ```
 
-## 운영 시 주의
+## 6. 운영 시 주의
 
-YouTube는 템플릿으로 찍어낸 듯 영상 간 차이가 거의 없는 대량 생산 콘텐츠를 수익 창출에서 제외합니다.
-이 도구는 **제작 노동을 자동화**하는 용도로 쓰고, 편마다 관점·대본·연출은 사람이 직접 다듬는 것을 권장합니다.
-`plan` 명령이 완성본이 아닌 **초안**과 `facts_to_check` 목록을 내놓는 것도 그 때문입니다.
+- **사실 확인:** 예제 YAML 맨 위의 `facts_to_check`처럼, 대본의 수치는 올리기 전에 반드시 확인하세요.
+- **수익 정책:** YouTube는 템플릿으로 찍어낸 듯 차이 없는 대량 생산 콘텐츠를 수익 창출에서 제외합니다. 도구는 제작 노동을 줄이는 데 쓰고, 편마다 주제·관점·연출은 직접 다듬으세요.
 
 ## 로드맵
-
-- [x] 군중 레이어, 시계·카운터 HUD, 끊어 읽는 자막
-- [ ] 웹 UI (주제 / 스타일 / 길이 / 애니메이션 방식 선택 화면)
-- [ ] 한국어 TTS 내레이션 + 음성 기반 자막 타이밍
-- [ ] Kling / Veo 영상 API 직접 호출 + 비용 표시
-- [ ] 장면별 재생성, 캐릭터 레퍼런스 시트로 일관성 유지
-- [ ] YouTube 예약 업로드 · 시청 지속률 피드백
+- [x] 3D 복셀 렌더러, 장소 템플릿 8종, 시간대 조명, 군중 인스턴싱
+- [x] 시계·카운터 HUD, 끊어 읽는 자막
+- [ ] 한국어 TTS 내레이션 + 음성에 맞춘 자막 타이밍 + 배경음악 자동 볼륨 조절
+- [ ] 걷기 애니메이션(다리 움직임), 군중 모이기·흩어지기 동작
+- [ ] 대본 → 장면 YAML 자동 생성 (템플릿·샷 자동 선택)
+- [ ] 커버(썸네일) 템플릿 자동 생성
 
 ## 라이선스
-
 MIT. 폰트·외부 AI 생성물의 라이선스는 각 제공처 약관을 따릅니다.

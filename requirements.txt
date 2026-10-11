@@ -1,3 +1,5 @@
 numpy>=1.26
 Pillow>=10.0
 PyYAML>=6.0
+moderngl>=5.10
+glcontext>=3.0

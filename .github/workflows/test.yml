@@ -8,7 +8,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-noto-cjk
+      # GPU가 없는 서버에서도 3D 렌더링이 되도록 소프트웨어 OpenGL(Mesa EGL) 설치
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-noto-cjk libegl1 libgl1-mesa-dri libegl-mesa0
       - run: pip install -r requirements.txt pytest
       - run: pytest -q tests
-      - run: python -m if60 render examples/earth_rotation_stop.yaml --preview --length 30
+      - run: python -m if60 render examples/earth_rotation_stop.yaml --preview --length 20
+      - run: python -m if60 render examples/seoul_moon_gravity.yaml --preview --length 20 --fps 8
