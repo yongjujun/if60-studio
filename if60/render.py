@@ -147,6 +147,8 @@ class Scene:
     shot: object = None                   # 템플릿 샷 이름 또는 카메라 dict
     time: object = None                   # 조명 시각 "05:00" 또는 {from, to} (없으면 HUD 시계를 따름)
     seed: int = 0
+    props: list = field(default_factory=list)    # 장면에 놓는 사물 (model 또는 box/sphere/cylinder)
+    labels: list = field(default_factory=list)   # 3D 위치에 붙는 화면 라벨 {text, at: [x,y,z], from, to}
 
 
 # ------------------------------------------------------------------ HUD
@@ -297,7 +299,7 @@ def text_color(hexstr: str) -> tuple[int, int, int]:
 
 # ------------------------------------------------------------------ project
 def load_project(path: str, style_override: str | None = None,
-                 length: float | None = None, provider_name: str | None = None):
+                 length: float | None = None, provider_name: str | None = None, quiet: bool = False):
     path_p = Path(path)
     spec = yaml.safe_load(path_p.read_text(encoding="utf-8"))
     style = Style.from_preset(style_override or spec.get("style", "cinematic_pixel"),
@@ -308,7 +310,8 @@ def load_project(path: str, style_override: str | None = None,
     ratio = (length / total) if length else 1.0  # 30/45/60초로 맞출 때 장면 길이를 비례 조정
     scenes = []
     for i, s in enumerate(scenes_spec):
-        print(f"  · 장면 {i + 1}/{len(scenes_spec)} 레이어 준비")
+        if not quiet and not s.get("world"):
+            print(f"  · 장면 {i + 1}/{len(scenes_spec)} 레이어 준비")
         layers = [] if s.get("world") else [build_layer(l, style, provider, path_p.parent)
                                              for l in s.get("layers", [])]
         scenes.append(Scene(
@@ -318,7 +321,8 @@ def load_project(path: str, style_override: str | None = None,
             caption_mode=s.get("caption_mode", spec.get("caption_mode", "chunk")),
             captions=s.get("captions"), hud=s.get("hud"),
             world=s.get("world"), crowds=s.get("crowds", []) or [], shot=s.get("shot"),
-            time=s.get("time"), seed=int(s.get("seed", (s.get("world") or {}).get("seed", i)))))
+            time=s.get("time"), seed=int(s.get("seed", (s.get("world") or {}).get("seed", i))),
+            props=s.get("props", []) or [], labels=s.get("labels", []) or []))
     return spec, style, scenes
 
 
@@ -403,7 +407,7 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
     for si, sc in enumerate(scenes):
         n = max(1, int(round(sc.duration * style.fps)))
         print(f"▶ 장면 {si + 1}/{len(scenes)} 렌더링 ({n}프레임{', 3D' if sc.world else ''})")
-        prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot) if sc.world else None
+        prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot, props=sc.props) if sc.world else None
         cam = None
         if prep is not None:
             cam = sc.shot if isinstance(sc.shot, dict) else prep.shots.get(sc.shot or next(iter(prep.shots)))
@@ -412,7 +416,7 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
         for fi in range(n):
             t = fi / style.fps
             if prep is not None:
-                big = render_3d_frame(vr, prep, cam, sc, t)
+                big = render_3d_frame(vr, prep, cam, sc, t, font)
             else:
                 frame, _ = compose_frame(sc, t, style)
                 if final_pal is not None:
@@ -439,7 +443,39 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
     return out_path
 
 
-def render_3d_frame(vr, prep, cam: dict, sc: Scene, t: float) -> np.ndarray:
+def draw_labels(img: np.ndarray, vr, labels: list, t: float, font_path: str | None) -> np.ndarray:
+    """3D 점에 붙는 라벨: 점 위에 말풍선 상자 + 연결선 + 점. 카메라가 움직여도 대상에 붙어 다닌다."""
+    active = [lb for lb in labels if lb.get("from", 0) <= t <= lb.get("to", 1e9) and lb.get("text")]
+    if not active or font_path is None:
+        return img
+    from PIL import ImageDraw, ImageFont
+    h, w = img.shape[:2]
+    im = Image.fromarray(img)
+    d = ImageDraw.Draw(im)
+    size = max(10, int(w / 360 * 13))
+    font = ImageFont.truetype(font_path, size=size, index=0)
+    pts = vr.project([lb["at"] for lb in active])
+    for lb, pt in zip(active, pts):
+        if pt is None or not (-0.05 * w < pt[0] < 1.05 * w and -0.05 * h < pt[1] < 1.05 * h):
+            continue
+        x, y = pt
+        accent = text_color(lb.get("color", "#d62848"))
+        label_text = text.safe_text(lb["text"])
+        tw = font.getlength(label_text)
+        pad = size * 0.45
+        up = size * float(lb.get("lift", 2.6))
+        bx = min(max(x - tw / 2 - pad, 4), w - tw - 2 * pad - 4)
+        by = max(y - up - size - 2 * pad, 4)
+        d.line([(x, y), (x, by + size + 2 * pad)], fill=accent, width=max(2, size // 6))
+        r = size * 0.32
+        d.ellipse([x - r, y - r, x + r, y + r], fill=accent, outline=(255, 255, 255), width=max(1, size // 10))
+        d.rectangle([bx, by, bx + tw + 2 * pad, by + size + 2 * pad], fill=(255, 255, 255), outline=accent,
+                    width=max(2, size // 7))
+        d.text((bx + pad, by + pad * 0.7), label_text, font=font, fill=(28, 26, 34))
+    return np.array(im)   # 쓰기 가능한 복사본 (뒤에서 자막을 덧그림)
+
+
+def render_3d_frame(vr, prep, cam: dict, sc: Scene, t: float, font: str | None = None) -> np.ndarray:
     """3D 장면 한 프레임. 흔들림은 카메라를 실제로 흔들고, 플래시·틴트·페이드는 화면에 입힌다."""
     from .voxel.renderer import scene_hours
     shake = (0.0, 0.0)
@@ -465,9 +501,12 @@ def render_3d_frame(vr, prep, cam: dict, sc: Scene, t: float) -> np.ndarray:
         level = t / fade_in
     if fade_out and t > sc.duration - fade_out:
         level = min(level, (sc.duration - t) / fade_out)
+    out = np.clip(img, 0, 255).astype(np.uint8)
+    if sc.labels:
+        out = draw_labels(out, vr, sc.labels, t, font)
     if level < 1.0:
-        img *= level
-    return np.clip(img, 0, 255).astype(np.uint8)
+        out = (out.astype(np.float32) * level).astype(np.uint8)
+    return out
 
 
 def pixelate_file(src: str, out: str, style_name: str = "cinematic_pixel",

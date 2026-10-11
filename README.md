@@ -15,7 +15,7 @@ AI 영상 생성 크레딧 없이 컴퓨터에서 직접 렌더링하므로 편�
 
 1. 저장소 폴더에서 **`IF60 만들기.command`** 를 더블클릭 (Windows는 `IF60 만들기.bat`)
 2. 터미널 창에 주제를 입력하고 Enter — 예: `파리는 어떻게 그렇게 잘 도망칠까?`
-3. 기다리면 끝: **웹 조사 → 대본·연출 작성 → 렌더링 → 영상 자동 재생**
+3. 기다리면 끝: **웹 조사 → 대본·연출 작성 → 감독 검수(장면 미리보기를 보고 화면·자막 불일치 장면 수정) → 렌더링 → 영상 자동 재생**
    (조사·작성 1~3분 + 렌더링 수 분)
 
 - **대본 작성에 Claude가 필요해요. Pro/Max 구독이 있으면 추가 비용 없이 쓸 수 있어요 (추천).**
@@ -129,9 +129,32 @@ python -m if60 render examples/seoul_moon_gravity.yaml --length 60
     - shake: {at: 1.0, length: 1.4, amp: 5}
 ```
 
+### 사물·원리를 직접 보여주기 (자유 주제)
+과자 봉지, 분자, 음식, 물건처럼 **장소가 아닌 대상**은 `studio`(단색 무대)나 `tabletop`(식탁 위) 세트에 소품을 놓고,
+움직이는 입자는 군중으로, 이름표는 라벨로 붙입니다. 예시: `scenes/nitrogen_snack.yaml`
+```yaml
+- duration: 5
+  visual: 앞면이 잘린 과자 봉지 단면 — 안에서 파란 질소 분자들이 떠다님   # 화면에 보일 것 (대본 작성용 메모)
+  caption: 봉지 안을 채운 건 대부분 질소 기체예요.
+  world: {template: studio, params: {color: "#f1e6d2"}}
+  shot: close
+  props:                                   # 정지한 사물
+    - {model: snack_bag_cut, at: [0, 0, 0], scale: 3, color: "#d8443a"}
+    - {shape: sphere, r: 0.2, at: [0.8, 0.5, 0], color: "#e0473f"}   # 목록에 없으면 도형으로 직접
+  crowds:                                  # 여러 개 / 떠다니는 입자
+    - {agent: molecule_n2, count: 16, area: [-0.3, -0.12, 0.3, 0.05], y_range: [0.3, 1.0], wander: 0.12, spin: 1.5, scale: 0.55}
+  labels:                                  # 3D 위치에 붙는 이름표 (카메라가 움직여도 따라감)
+    - {text: "질소 N2", at: [0, 0.7, -0.05], from: 1.0}
+```
+- 소품 모델: `snack_bag` `snack_bag_cut`(단면) `chip` `molecule_n2` `molecule_o2` `molecule_co2` `molecule_h2o` `bottle` `cup` `phone` `book` `parcel` `rocket` `coin` `lightbulb` `flame` `cloud` `ball` `germ` `table` (+ 사람·동물·차 등 군중 모델 모두)
+- 도형: `{shape: box, size: [w,h,d]}` `{shape: sphere, r}` `{shape: cylinder, r, h}` + `color`, `mat: flat|stone|glass|glow`
+- 입자 움직임: `wander`(제각각 떠다님), `y_range`(공중 높이 범위), `spin`(회전), `velocity: [vx, vy, vz]`, `wrap: false`(밖으로 빠져나감)
+
 ### 장소 템플릿과 샷
 | 템플릿 | 장소 | 샷 (`shot:`) | 군중 구역 (`area:`) |
 |---|---|---|---|
+| `studio` | 단색 무대 (`params: {color: "#hex"}`) — 사물·원리 설명용 | `front` `close` `wide` `orbit` `top` | `stage` `air` `back` |
+| `tabletop` | 방 안 식탁 위 (상판 높이 0.9m) — 일상 사물 클로즈업 | `table` `close` `low` `orbit` `top` | `table`(높이 자동) `floor` |
 | `plaza` | 넓은 광장 + 도로 + 빌딩 + 성문 + 뒷산 | `forward` `aerial` `low` `rise` `gate` | `plaza` `road_l` `road_r` `sidewalk_l` `sidewalk_r` |
 | `boulevard` | 고층 빌딩 협곡 사이 대로 | `forward` `sidewalk` `canyon` `up` | `road` `sidewalk_l` `sidewalk_r` |
 | `crossroad` | 위에서 본 교차로 + 횡단보도 | `top` `top_drift` `street` | `lane_s` `lane_n` `lane_e` `lane_w` `crosswalk_n/s/e/w` `corner_ne/nw/se/sw` |

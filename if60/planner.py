@@ -92,67 +92,91 @@ def catalog() -> dict:
 
 
 TEMPLATE_NOTES = {
-    "plaza": "광화문 같은 넓은 광장, 양옆 도로·빌딩, 끝에 성문, 뒤에 산. 군중 장면의 기본",
+    "studio": "★사물·물질·원리 설명의 기본 무대. 단색 배경(params: color) + 바닥(y=0). 물체를 (0,0,0) 근처에 놓는다. "
+              "front 샷에서 보이는 범위: 가로 x -0.8~0.8, 높이 y 0~2.2 / close: x -0.4~0.4, y 0~1",
+    "tabletop": "★일상 사물 클로즈업. 방 안 식탁, 상판 높이 y=0.9, 상판 범위 x -1.2~1.2, z -0.6~0.6. "
+                "table 샷에서 보이는 폭 약 x -0.55~0.55. 소품 at의 y는 0.9",
+    "plaza": "광화문 같은 넓은 광장, 양옆 도로·빌딩, 끝에 성문, 뒤에 산. 많은 사람·동물이 모이는 장면",
     "boulevard": "고층 빌딩 협곡 사이 대로. 출퇴근·도심·속도감",
     "crossroad": "위에서 내려다본 교차로·횡단보도·차량. 교통·이동",
     "river_bridge": "강 + 트러스 철교(지하철 train) + 건너편 스카이라인. 한강 느낌",
     "apartments": "아파트 단지 항공샷. 주거·생활",
-    "room": "방 안(침대·책상·창문). 일상·클로즈업·작은 생물. params: window_sky(창밖 색, 낮 '#a9cbe8' 밤 '#22305e')",
-    "field": "넓은 잔디 공원 + 먼 스카이라인. 야외·마무리 장면",
-    "planet": "화성/달 표면 + 착륙선. params: surface: mars|moon. 우주 회차",
+    "room": "방 안(침대·책상·창문). 일상·작은 생물. params: window_sky(창밖 색, 낮 '#a9cbe8' 밤 '#22305e')",
+    "field": "넓은 잔디 공원 + 먼 스카이라인. 야외·사람들·하늘",
+    "planet": "화성/달 표면 + 착륙선. params: surface: mars|moon. 우주",
 }
 
 
 def system_prompt(cat: dict) -> str:
+    from .voxel.models import DESCRIPTIONS
     tpl_lines = []
-    for name, info in cat["templates"].items():
+    for name in ["studio", "tabletop"] + [n for n in cat["templates"] if n not in ("studio", "tabletop")]:
+        info = cat["templates"][name]
         tpl_lines.append(f"- {name}: {TEMPLATE_NOTES.get(name, '')}\n"
                          f"    shots: {', '.join(info['shots'])}\n"
                          f"    areas: {', '.join(info['areas'])}")
-    example = (ROOT / "scenes" / "fly_escape.yaml")
+    model_lines = [f"  {n}: {DESCRIPTIONS.get(n, '')}" for n in cat["agents"]]
+    example = ROOT / "scenes" / "nitrogen_snack.yaml"
     example_txt = example.read_text(encoding="utf-8") if example.exists() else ""
-    return f"""너는 유튜브 과학 상상 쇼츠 채널 'IF 60'의 작가 겸 연출가다.
+    return f"""너는 유튜브 과학·상식 쇼츠 채널 'IF 60'의 작가 겸 연출가다. 주제는 무엇이든 올 수 있다(사물, 음식, 몸, 동물, 우주, 사회, 상상).
 주제를 받으면 (1) 웹 검색으로 핵심 사실과 수치를 확인하고 (2) 3D 복셀 렌더러용 장면 YAML을 쓴다.
+
+## 제1 원칙: 화면이 자막을 직접 보여준다
+시청자가 소리 없이 화면만 봐도 그 장면 자막이 무슨 말인지 알 수 있어야 한다.
+- 장면마다 `visual:` 한 줄로 "화면에 무엇이 어떻게 보이는지"를 먼저 쓰고, 그 visual이 caption의 핵심 대상(명사)과 동작을 그대로 보여주게 연출한다.
+- 사물·음식·물질·원리·작은 것·몸속·분자 이야기 → studio 또는 tabletop 세트 + props(사물) + crowds(입자·여러 개)로 그 대상을 직접 만든다.
+- 도시 템플릿(plaza, boulevard, crossroad…)은 자막이 실제로 장소·사람들·교통·사회 현상을 말할 때만 쓴다. 주제와 상관없는 도시 풍경을 '배경용'으로 쓰지 않는다.
+- 목록에 딱 맞는 모델이 없으면 shape(box/sphere/cylinder)를 조합해 직접 만든다. 예: 탄산음료 캔 = 빨간 cylinder, 피자 = 납작한 주황 cylinder + 작은 빨간 sphere들, 얼음 = 하늘색 box.
+- labels로 핵심 대상에 이름표를 붙인다 (예: "질소 N2", "산소 → 기름과 반응"). 숫자는 hud로 보여준다.
+- 화면은 세로 9:16이라 좁다. 카메라와 거리 d일 때 보이는 가로 폭은 약 0.45×d, 세로 높이는 약 0.9×d (fov 50 기준). 주인공 물체가 화면 가운데 크게 보이게 거리·scale을 정한다.
+- 좌표: 미터, x는 화면 오른쪽(+z를 바라볼 때), y 위, z 앞(카메라 반대쪽). 템플릿 샷들은 대부분 +z를 바라본다.
 
 ## 콘텐츠 공식 (조회수가 검증된 구조)
 - 0~4초 훅: 상단 title(18자 이내 질문) + 궁금증을 만드는 caption
-- 본편: 한 장면 = 한 가지 '실제 사실'을 '한국인에게 익숙한 장소·상황'에 대입한 비트. 4~7초씩.
-- HUD(우측 상단 배지)로 진행감: 시계 {{from: "05:00", to: "05:30", step: 1}}, 카운터 {{from: 0, to: 0.2, format: "{{:.2f}}초", ease: false}}, 또는 고정 문구 "슬로 모션 ×4"
+- 본편: 한 장면 = 한 가지 사실. 4~7초씩. 비유는 한국인에게 익숙한 장소·상황으로.
+- HUD(우측 상단 배지)로 진행감: 시계 {{from: "05:00", to: "05:30", step: 1}}, 카운터 {{from: 21, to: 3, format: "남은 산소 {{:.0f}}%", ease: false}}, 고정 문구 "공기 = 질소 78%"
 - 후반 반전 1회(의외의 사실), 마지막 장면은 title + 댓글을 부르는 질문(양자택일이면 더 좋음)
 - 말투: 친근한 존댓말. caption은 한 장면 45자 이내, 숫자는 구체적으로.
-- 사실은 검색으로 확인된 것만. 불확실하면 쓰지 않는다. 연구 대상이 특정 종이면 그 사실을 facts_to_check에 적는다.
+- 사실은 검색으로 확인된 것만. 불확실하면 쓰지 않는다. 출처를 facts_to_check에 URL과 함께.
 - 위험한 행동을 따라 하게 만드는 내용, 실존 인물·상표·저작권 캐릭터는 넣지 않는다.
 
 ## 렌더러가 지원하는 것 (이 목록 밖의 이름을 쓰면 렌더링이 실패한다)
 템플릿(world.template):
 {chr(10).join(tpl_lines)}
-군중 agent: {', '.join(cat['agents'])}
+
+모델(props의 model, crowds의 agent에 공통 사용):
+{chr(10).join(model_lines)}
 
 장면 필드:
-- duration(초), caption, title(선택), hud(선택), time(선택: 조명 시각 "14:00" 또는 {{from, to}}; 없으면 hud 시계를 따르고 그것도 없으면 정오)
-- world: {{template: 이름, seed: 정수, params: {{...}}}}  — 같은 장소를 여러 장면에 쓰면 seed를 같게
-- shot: 위 목록의 샷 이름, 또는 직접 카메라:
+- duration(초), visual(화면 설명 한 줄, 필수), caption, title(선택), hud(선택), time(선택: 조명 시각 "14:00")
+- world: {{template: 이름, seed: 정수, params: {{...}}}}
+- shot: 템플릿 샷 이름, 또는 직접 카메라:
     {{from: [x,y,z], to: [x,y,z], target: [x,y,z], target_to: [x,y,z], fov: 50}}
-    {{type: orbit, center: [x,y,z], radius: r, height: h, from_deg: a, to_deg: b, look_height: h2, fov: 45}}
-    {{type: topdown, center: [x,y,z], height: 90, height_to: 75}}
-  좌표는 미터, x 오른쪽, y 위, z 앞. room 템플릿은 바닥 중앙이 (0,0,0)이고 방은 x -3~3, z -4.6~2.6, 높이 2.9.
-- crowds: 목록. 각 항목 {{agent, count, area(구역 이름 또는 [x0,z0,x1,z1]), layout: random|grid|queue, axis: x|z,
-    facing: random|각도|[x,z]|velocity, velocity: [vx,vz] 또는 [vx,vy,vz] (m/s), bob(점프 높이 m), bob_freq,
-    scale: 숫자 또는 [최소,최대], y(높이 고정), colors: ["#hex"]}}
-  가이드: 광장 군중 1000~3000, 보도 200~300, 고양이·강아지는 넓은 샷에서 scale [1.6, 2.0],
-  파리 같은 작은 생물은 room에서 scale 0.2 안팎 + 직접 카메라로 클로즈업(카메라와 0.3~0.8m),
-  상상 장면에서 생물을 거대하게 보여줄 땐 scale 10~16. 열차는 river_bridge에서
-  {{agent: train, count: 8, area: [-90,104,400,104], layout: queue, axis: x, gap: 18.6, velocity: [4,0], y: 15, speed_jitter: 0}}
-- effects(선택): shake {{at, length, amp}}, flash {{at, length}}, tint {{color, at, length}}
-- camera(선택): {{fade_in: 초, fade_out: 초}}  — 마지막 장면에 fade_out 0.6
+    {{type: orbit, center: [x,y,z], radius: r, height: h, from_deg: 150, to_deg: 210, look_height: h2, fov: 45}}  (180도 = 물체 앞쪽 -z에서 봄)
+    {{type: topdown, center: [x,y,z], height: 4, height_to: 3}}
+- props (정지한 사물, 여러 개):
+    {{model: 이름, at: [x,y,z](바닥 중심), yaw: 각도, scale: 배율, color: "#hex", color2: "#hex"}}
+    {{shape: box, size: [가로,높이,깊이], at: [x,y,z](밑면 중심), color: "#hex", mat: flat|stone|glass|glow}}
+    {{shape: sphere, r: 반지름, at: [x,y,z](중심), color, mat}}     {{shape: cylinder, r, h, at: [x,y,z](밑면 중심), color, mat, axis: y|x|z}}
+    mat: glow는 스스로 빛남(불빛·화면), stone은 거친 질감
+- crowds (여러 개 / 움직이는 것):
+    {{agent, count, area(구역 이름 또는 [x0,z0,x1,z1]), y 또는 y_range: [최저,최고], scale,
+      layout: random|grid|queue, facing: random|각도|[x,z]|velocity,
+      velocity: [vx,vz] 또는 [vx,vy,vz](m/s, 모두 같은 방향), wander: 속도(제각각 떠다님 — 기체 분자·먼지),
+      spin: 회전 속도, bob: 점프 높이, bob_freq, wrap: false(구역 밖으로 나가게), colors: ["#hex"]}}
+    분자·입자는 y_range + wander + spin. 탁자 위 물건은 area: table (y 자동 0.9).
+    광장 군중 1000~3000, 동물은 넓은 샷에서 scale [1.6, 2.0].
+- labels: [{{text: "이름표", at: [x,y,z](가리킬 지점), from: 초, to: 초, color: "#hex"}}]  — 대상 바로 위에 말풍선으로 붙는다
+- effects: shake {{at, length, amp}}, flash {{at, length}}, tint {{color, at, length}}  (한 항목에 하나씩)
+- camera: {{fade_out: 0.6}}  — 마지막 장면
 
 ## 출력 형식
-설명 없이 ```yaml 코드블록 하나만 출력한다. 최상위 키:
+설명 없이 ```yaml 코드블록 하나만 출력한다. 문자열에 콜론(:)이 있으면 큰따옴표로 감싼다. 최상위 키:
 title, style: voxel, music: {{mood: wonder|tense|calm|epic, bpm: 90~130, seed: 정수, volume: 0.18}},
-facts_to_check: ["사실 한 줄 — 출처 URL", ...]  (대본에 쓴 모든 수치),
+facts_to_check: ["사실 한 줄 — 출처 URL", ...],
 scenes: [...]
 
-## 참고 예시 (형식과 연출 수준)
+## 참고 예시 (자유 주제를 화면에 직접 보여주는 수준)
 {example_txt}
 """
 
@@ -235,13 +259,16 @@ def claude_code_logged_in(cli: str) -> bool:
         return False
 
 
-def ask_cli(system: str, user: str, web_search: bool = True) -> tuple[str, list]:
-    """Claude Code 비대화 모드로 질문. 웹 검색·웹 읽기 도구만 허용(파일 수정·명령 실행 불가)."""
+def ask_cli(system: str, user: str, web_search: bool = True, tools: str | None = None,
+            workdir: str | None = None) -> tuple[str, list]:
+    """Claude Code 비대화 모드로 질문. 웹 검색·웹 읽기(또는 검수 때 파일 읽기)만 허용 — 파일 수정·명령 실행 불가."""
     cli = claude_cli()
     if not cli:
         raise RuntimeError("Claude Code가 설치되어 있지 않아요.")
-    tools = "WebSearch,WebFetch" if web_search else ""
-    with tempfile.TemporaryDirectory() as tmp:
+    if tools is None:
+        tools = "WebSearch,WebFetch" if web_search else ""
+    with tempfile.TemporaryDirectory() as tmp0:
+        tmp = workdir or tmp0
         sp = Path(tmp) / "system.txt"
         sp.write_text(system, encoding="utf-8")
         cmd = [cli, "-p", user, "--append-system-prompt-file", str(sp), "--tools", tools,
@@ -298,6 +325,17 @@ def quote_text_values(ytxt: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def ask_with_image(system: str, user: str, image_png: bytes, key: str, max_tokens: int = 12000) -> str:
+    import base64
+    model = os.environ.get("IF60_PLANNER_MODEL", DEFAULT_MODEL)
+    content = [{"type": "image", "source": {"type": "base64", "media_type": "image/png",
+                                            "data": base64.b64encode(image_png).decode()}},
+               {"type": "text", "text": user}]
+    data = _post({"model": model, "max_tokens": max_tokens, "system": system,
+                  "messages": [{"role": "user", "content": content}]}, key)
+    return "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
+
+
 def extract_yaml(text: str) -> str:
     blocks = re.findall(r"```(?:yaml|yml)?\s*\n(.*?)```", text, re.S)
     if blocks:
@@ -352,6 +390,20 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
             for n in names:
                 if n not in ("shake", "flash", "tint"):
                     errs.append(f"장면 {i}: 효과 '{n}' 지원 안 함 (shake/flash/tint만 가능, 형식: - shake: {{at: 1, length: 1.2, amp: 4}})")
+        for j, pr in enumerate(s.get("props") or [], 1):
+            if not isinstance(pr, dict):
+                errs.append(f"장면 {i} 소품 {j}: 형식 오류"); continue
+            if "model" in pr:
+                if pr["model"] not in cat["agents"]:
+                    errs.append(f"장면 {i} 소품 {j}: model '{pr['model']}' 없음 — 목록에 없으면 shape(box/sphere/cylinder)로 직접 만들 것")
+            elif pr.get("shape", "box") not in ("box", "sphere", "cylinder"):
+                errs.append(f"장면 {i} 소품 {j}: shape '{pr.get('shape')}' 지원 안 함 (box/sphere/cylinder 중 하나)")
+            at = pr.get("at", [0, 0, 0])
+            if not (isinstance(at, list) and len(at) == 3):
+                errs.append(f"장면 {i} 소품 {j}: at은 [x, y, z]")
+        for j, lb in enumerate(s.get("labels") or [], 1):
+            if not isinstance(lb, dict) or not lb.get("text") or not (isinstance(lb.get("at"), list) and len(lb["at"]) == 3):
+                errs.append(f"장면 {i} 라벨 {j}: {{text: \"...\", at: [x, y, z]}} 형식이어야 함")
         for j, c in enumerate(s.get("crowds") or [], 1):
             if not isinstance(c, dict):
                 errs.append(f"장면 {i} 군중 {j}: 형식 오류"); continue
@@ -384,7 +436,7 @@ def smoke_test(ytxt: str) -> list[str]:
         path = Path(tmp) / "check.yaml"
         path.write_text(ytxt, encoding="utf-8")
         try:
-            spec, style, scenes = R.load_project(str(path))
+            spec, style, scenes = R.load_project(str(path), quiet=True)
             font = R.text.find_font(style.font)
         except Exception as e:
             return [f"장면 파일을 불러오다 오류: {type(e).__name__}: {e}"]
@@ -400,11 +452,11 @@ def smoke_test(ytxt: str) -> list[str]:
                     R._text_layer(sc, t, style, font)
                     R.hud_label(sc.hud, t, sc.duration)
                 if sc.world and vr is not None:
-                    prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot)
+                    prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot, props=sc.props)
                     cam = sc.shot if isinstance(sc.shot, dict) else prep.shots.get(sc.shot or next(iter(prep.shots)))
                     if cam is None:
                         raise ValueError(f"샷 '{sc.shot}' 없음")
-                    R.render_3d_frame(vr, prep, cam, sc, sc.duration * 0.5)
+                    R.render_3d_frame(vr, prep, cam, sc, sc.duration * 0.5, font)
                     vr.release(prep)
                 elif not sc.world:
                     R.compose_frame(sc, 0.0, style)
@@ -415,17 +467,118 @@ def smoke_test(ytxt: str) -> list[str]:
     return errs
 
 
+def contact_sheet(ytxt: str, cell=(180, 320), cols: int = 4) -> bytes | None:
+    """장면마다 가운데 시점 한 장(자막 포함)을 번호와 함께 격자로 모은 PNG. OpenGL이 없으면 None."""
+    import io
+    from PIL import Image, ImageDraw, ImageFont
+    from . import render as R
+    try:
+        from .voxel.renderer import VoxelRenderer
+        vr = VoxelRenderer(cell[0], cell[1], samples=0, shadow_size=1024)
+    except Exception:
+        return None
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "s.yaml"
+        path.write_text(ytxt, encoding="utf-8")
+        spec, style, scenes = R.load_project(str(path), quiet=True)
+        font = R.text.find_font(style.font)
+        tiles = []
+        for sc in scenes:
+            t = sc.duration * 0.55
+            if sc.world:
+                prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot, props=sc.props)
+                cam = sc.shot if isinstance(sc.shot, dict) else prep.shots.get(sc.shot or next(iter(prep.shots)))
+                img = R.render_3d_frame(vr, prep, cam, sc, t, font)
+                vr.release(prep)
+            else:
+                small, _ = R.compose_frame(sc, t, style)
+                img = np.asarray(Image.fromarray(small).resize(cell, Image.Resampling.NEAREST))
+            im = Image.fromarray(img).convert("RGB")
+            tl = R._text_layer(sc, t, style, font)
+            if tl is not None:
+                ov = Image.fromarray(tl).resize(cell, Image.Resampling.NEAREST)
+                im.paste(ov, (0, 0), ov)
+            tiles.append(im)
+    vr.close()
+    rows = (len(tiles) + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * (cell[0] + 6), rows * (cell[1] + 6)), (20, 18, 30))
+    d = ImageDraw.Draw(sheet)
+    num_font = ImageFont.truetype(R.text.find_font(), 20, index=0)
+    for i, im in enumerate(tiles):
+        x, y = (i % cols) * (cell[0] + 6), (i // cols) * (cell[1] + 6)
+        sheet.paste(im, (x, y))
+        d.rectangle([x, y, x + 34, y + 28], fill=(255, 220, 60))
+        d.text((x + 6, y + 2), str(i + 1), font=num_font, fill=(0, 0, 0))
+    buf = io.BytesIO()
+    sheet.save(buf, "PNG")
+    return buf.getvalue()
+
+
+REVIEW_PROMPT = """너는 쇼츠 영상의 감독이다. 첨부한 미리보기 시트(contact_sheet.png)에는 장면 번호(노란 칸)별로
+실제 렌더링된 화면 한 장과 그 장면의 자막이 함께 보인다. 아래는 장면별 자막과 의도한 visual이다.
+
+{scene_list}
+
+각 장면을 보고 판정하라: 소리 없이 화면만 봐도 자막이 말하는 대상·동작이 보이는가?
+- 대상이 화면 밖에 있거나, 너무 작거나, 다른 것에 가려졌거나, 자막과 상관없는 풍경이면 '불일치'.
+- 불일치 장면은 world/shot/props/crowds/labels/effects를 고쳐 화면이 자막을 직접 보여주게 한다.
+  (카메라 거리·scale·at 좌표를 조정하거나, studio/tabletop + props로 대상을 직접 만든다.)
+  caption·title·hud·facts_to_check·duration은 바꾸지 않는다.
+- 모든 장면이 일치하면 다른 말 없이 "통과"라고만 답한다.
+- 하나라도 고치면, 고친 장면이 포함된 전체 YAML을 ```yaml 블록 하나로 출력한다.
+
+현재 YAML:
+```yaml
+{yaml}
+```"""
+
+
+def review(ytxt: str, spec: dict, backend_call_image, log=print) -> str | None:
+    """감독 검수: 고쳐진 YAML 문자열 또는 None(통과/검수 불가)"""
+    png = contact_sheet(ytxt)
+    if png is None:
+        log("  · (이 컴퓨터에서 미리보기를 만들 수 없어 감독 검수를 건너뜀)")
+        return None
+    lines = []
+    for i, sc in enumerate(spec.get("scenes", []), 1):
+        lines.append(f"{i}. 자막: {sc.get('caption', '')} | visual: {sc.get('visual', '(없음)')}")
+    prompt = REVIEW_PROMPT.format(scene_list="\n".join(lines), yaml=ytxt)
+    text = backend_call_image(prompt, png)
+    if "```" not in text:
+        return None
+    return extract_yaml(text)
+
+
 # ------------------------------------------------------------------ 전체 흐름
+def _validated(ytxt: str, cat: dict, length, log) -> tuple[dict | None, list]:
+    try:
+        spec = yaml.safe_load(ytxt)
+        errs = validate(spec, cat, length)
+    except yaml.YAMLError as e:
+        return None, [f"YAML 문법 오류: {e}"]
+    if not errs:
+        log("  · 장면별 시험 렌더링으로 오류 확인 중")
+        errs = smoke_test(ytxt)
+    return spec, errs
+
+
 def plan(topic: str, length: int = 60, *, interactive: bool = True, web_search: bool = True,
-         log=print) -> tuple[str, dict, list]:
+         review_pass: bool = True, log=print) -> tuple[str, dict, list]:
     """주제 → 검증된 장면 YAML 텍스트, 파싱된 spec, 인용 목록"""
     backend = choose_backend(interactive)
     if backend == "api":
         key = require_key(interactive)
         call = lambda u, ws: ask(system, u, key, web_search=ws)
+        call_image = lambda u, png: ask_with_image(system, u, png, key)
         log("  · Claude API 사용 (사용량만큼 별도 과금)")
     else:
         call = lambda u, ws: ask_cli(system, u, web_search=ws)
+
+        def call_image(u, png):
+            with tempfile.TemporaryDirectory() as wd:
+                (Path(wd) / "contact_sheet.png").write_bytes(png)
+                u2 = "먼저 Read 도구로 현재 폴더의 contact_sheet.png 를 열어 본 뒤 답하라.\n\n" + u
+                return ask_cli(system, u2, tools="Read", workdir=wd)[0]
         log("  · Claude Code + 내 Claude 구독 사용 (추가 비용 없음, 구독 사용량에서 차감)")
     cat = catalog()
     system = system_prompt(cat)
@@ -437,14 +590,7 @@ def plan(topic: str, length: int = 60, *, interactive: bool = True, web_search: 
     log(f"  · 완료 ({time.time() - t0:.0f}초)")
     ytxt = extract_yaml(text)
     for attempt in range(3):
-        try:
-            spec = yaml.safe_load(ytxt)
-            errs = validate(spec, cat, length)
-        except yaml.YAMLError as e:
-            spec, errs = None, [f"YAML 문법 오류: {e}"]
-        if not errs:
-            log("  · 장면별 시험 렌더링으로 오류 확인 중")
-            errs = smoke_test(ytxt)
+        spec, errs = _validated(ytxt, cat, length, log)
         if not errs:
             break
         log(f"▶ 장면 파일 자동 수정 중 ({attempt + 1}/3): " + "; ".join(errs[:3]) + (" …" if len(errs) > 3 else ""))
@@ -454,6 +600,23 @@ def plan(topic: str, length: int = 60, *, interactive: bool = True, web_search: 
         ytxt = extract_yaml(text2)
     else:
         raise RuntimeError("장면 파일을 자동으로 고치지 못했어요: " + "; ".join(errs))
+    if review_pass:
+        log("▶ 감독 검수: 장면 미리보기를 보며 화면과 자막이 맞는지 확인 중 (1~3분)")
+        t1 = time.time()
+        try:
+            revised = review(ytxt, spec, call_image, log)
+        except Exception as e:
+            revised = None
+            log(f"  · 검수 중 문제가 있어 원래 연출로 진행: {e}")
+        if revised:
+            spec2, errs2 = _validated(revised, cat, length, log)
+            if not errs2:
+                ytxt, spec = revised, spec2
+                log(f"  · 화면이 안 맞는 장면을 고쳤어요 ({time.time() - t1:.0f}초)")
+            else:
+                log("  · 수정안에 오류가 있어 원래 연출을 유지: " + "; ".join(errs2[:2]))
+        else:
+            log(f"  · 통과 ({time.time() - t1:.0f}초)")
     return ytxt, spec, cites
 
 

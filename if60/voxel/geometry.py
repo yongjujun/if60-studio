@@ -114,3 +114,91 @@ class Model:
     @property
     def data(self) -> np.ndarray:
         return np.vstack(self._parts)
+
+
+# ------------------------------------------------------------------ 복셀 도형 (구·원기둥 등)
+def voxel_faces(occ: np.ndarray, origin, voxel: float) -> tuple[np.ndarray, np.ndarray]:
+    """3D 점유 격자(X,Y,Z bool) → 겉으로 드러난 면만 삼각형으로. 속이 찬 구도 꼭짓점이 적다."""
+    origin = np.asarray(origin, np.float32)
+    pos_all, nrm_all = [], []
+    pad = np.pad(occ, 1)
+    core = (slice(1, -1),) * 3
+    neighbors = {0: (2, 1, 1), 1: (0, 1, 1), 2: (1, 2, 1), 3: (1, 0, 1), 4: (1, 1, 2), 5: (1, 1, 0)}
+    for f, (dx, dy, dz) in neighbors.items():
+        nb = pad[dx:dx + occ.shape[0], dy:dy + occ.shape[1], dz:dz + occ.shape[2]]
+        exposed = occ & ~nb
+        idx = np.argwhere(exposed)
+        if len(idx) == 0:
+            continue
+        mins = origin + idx * voxel
+        p, n = box_vertices(mins, mins + voxel, [f])
+        pos_all.append(p)
+        nrm_all.append(n)
+    if not pos_all:
+        return np.zeros((0, 3), np.float32), np.zeros((0, 3), np.float32)
+    return np.vstack(pos_all), np.vstack(nrm_all)
+
+
+def _grid(extent_min, extent_max, voxel):
+    n = np.maximum(1, np.ceil((np.asarray(extent_max) - np.asarray(extent_min)) / voxel).astype(int))
+    axes = [extent_min[i] + (np.arange(n[i]) + 0.5) * voxel for i in range(3)]
+    return np.meshgrid(*axes, indexing="ij"), np.asarray(extent_min, np.float32)
+
+
+def sphere_occ(center, radii, voxel):
+    c = np.asarray(center, np.float32)
+    r = np.broadcast_to(np.asarray(radii, np.float32), (3,))
+    (gx, gy, gz), origin = _grid(c - r, c + r, voxel)
+    occ = ((gx - c[0]) / r[0]) ** 2 + ((gy - c[1]) / r[1]) ** 2 + ((gz - c[2]) / r[2]) ** 2 <= 1.0
+    return occ, origin
+
+
+def cylinder_occ(base, r, h, voxel, axis="y"):
+    b = np.asarray(base, np.float32)
+    if axis == "y":
+        mn, mx = b + [-r, 0, -r], b + [r, h, r]
+    elif axis == "x":
+        mn, mx = b + [0, -r, -r], b + [h, r, r]
+    else:
+        mn, mx = b + [-r, -r, 0], b + [r, r, h]
+    (gx, gy, gz), origin = _grid(mn, mx, voxel)
+    if axis == "y":
+        occ = (gx - b[0]) ** 2 + (gz - b[2]) ** 2 <= r * r
+    elif axis == "x":
+        occ = (gy - b[1]) ** 2 + (gz - b[2]) ** 2 <= r * r
+    else:
+        occ = (gx - b[0]) ** 2 + (gy - b[1]) ** 2 <= r * r
+    return occ, origin
+
+
+def _add_mesh(model: "Model", pos, nrm, color, mat):
+    if len(pos) == 0:
+        return
+    if isinstance(color, int):
+        slot, col = float(color), np.zeros(3, np.float32)
+    else:
+        slot, col = 0.0, rgb(color)
+    k = len(pos)
+    model._parts.append(np.hstack([pos, nrm, np.broadcast_to(col, (k, 3)), np.full((k, 1), slot),
+                                   np.full((k, 1), MAT[mat])]).astype(np.float32))
+
+
+def _sphere(self, center, r, color, voxel=None, mat="flat"):
+    """복셀 구 (r은 숫자 또는 [rx, ry, rz] 타원체)"""
+    rr = max(np.atleast_1d(r))
+    voxel = voxel or max(rr / 4.5, 0.004)
+    occ, origin = sphere_occ(center, r, voxel)
+    _add_mesh(self, *voxel_faces(occ, origin, voxel), color, mat)
+    return self
+
+
+def _cylinder(self, base, r, h, color, voxel=None, mat="flat", axis="y"):
+    """복셀 원기둥 (base는 밑면 중심)"""
+    voxel = voxel or max(r / 4.0, 0.004)
+    occ, origin = cylinder_occ(base, r, h, voxel, axis)
+    _add_mesh(self, *voxel_faces(occ, origin, voxel), color, mat)
+    return self
+
+
+Model.sphere = _sphere
+Model.cylinder = _cylinder

@@ -40,6 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     mk.add_argument("--preview", action="store_true", help="저화질 미리보기로만 빠르게")
     mk.add_argument("--no-open", action="store_true", help="완성 후 영상을 자동으로 열지 않기")
     mk.add_argument("--no-search", action="store_true", help="웹 검색 없이 작성 (비추천)")
+    mk.add_argument("--no-review", action="store_true", help="감독 검수(미리보기로 화면·자막 일치 확인) 건너뛰기")
 
     sub.add_parser("key", help="Anthropic API 키 저장/변경")
 
@@ -96,7 +97,7 @@ def make(a) -> int:
         return 1
     print(f"\n주제: {topic}  (목표 약 {a.length}초)\n")
     try:
-        ytxt, spec, cites = plan(topic, a.length, web_search=not a.no_search)
+        ytxt, spec, cites = plan(topic, a.length, web_search=not a.no_search, review_pass=not a.no_review)
     except RuntimeError as e:
         print(f"\n✖ {e}")
         return 1

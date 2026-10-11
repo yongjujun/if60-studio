@@ -40,6 +40,7 @@ class Crowd:
     bob_freq: float = 6.0
     wrap_min: tuple = (0.0, 0.0, 0.0)
     wrap_size: tuple = (0.0, 0.0, 0.0)
+    spin: float = 0.0
 
 
 def make_crowd(spec: dict, areas: dict, rng: np.random.Generator, avoid: np.ndarray | None = None) -> Crowd:
@@ -81,6 +82,13 @@ def make_crowd(spec: dict, areas: dict, rng: np.random.Generator, avoid: np.ndar
         xs = rng.uniform(x0, x1, n)
         zs = rng.uniform(z0, z1, n)
     vel = np.zeros((n, 3), np.float32)
+    y_range = spec.get("y_range")
+    if "wander" in spec:     # 개체마다 제각각 떠다니는 방향 (기체 분자, 먼지, 반딧불 등)
+        d = rng.normal(0, 1, (n, 3))
+        if not y_range:
+            d[:, 1] = 0
+        d /= np.linalg.norm(d, axis=1, keepdims=True) + 1e-9
+        vel = (d * float(spec["wander"]) * rng.uniform(0.6, 1.4, (n, 1))).astype(np.float32)
     if "velocity" in spec:   # [vx, vz] 또는 위아래 포함 [vx, vy, vz]
         v = list(spec["velocity"])
         vx, vy, vz = (v[0], 0.0, v[1]) if len(v) == 2 else v
@@ -102,9 +110,13 @@ def make_crowd(spec: dict, areas: dict, rng: np.random.Generator, avoid: np.ndar
     c2 = np.stack([p2[i] for i in rng.integers(0, len(p2), n)])
     smin, smax = spec.get("scale", [0.92, 1.08]) if isinstance(spec.get("scale"), list) else (spec.get("scale", 1.0),) * 2
     inst = np.zeros((n, 15), np.float32)
+    if "y" not in spec and isinstance(area, str) and f"__y_{area}" in areas:   # 탁자 위 같은 구역의 기본 높이
+        y = float(areas[f"__y_{area}"])
     ys = np.full(n, y, np.float32)
     if "__height__" in areas and "y" not in spec:   # 울퉁불퉁한 지형 위에 세우기
         ys = areas["__height__"](xs, zs).astype(np.float32)
+    if y_range:
+        ys = rng.uniform(float(y_range[0]), float(y_range[1]), n).astype(np.float32)
     inst[:, 0], inst[:, 1], inst[:, 2] = xs, ys, zs
     inst[:, 3] = yaw
     inst[:, 4:7], inst[:, 7:10] = c1, c2
@@ -117,11 +129,53 @@ def make_crowd(spec: dict, areas: dict, rng: np.random.Generator, avoid: np.ndar
         clr = float(spec.get("clearance", 3.0))
         d2 = (inst[:, None, 0] - avoid[None, :, 0]) ** 2 + (inst[:, None, 2] - avoid[None, :, 1]) ** 2
         inst = inst[d2.min(1) > clr * clr]
-    wrap = spec.get("wrap", "velocity" in spec)
-    wsize = (x1 - x0 if (wrap and abs(vel[:, 0]).max() > 0) else 0, 0,
-             z1 - z0 if (wrap and abs(vel[:, 2]).max() > 0) else 0)
+    wrap = spec.get("wrap", "velocity" in spec or "wander" in spec)
+    if len(inst) == 0:
+        return Crowd(name, inst)
+    v = inst[:, 11:14]
+    ylo, yhi = (float(y_range[0]), float(y_range[1])) if y_range else (0.0, 0.0)
+    wsize = (x1 - x0 if (wrap and abs(v[:, 0]).max() > 0) else 0,
+             yhi - ylo if (wrap and y_range and abs(v[:, 1]).max() > 0) else 0,
+             z1 - z0 if (wrap and abs(v[:, 2]).max() > 0) else 0)
     return Crowd(name, inst, bob=float(spec.get("bob", 0.0)), bob_freq=float(spec.get("bob_freq", 6.0)),
-                 wrap_min=(x0, 0, z0), wrap_size=wsize)
+                 wrap_min=(x0, ylo, z0), wrap_size=wsize, spin=float(spec.get("spin", 0.0)))
+
+
+def add_props(builder, props: list, rng) -> None:
+    """장면 YAML의 props → 정적 세계에 박아 넣기.
+      - {model: snack_bag, at: [x,y,z], yaw: 도, scale: 배율, color: "#hex", color2: "#hex"}
+      - {shape: box, size: [w,h,d], at: [x,y,z](밑면 중심), color, mat, yaw}
+      - {shape: sphere, r: 반지름 또는 [rx,ry,rz], at: [x,y,z](중심), color, mat}
+      - {shape: cylinder, r, h, at: [x,y,z](밑면 중심), color, mat, axis: y|x|z}
+    """
+    import math as _m
+    from .geometry import Model, rgb as _rgb
+    for pr in props or []:
+        at = np.asarray(pr.get("at", [0, 0, 0]), np.float32)
+        yaw = _m.radians(float(pr.get("yaw", 0)))
+        scale = float(pr.get("scale", 1.0))
+        mat = pr.get("mat", "flat")
+        if "model" in pr:
+            mdl = models.get(pr["model"])
+            c1 = pr.get("color", mdl.palette1[rng.integers(len(mdl.palette1))])
+            c2 = pr.get("color2", mdl.palette2[rng.integers(len(mdl.palette2))])
+            builder.stamp(mdl, at, yaw, c1=c1, c2=c2, scale=scale)
+            continue
+        shape = pr.get("shape", "box")
+        color = pr.get("color", "#cccccc")
+        m = Model("prop", [color], [color])
+        if shape == "box":
+            w, h, d = (np.asarray(pr.get("size", [1, 1, 1]), np.float32) * scale)
+            m.part((-w / 2, 0, -d / 2), (w / 2, h, d / 2), color, mat)
+        elif shape == "sphere":
+            r = np.asarray(pr.get("r", 0.5), np.float32) * scale
+            m.sphere((0, 0, 0), r if r.size > 1 else float(r), color, mat=mat)
+        elif shape == "cylinder":
+            m.cylinder((0, 0, 0), float(pr.get("r", 0.5)) * scale, float(pr.get("h", 1.0)) * scale, color,
+                       mat=mat, axis=pr.get("axis", "y"))
+        else:
+            raise ValueError(f"알 수 없는 소품 shape: {shape} (box/sphere/cylinder 또는 model)")
+        builder.stamp(m, at, yaw)
 
 
 # ------------------------------------------------------------------ renderer
@@ -136,6 +190,7 @@ class Prepared:
     sky: str = "auto"
     sun_azimuth: float = 35.0
     lighting_override: dict = field(default_factory=dict)
+    texel: float = 8.0
 
 
 class VoxelRenderer:
@@ -165,10 +220,11 @@ class VoxelRenderer:
         self.out_fbo = ctx.framebuffer(color_attachments=[ctx.renderbuffer((width, height))])
 
     # -------------------------------------------------------------- scene setup
-    def prepare(self, world: dict, crowds: list[dict], seed: int = 0, shot=None) -> Prepared:
+    def prepare(self, world: dict, crowds: list[dict], seed: int = 0, shot=None, props=None) -> Prepared:
         from .templates import build_template
         rng = np.random.default_rng(seed)
         built = build_template(world, rng)
+        add_props(built.builder, list(built.props) + list(props or []), rng)
         ctx = self.ctx
         data = built.builder.build()
         vbo = ctx.buffer(data.tobytes())
@@ -178,7 +234,7 @@ class VoxelRenderer:
             world_depth_vao=ctx.vertex_array(self.world_depth, [(vbo, "3f 12x 12x 4x", "in_pos")]),
             world_vbo=vbo, shots=built.shots, shadow_radius=built.shadow_radius,
             sky=world.get("sky", built.sky), sun_azimuth=built.sun_azimuth,
-            lighting_override=built.lighting)
+            lighting_override=built.lighting, texel=built.texel)
         cam = shot if isinstance(shot, dict) else built.shots.get(shot or next(iter(built.shots)))
         avoid = None
         if cam is not None and cam.get("type", "dolly") == "dolly":
@@ -227,6 +283,7 @@ class VoxelRenderer:
         proj = perspective(fov, self.w / self.h, 0.1, 2500.0)
         view = look_at(eye, target)
         vp = proj @ view
+        self.last_vp = vp
         light = self.lighting(prep, hours)
 
         # 그림자 상자는 카메라가 보는 곳 주변으로
@@ -273,7 +330,7 @@ class VoxelRenderer:
             prog["u_light_vp"].write(gl_bytes(light_vp))
             self._set(prog, u_cam=eye, u_sun_dir=sun, u_sun_col=light.sun_col, u_amb_sky=light.amb_sky,
                       u_amb_ground=light.amb_ground, u_fog_col=light.horizon, u_fog_density=light.fog_density,
-                      u_time=t, u_night=light.night, u_texel=8.0, u_shadow_on=shadow_on)
+                      u_time=t, u_night=light.night, u_texel=prep.texel, u_shadow_on=shadow_on)
             if prog.get("u_shadow", None) is not None:
                 prog["u_shadow"].value = 0
         prep.world_vao.render()
@@ -298,8 +355,20 @@ class VoxelRenderer:
                 u.value = float(v)
 
     def _crowd_uniforms(self, prog, cr: Crowd, t: float):
-        self._set(prog, u_time=t, u_bob=cr.bob, u_bob_freq=cr.bob_freq,
+        self._set(prog, u_time=t, u_bob=cr.bob, u_bob_freq=cr.bob_freq, u_spin=cr.spin,
                   u_wrap_min=np.asarray(cr.wrap_min, np.float32), u_wrap_size=np.asarray(cr.wrap_size, np.float32))
+
+    def project(self, points) -> list:
+        """마지막으로 그린 프레임 기준, 3D 점 → 화면 픽셀 좌표 (카메라 뒤면 None)"""
+        out = []
+        for p in points:
+            c = self.last_vp @ np.array([p[0], p[1], p[2], 1.0], np.float32)
+            if c[3] <= 1e-4:
+                out.append(None)
+                continue
+            nx, ny = c[0] / c[3], c[1] / c[3]
+            out.append(((nx * 0.5 + 0.5) * self.w, (1 - (ny * 0.5 + 0.5)) * self.h))
+        return out
 
     def close(self):
         self.ctx.release()

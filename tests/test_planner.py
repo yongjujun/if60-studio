@@ -69,7 +69,7 @@ def test_plan_repairs_invalid_yaml(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
-    ytxt, spec, cites = planner.plan("테스트 주제", 60, interactive=False, log=lambda *a: None)
+    ytxt, spec, cites = planner.plan("테스트 주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
     assert len(calls) == 2                       # 처음 작성 + 자동 수정 1회
     assert "tools" in calls[0] and "tools" not in calls[1]   # 조사할 때만 웹 검색
     assert spec["scenes"][0]["shot"] == "forward"
@@ -97,7 +97,7 @@ def test_web_search_falls_back_on_400(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
     assert seen[-1] == "null" and len(seen) == 3
 
 
@@ -180,3 +180,80 @@ def test_smoke_test_catches_render_errors():
     bad = ok.replace("    caption: 첫 장면이에요.", "    caption: 첫 장면이에요.\n    hud: {from: 시작, to: 끝}")
     errs = planner.smoke_test(bad)
     assert errs and "장면 1" in errs[0]
+
+
+def test_review_revises_mismatched_scene_with_image(monkeypatch):
+    """감독 검수: 미리보기 이미지가 첨부되고, 고친 YAML이 오면 그걸 채택"""
+    fixed = GOOD.replace("shot: forward", "shot: aerial")
+    sent = []
+
+    def fake_post(body, key):
+        sent.append(body)
+        content = body["messages"][0]["content"]
+        if isinstance(content, list):                    # 검수 호출 (이미지 + 텍스트)
+            assert content[0]["type"] == "image" and content[0]["source"]["media_type"] == "image/png"
+            assert "1. 자막: 첫 장면이에요." in content[1]["text"]
+            return _resp(fixed)
+        return _resp(GOOD)
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
+    monkeypatch.setattr(planner, "_post", fake_post)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
+    assert len(sent) == 2
+    assert spec["scenes"][0]["shot"] == "aerial"
+
+
+def test_review_pass_keeps_original(monkeypatch):
+    def fake_post(body, key):
+        if isinstance(body["messages"][0]["content"], list):
+            return _resp("통과")
+        return _resp(GOOD)
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
+    monkeypatch.setattr(planner, "_post", fake_post)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
+    assert spec["scenes"][0]["shot"] == "forward"
+
+
+def test_review_with_claude_code_reads_image(tmp_path, monkeypatch):
+    import os
+    import stat
+    fake = tmp_path / "claude"
+    fake.write_text(FAKE_CLAUDE.replace('print(open(os.environ["FAKE_REPLY"]).read())',
+        'import pathlib\nif "--tools" in args and args[args.index("--tools") + 1] == "Read":\n'
+        '    assert pathlib.Path("contact_sheet.png").exists()\n    print("통과")\n'
+        'else:\n    print(open(os.environ["FAKE_REPLY"]).read())'))
+    fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+    reply = tmp_path / "reply.txt"
+    reply.write_text(GOOD)
+    log = tmp_path / "log.jsonl"
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setenv("FAKE_REPLY", str(reply))
+    monkeypatch.setenv("FAKE_LOG", str(log))
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("IF60_BACKEND", raising=False)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
+    calls = [json.loads(l)["args"] for l in log.read_text().splitlines()]
+    assert len(calls) == 2
+    assert calls[1][calls[1].index("--tools") + 1] == "Read"   # 검수 때는 파일 읽기만 허용
+
+
+def test_contact_sheet_has_every_scene():
+    from PIL import Image
+    import io
+    png = planner.contact_sheet(planner.extract_yaml(GOOD))
+    assert png is not None
+    im = Image.open(io.BytesIO(png))
+    assert im.size == (4 * 186, 1 * 326)
+
+
+def test_validate_props_and_labels(cat):
+    spec = yaml.safe_load(planner.extract_yaml(GOOD))
+    spec["scenes"][0]["props"] = [{"model": "pizza", "at": [0, 0, 0]}, {"shape": "cone", "at": [0, 0, 0]},
+                                  {"shape": "sphere", "r": 0.2, "at": [0, 1, 0]}]
+    spec["scenes"][0]["labels"] = [{"text": "질소"}]
+    errs = planner.validate(spec, cat, 60)
+    assert any("pizza" in e for e in errs) and any("cone" in e for e in errs) and any("라벨" in e for e in errs)
+    assert len(errs) == 3

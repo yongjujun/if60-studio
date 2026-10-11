@@ -36,6 +36,8 @@ class Built:
     sky: str = "auto"
     sun_azimuth: float = 35.0
     lighting: dict = field(default_factory=dict)
+    props: list = field(default_factory=list)
+    texel: float = 8.0          # 픽셀 질감 밀도 (1m당 칸 수). 클로즈업 세트는 더 촘촘하게
 
 
 def _noise1(n: int, rng, smooth: int = 6) -> np.ndarray:
@@ -418,8 +420,68 @@ def planet(rng, surface: str = "mars", **_) -> Built:
                  sun_azimuth=60)
 
 
+def studio(rng, color: str = "#e9e4da", floor: str | None = None, **_) -> Built:
+    """사물·원리 설명용 무대: 이음매 없는 배경(사이클로라마) + 부드러운 조명 + 또렷한 그림자.
+    물체를 바닥(y=0) 가운데에 두고 front/close/orbit 샷으로 보여준다."""
+    b = WorldBuilder()
+    wall = rgb(color)
+    fl = rgb(floor) if floor else wall * 0.94
+    b.box((-30, -1, -30), (30, 0, 6), fl, "flat")
+    # 바닥에서 뒷벽으로 휘어 올라가는 곡면 (계단을 촘촘히 쌓아 근사)
+    for k in range(10):
+        a0 = k / 10 * (math.pi / 2)
+        z = 6 + math.sin(a0) * 3.0
+        y = (1 - math.cos(a0)) * 3.0
+        b.box((-30, -1, z), (30, y + 0.35, z + 0.35), fl + (wall - fl) * (k / 9), "glow")
+    b.box((-30, 0, 9), (30, 40, 10), wall, "glow")
+    shots = {
+        "front": {"from": [0, 1.3, -3.2], "to": [0, 1.25, -2.6], "target": [0, 0.6, 0], "fov": 50},
+        "close": {"from": [0.6, 0.8, -1.4], "to": [0.4, 0.75, -1.1], "target": [0, 0.4, 0], "fov": 45},
+        "wide": {"from": [0, 2.6, -6.5], "to": [0, 2.4, -5.5], "target": [0, 0.8, 0], "fov": 50},
+        "orbit": {"type": "orbit", "center": [0, 0.5, 0], "radius": 3.0, "height": 1.0, "from_deg": 145,
+                  "to_deg": 215, "look_height": 0.2, "fov": 48},
+        "top": {"type": "topdown", "center": [0, 0, 0], "height": 4.5, "height_to": 3.8},
+    }
+    areas = {"stage": [-1.5, -1.5, 1.5, 1.5], "back": [-4, 1.5, 4, 5], "air": [-1.5, -1.5, 1.5, 1.5]}
+    lighting = {"zenith": list(wall), "horizon": list(wall), "fog_density": 0.0,
+                "amb_sky": [0.62, 0.62, 0.64], "amb_ground": [0.46, 0.45, 0.44], "sun_col": [0.52, 0.5, 0.47]}
+    return Built(b, areas, shots, shadow_radius=7, sun_azimuth=-35, lighting=lighting, texel=24.0)
+
+
+def tabletop(rng, wall: str = "#e6dccb", wood: str = "#9a6a40", **_) -> Built:
+    """방 안 식탁 위 클로즈업용 세트. 탁자 윗면 높이 0.9m, 가운데가 (0, 0.9, 0)."""
+    b = WorldBuilder()
+    b.box((-4, -0.1, -5), (4, 0.0, 3), "#8a6a4a", "stone")                  # 바닥
+    for x in np.arange(-4, 4, 0.5):
+        b.box((x, 0.0, -5), (x + 0.02, 0.004, 3), "#6e4a2c")
+    b.box((-4, 0, 3), (4, 3.0, 3.1), wall, "stone")                          # 뒷벽
+    b.box((-4.1, 0, -5), (-4, 3.0, 3), wall, "stone")
+    b.box((4, 0, -5), (4.1, 3.0, 3), wall, "stone")
+    b.box((-1.3, 1.2, 2.95), (0.3, 2.3, 3.0), "#a9cbe8", "glow")            # 창
+    b.box((-0.6, 2.95, -1.0), (0.6, 3.0, 0.2), "#fff6dc", "glow")           # 천장 조명
+    b.box((-4, 2.98, -5), (4, 3.08, 3), "#ece6da", "stone")
+    b.box((-1.2, 0.86, -0.6), (1.2, 0.9, 0.6), wood, "stone")               # 탁자 상판
+    for x in (-1.12, 1.04):
+        for z in (-0.52, 0.44):
+            b.box((x, 0.0, z), (x + 0.08, 0.86, z + 0.08), "#6b4228")
+    b.box((-2.0, 0, 1.9), (-1.2, 1.9, 2.9), "#c9b28a", "stone")             # 뒤쪽 선반
+    shots = {
+        "table": {"from": [0, 1.75, -2.2], "to": [0, 1.65, -1.95], "target": [0, 0.95, 0.05], "fov": 50},
+        "close": {"from": [0.45, 1.2, -1.15], "to": [0.38, 1.15, -1.0], "target": [0, 0.95, 0], "fov": 45},
+        "low": {"from": [-0.9, 1.0, -1.3], "to": [-0.7, 1.0, -1.15], "target": [0.1, 0.97, 0.1], "fov": 50},
+        "top": {"type": "topdown", "center": [0, 0.9, 0], "height": 2.4, "height_to": 2.0},
+        "orbit": {"type": "orbit", "center": [0, 0.9, 0], "radius": 1.9, "height": 0.55, "from_deg": 155,
+                  "to_deg": 205, "look_height": 0.12, "fov": 45},
+    }
+    areas = {"table": [-1.0, -0.45, 1.0, 0.45], "__y_table": 0.9, "floor": [-3, -4, 3, -1]}
+    lighting = {"sun_col": [0.18, 0.17, 0.15], "amb_sky": [0.8, 0.74, 0.64], "amb_ground": [0.5, 0.44, 0.38],
+                "fog_density": 0.0}
+    return Built(b, areas, shots, shadow_radius=3, sun_azimuth=-40, lighting=lighting, texel=32.0)
+
+
 TEMPLATES = {"plaza": plaza, "boulevard": boulevard, "crossroad": crossroad, "river_bridge": river_bridge,
-             "apartments": apartments, "room": room, "field": field, "planet": planet}
+             "apartments": apartments, "room": room, "field": field, "planet": planet,
+             "studio": studio, "tabletop": tabletop}
 
 
 def build_template(world: dict, rng) -> Built:

@@ -1,0 +1,168 @@
+# 과자 봉지엔 왜 하필 질소일까? (약 57초, 11장면) — 자유 주제 연출 예시
+# 화면이 자막을 '직접' 보여주도록 studio/tabletop 세트 + 소품(props) + 분자 입자 + 라벨을 사용
+#
+# facts_to_check
+#   - 공기의 약 78%는 질소, 약 21%는 산소 (일반 상식, 표준 대기 조성)
+#   - 산소는 과자 기름과 반응해 빠르게 산패시킴, 질소는 반응하지 않음(비활성)
+#     — Fred Caporaso, Chapman University (NBC 보도) https://www.nbcconnecticut.com/news/national-international/chips-and-air-why-your-favorite-snacks-are-always-half-full/2986996/
+#   - 운송 중 흔들림에도 과자가 가루가 되지 않게 하는 쿠션 역할 — Joe Schwarcz, McGill University (같은 기사)
+#   - 질소 덕분에 뜯지 않은 봉지는 2~3개월 신선 (같은 기사)
+#   - 질소 충전 포장의 일반적 목표: 남은 산소 3% 미만 (포장기계 업체 Levapack 가이드) https://www.levapack.com/?p=75094
+title: 과자 봉지엔 왜 하필 질소일까?
+style: voxel
+music: {mood: wonder, bpm: 118, seed: 21, volume: 0.18}
+
+scenes:
+  # 1. 훅 — 식탁 위 빵빵한 과자 봉지
+  - duration: 4
+    visual: 식탁 위에 빵빵하게 부푼 빨간 과자 봉지 하나
+    title: 과자 봉지엔 왜 하필 질소?
+    caption: 과자 봉지의 절반은 공기. 그런데 그냥 공기가 아니에요.
+    world: {template: tabletop, seed: 1}
+    shot: table
+    props:
+      - {model: snack_bag, at: [0, 0.9, 0.05], scale: 2.2, yaw: -12, color: "#d8443a", color2: "#f2d34a"}
+    labels:
+      - {text: "빵빵한 이유는?", at: [0.22, 1.05, -0.12], from: 1.0}
+
+  # 2. 봉지 속 — 단면에 질소 분자
+  - duration: 5
+    visual: 앞면이 잘린 과자 봉지 단면 — 안에서 파란 질소 분자들이 떠다님
+    caption: 봉지 안을 채운 건 대부분 질소 기체예요.
+    world: {template: studio, seed: 2, params: {color: "#f1e6d2"}}
+    shot: {from: [0.7, 0.95, -2.7], to: [0.5, 0.9, -2.3], target: [0, 0.62, 0], fov: 45}
+    props:
+      - {model: snack_bag_cut, at: [0, 0, 0], scale: 3, color: "#d8443a"}
+    crowds:
+      - {agent: molecule_n2, count: 16, area: [-0.3, -0.12, 0.3, 0.05], y_range: [0.3, 1.0], wander: 0.12, spin: 1.5, scale: 0.55}
+    labels:
+      - {text: "질소 N₂", at: [0.0, 0.7, -0.05], from: 1.0}
+
+  # 3. 공기의 조성
+  - duration: 6
+    visual: 하늘색 무대 공중에 파란 질소 분자 다수와 빨간 산소 분자 소수가 섞여 떠다님
+    caption: 사실 우리가 숨 쉬는 공기도 약 78%가 질소예요. 산소는 약 21%.
+    hud: "공기 = 질소 78% · 산소 21%"
+    world: {template: studio, seed: 3, params: {color: "#cfe3f0"}}
+    shot: front
+    crowds:
+      - {agent: molecule_n2, count: 39, area: [-1.0, -0.8, 1.0, 0.8], y_range: [0.2, 1.7], wander: 0.2, spin: 1.2, scale: 0.9}
+      - {agent: molecule_o2, count: 11, area: [-1.0, -0.8, 1.0, 0.8], y_range: [0.2, 1.7], wander: 0.2, spin: 1.2, scale: 0.9}
+
+  # 4. 산소가 문제
+  - duration: 6
+    visual: 커다란 감자칩 더미 주위를 빨간 산소 분자들이 빠르게 맴돌고 화면이 붉게 깜빡임
+    caption: 문제는 산소. 산소는 과자의 기름과 반응해 맛을 상하게 만들어요.
+    world: {template: studio, seed: 4, params: {color: "#f3d9d2"}}
+    shot: close
+    effects:
+      - tint: {color: "#c8384a", at: 2.5, length: 2.0}
+    props:
+      - {model: chip, at: [0, 0.0, 0], scale: 9, yaw: 10}
+      - {model: chip, at: [0.12, 0.05, 0.05], scale: 8, yaw: 50}
+      - {model: chip, at: [-0.1, 0.09, -0.04], scale: 8, yaw: -30}
+    crowds:
+      - {agent: molecule_o2, count: 14, area: [-0.6, -0.5, 0.6, 0.5], y_range: [0.15, 1.0], wander: 0.25, spin: 3, scale: 0.6}
+    labels:
+      - {text: "산소 O₂ → 기름과 반응", at: [0.0, 0.12, 0.0], from: 0.8}
+
+  # 5. 질소는 조용
+  - duration: 5
+    visual: 같은 감자칩 더미 옆에 파란 질소 분자들이 느릿느릿 조용히 떠 있음
+    caption: 반면 질소는 거의 반응하지 않는 기체. 과자 곁에 있어도 조용하죠.
+    world: {template: studio, seed: 5, params: {color: "#dfeaf6"}}
+    shot: close
+    props:
+      - {model: chip, at: [0, 0.0, 0], scale: 9, yaw: 10}
+      - {model: chip, at: [0.12, 0.05, 0.05], scale: 8, yaw: 50}
+      - {model: chip, at: [-0.1, 0.09, -0.04], scale: 8, yaw: -30}
+    crowds:
+      - {agent: molecule_n2, count: 14, area: [-0.6, -0.5, 0.6, 0.5], y_range: [0.15, 1.0], wander: 0.08, spin: 0.5, scale: 0.6}
+    labels:
+      - {text: "질소 N₂ = 반응 거의 없음", at: [0.0, 0.12, 0.0], from: 0.8, color: "#2f6fd6"}
+
+  # 6. 산소를 밀어내는 질소 충전
+  - duration: 5
+    visual: 봉지 단면에서 빨간 산소 분자는 위로 빠져나가고 파란 질소 분자가 옆에서 들어옴
+    caption: 그래서 공장에선 봉지 속 공기를 질소로 밀어내요. 남는 산소는 보통 3% 미만.
+    hud: {from: 21, to: 3, format: "남은 산소 {:.0f}%", ease: false}
+    world: {template: studio, seed: 6, params: {color: "#f1e6d2"}}
+    shot: {from: [0.0, 0.95, -3.1], to: [0.0, 0.95, -2.8], target: [0, 0.75, 0], fov: 50}
+    props:
+      - {model: snack_bag_cut, at: [0, 0, 0], scale: 3, color: "#d8443a"}
+    crowds:
+      - {agent: molecule_o2, count: 8, area: [-0.3, -0.1, 0.3, 0.05], y_range: [0.3, 1.0], velocity: [0, 0.32, 0], wrap: false, spin: 2, scale: 0.55}
+      - {agent: molecule_n2, count: 14, area: [-1.6, -0.1, -0.9, 0.05], y_range: [0.3, 1.0], velocity: [0.24, 0, 0], wrap: false, spin: 1.5, scale: 0.55}
+    labels:
+      - {text: "산소 밖으로", at: [0.0, 1.45, -0.05], from: 0.5, to: 3.0}
+      - {text: "질소 안으로", at: [-0.5, 0.65, -0.05], from: 1.0, color: "#2f6fd6"}
+
+  # 7. 신선함 유지
+  - duration: 5
+    visual: 식탁 위 과자 봉지 세 개를 천천히 돌아보는 카메라, 보관 일수가 올라감
+    caption: 덕분에 뜯기 전까지 두세 달은 바삭함과 맛이 유지돼요.
+    hud: {from: 0, to: 90, format: "보관 {:.0f}일째", ease: false}
+    world: {template: tabletop, seed: 1}
+    shot: orbit
+    props:
+      - {model: snack_bag, at: [0, 0.9, 0], scale: 1.8, yaw: 0, color: "#d8443a", color2: "#f2d34a"}
+      - {model: snack_bag, at: [-0.55, 0.9, 0.2], scale: 1.6, yaw: 25, color: "#2f6fd6", color2: "#ffffff"}
+      - {model: snack_bag, at: [0.55, 0.9, 0.15], scale: 1.6, yaw: -25, color: "#3aa45a", color2: "#ffe8a0"}
+
+  # 8. 두 번째 이유: 쿠션
+  - duration: 6
+    visual: 택배 상자 위에 올린 과자 봉지들이 흔들림
+    caption: 두 번째 이유는 쿠션. 트럭에 실려 흔들려도 과자가 가루가 되지 않게 막아줘요.
+    world: {template: studio, seed: 7, params: {color: "#e9e4da"}}
+    shot: wide
+    effects:
+      - shake: {at: 0.8, length: 2.0, amp: 5}
+      - shake: {at: 3.6, length: 1.6, amp: 4}
+    props:
+      - {model: parcel, at: [-0.5, 0, 0.2], scale: 3}
+      - {model: parcel, at: [0.65, 0, -0.1], scale: 2.6, yaw: 15}
+      - {model: snack_bag, at: [-0.5, 0.9, 0.2], scale: 2.2, yaw: 8, color: "#d8443a", color2: "#f2d34a"}
+      - {model: snack_bag, at: [0.62, 0.78, -0.1], scale: 2.0, yaw: -20, color: "#f2a33a", color2: "#ffffff"}
+    labels:
+      - {text: "공기 쿠션", at: [-0.5, 1.55, 0.2], from: 1.0}
+
+  # 9. 진공 포장이면?
+  - duration: 5
+    visual: 왼쪽엔 납작하게 눌린 파란 봉지와 부서진 과자, 오른쪽엔 빵빵한 빨간 봉지
+    caption: 공기를 다 빼면 어떨까요? 봉지가 쪼그라들어 과자가 부서지기 쉬워요.
+    world: {template: studio, seed: 8, params: {color: "#ece8f2"}}
+    shot: {from: [0, 1.5, -3.4], to: [0, 1.45, -3.1], target: [0, 0.45, 0], fov: 50}
+    props:
+      - {shape: box, size: [0.85, 0.08, 0.5], at: [-0.5, 0, 0], color: "#2f6fd6"}
+      - {model: chip, at: [-0.6, 0.08, -0.05], scale: 4, yaw: 20}
+      - {model: chip, at: [-0.35, 0.08, 0.08], scale: 3, yaw: 70}
+      - {model: snack_bag, at: [0.5, 0, 0], scale: 2.6, yaw: -10, color: "#d8443a", color2: "#f2d34a"}
+    crowds:
+      - {agent: chip, count: 30, area: [-0.95, -0.4, -0.05, 0.4], scale: [1.0, 2.0]}
+    labels:
+      - {text: "진공 포장", at: [-0.5, 0.1, 0], from: 0.5, color: "#2f6fd6"}
+      - {text: "질소 포장", at: [0.5, 1.1, 0], from: 1.0}
+
+  # 10. 안전하고 흔한 기체
+  - duration: 5
+    visual: 공원 사람들 머리 위 하늘에 질소·산소 분자들이 떠다님
+    caption: 질소는 우리가 늘 숨 쉬는 기체라 안전하고, 공기에서 얻으니 구하기도 쉬워요.
+    world: {template: field, seed: 6}
+    shot: forward
+    crowds:
+      - {agent: person, count: 700, area: field, facing: 0}
+      - {agent: molecule_n2, count: 110, area: [-25, 12, 25, 90], y_range: [4, 16], wander: 1.0, spin: 1, scale: 4}
+      - {agent: molecule_o2, count: 30, area: [-25, 12, 25, 90], y_range: [4, 16], wander: 1.0, spin: 1, scale: 4}
+
+  # 11. 질문으로 마무리
+  - duration: 5
+    visual: 식탁 위 과자 봉지와 그 앞에 흩어진 과자
+    title: 질소 빵빵 vs 과자 꽉꽉?
+    caption: 여러분은 빵빵한 질소 봉지와 꽉 찬 과자 봉지 중 뭐가 좋아요?
+    world: {template: tabletop, seed: 1}
+    shot: table
+    camera: {fade_out: 0.6}
+    props:
+      - {model: snack_bag, at: [0, 0.9, 0.1], scale: 2.0, yaw: 10, color: "#d8443a", color2: "#f2d34a"}
+    crowds:
+      - {agent: chip, count: 18, area: [-0.35, -0.35, 0.35, -0.05], y: 0.905, scale: [1.4, 2.2]}

@@ -29,9 +29,10 @@ def look_at(eye, target, up=(0, 1, 0)) -> np.ndarray:
     fwd /= np.linalg.norm(fwd) + 1e-9
     if abs(np.dot(fwd, up)) > 0.999:  # 바로 아래를 볼 때
         up = np.array([0, 0, 1], np.float32)
-    right = np.cross(fwd, up)
+    # 앞(+z)을 볼 때 +x가 화면 오른쪽에 오도록 오른쪽 벡터를 up×fwd로 잡는다 (좌우 직관 유지)
+    right = np.cross(up, fwd)
     right /= np.linalg.norm(right) + 1e-9
-    true_up = np.cross(right, fwd)
+    true_up = np.cross(fwd, right)
     m = np.eye(4, dtype=np.float32)
     m[0, :3], m[1, :3], m[2, :3] = right, true_up, -fwd
     m[:3, 3] = -m[:3, :3] @ eye

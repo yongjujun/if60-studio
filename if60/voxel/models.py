@@ -164,9 +164,208 @@ def swatter() -> Model:
     return m
 
 
+# ================================================================ 사물·과학 소품 (자유 주제용)
+# 크기는 '실제 크기에 가까운 미터'. 장면에서 scale로 키워서 쓴다 (예: 과자 봉지 scale 3 → 약 1m).
+
+def snack_bag(cut: bool = False) -> Model:
+    """과자 봉지 (가로 0.30, 높이 0.40, 두께 0.12). slot1=봉지 색, slot2=라벨 색.
+    cut=True면 앞면이 잘린 단면 — 안쪽(과자, 공기 분자)을 보여줄 때."""
+    m = Model("snack_bag_cut" if cut else "snack_bag",
+              ["#d8443a", "#2f6fd6", "#f2a33a", "#3aa45a", "#8a3ab8"], ["#f2d34a", "#ffffff", "#ffe8a0"])
+    silver = "#c9cbd0"
+    if cut:   # 단면: 뒷판 + 옆판 + 바닥 + 위 실링
+        m.part((-0.15, 0.03, 0.04), (0.15, 0.37, 0.06), 1)
+        m.part((-0.15, 0.03, -0.06), (-0.13, 0.37, 0.06), 1)
+        m.part((0.13, 0.03, -0.06), (0.15, 0.37, 0.06), 1)
+        m.part((-0.15, 0.03, -0.06), (0.15, 0.05, 0.06), 1)
+        m.part((-0.16, 0.0, -0.01), (0.16, 0.03, 0.01), silver)
+        m.part((-0.16, 0.37, -0.01), (0.16, 0.40, 0.01), silver)
+        m.part((-0.13, 0.05, -0.04), (0.13, 0.09, 0.04), "#e8b84a", "stone")   # 바닥의 과자 더미
+        return m
+    m.part((-0.15, 0.03, -0.05), (0.15, 0.37, 0.05), 1)          # 몸통
+    m.part((-0.13, 0.06, -0.06), (0.13, 0.34, 0.06), 1)          # 빵빵하게 부푼 가운데
+    m.part((-0.10, 0.10, -0.065), (0.10, 0.30, 0.065), 1)
+    m.part((-0.09, 0.17, -0.068), (0.09, 0.25, -0.064), 2)       # 앞 라벨
+    m.part((-0.05, 0.12, -0.068), (0.05, 0.155, -0.064), "#e8b84a")   # 과자 그림
+    m.part((-0.16, 0.0, -0.01), (0.16, 0.03, 0.01), silver)      # 아래·위 실링
+    m.part((-0.16, 0.37, -0.01), (0.16, 0.40, 0.01), silver)
+    return m
+
+
+def chip() -> Model:
+    """감자칩 한 조각 (지름 약 5cm, 살짝 휜 모양)"""
+    m = Model("chip", ["#e8b84a", "#f0c860", "#d9a83a"], ["#c8902a"])
+    m.part((-0.025, 0.004, -0.025), (0.025, 0.008, 0.025), 1, "stone")
+    m.part((-0.03, 0.0, -0.012), (-0.022, 0.006, 0.012), 1)
+    m.part((0.022, 0.0, -0.012), (0.03, 0.006, 0.012), 1)
+    m.part((-0.01, 0.006, -0.01), (0.008, 0.009, 0.008), 2)
+    return m
+
+
+def _molecule(name, atoms, palette1=("#4a7be0",), palette2=("#ffffff",)):
+    m = Model(name, list(palette1), list(palette2))
+    for (x, y, z), r, color in atoms:
+        m.sphere((x, y + 0.12, z), r, color, voxel=r / 4.0)
+    return m
+
+
+def molecule_n2() -> Model:
+    """질소 분자 N₂ (파란 원자 2개, 한 변 약 0.3 — 실제 크기가 아니라 '보이게' 키운 모형)"""
+    return _molecule("molecule_n2", [((-0.065, 0, 0), 0.09, 1), ((0.065, 0, 0), 0.09, 1)], ("#4a7be0",))
+
+
+def molecule_o2() -> Model:
+    """산소 분자 O₂ (빨간 원자 2개)"""
+    return _molecule("molecule_o2", [((-0.065, 0, 0), 0.09, 1), ((0.065, 0, 0), 0.09, 1)], ("#e0473f",))
+
+
+def molecule_co2() -> Model:
+    """이산화탄소 CO₂ (검은 탄소 + 빨간 산소 2개)"""
+    return _molecule("molecule_co2", [((0, 0, 0), 0.085, "#2e2e33"), ((-0.15, 0, 0), 0.08, "#e0473f"),
+                                      ((0.15, 0, 0), 0.08, "#e0473f")])
+
+
+def molecule_h2o() -> Model:
+    """물 분자 H₂O (빨간 산소 + 흰 수소 2개)"""
+    return _molecule("molecule_h2o", [((0, 0, 0), 0.09, "#e0473f"), ((-0.09, -0.06, 0), 0.06, "#f2f2f2"),
+                                      ((0.09, -0.06, 0), 0.06, "#f2f2f2")])
+
+
+def bottle() -> Model:
+    m = Model("bottle", ["#7fc4e8", "#5aa86a", "#c8e0f0", "#8a5a3a"], ["#2f6fd6", "#e8e8e8", "#c8384a"])
+    m.cylinder((0, 0, 0), 0.04, 0.17, 1, voxel=0.01)
+    m.cylinder((0, 0.17, 0), 0.025, 0.04, 1, voxel=0.008)
+    m.cylinder((0, 0.21, 0), 0.02, 0.02, 2, voxel=0.008)
+    m.part((-0.041, 0.06, -0.041), (0.041, 0.11, 0.041), 2)        # 라벨
+    return m
+
+
+def cup() -> Model:
+    m = Model("cup", ["#f2f2f2", "#e07b39", "#2f6fd6", "#3aa45a"], ["#6b4a2e", "#c8e0f0"])
+    m.cylinder((0, 0, 0), 0.045, 0.10, 1, voxel=0.01)
+    m.part((-0.035, 0.085, -0.035), (0.035, 0.1, 0.035), 2)        # 안의 음료
+    m.part((0.045, 0.03, -0.008), (0.065, 0.08, 0.008), 1)         # 손잡이
+    return m
+
+
+def phone() -> Model:
+    m = Model("phone", ["#1e1e22", "#e8e8e8", "#3b3a8c"], ["#7fd3ff"])
+    m.part((-0.036, 0.0, -0.075), (0.036, 0.008, 0.075), 1)
+    m.part((-0.032, 0.008, -0.068), (0.032, 0.009, 0.068), 2, "glow")
+    return m
+
+
+def book() -> Model:
+    m = Model("book", ["#c8384a", "#2f6fd6", "#3aa45a", "#8a3ab8"], ["#f2ecdc"])
+    m.part((-0.08, 0.0, -0.11), (0.08, 0.004, 0.11), 1)
+    m.part((-0.078, 0.004, -0.106), (0.076, 0.026, 0.106), 2)
+    m.part((-0.08, 0.026, -0.11), (0.08, 0.03, 0.11), 1)
+    m.part((-0.08, 0.0, -0.11), (-0.074, 0.03, 0.11), 1)
+    return m
+
+
+def parcel() -> Model:
+    """택배 상자 (0.4 x 0.3 x 0.3)"""
+    m = Model("parcel", ["#c9945a", "#b8854a"], ["#e8d8a8"])
+    m.part((-0.2, 0.0, -0.15), (0.2, 0.3, 0.15), 1, "stone")
+    m.part((-0.2, 0.3, -0.03), (0.2, 0.305, 0.03), 2)
+    m.part((-0.03, 0.0, -0.155), (0.03, 0.3, -0.15), 2)
+    return m
+
+
+def rocket() -> Model:
+    """로켓 (높이 약 1.2)"""
+    m = Model("rocket", ["#e8e8ec", "#f2f2f2"], ["#c8384a", "#2f6fd6"])
+    m.cylinder((0, 0.15, 0), 0.12, 0.75, 1, voxel=0.03)
+    for k, (r, h) in enumerate(((0.10, 0.08), (0.08, 0.07), (0.055, 0.07), (0.03, 0.06))):
+        m.cylinder((0, 0.90 + k * 0.07, 0), r, h, 2 if k == 0 else 1, voxel=0.02)
+    m.cylinder((0, 0.55, 0.11), 0.04, 0.02, "#7fd3ff", voxel=0.01, axis="z")
+    for sx, sz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        m.part((sx * 0.12 - (0.01 if sx else 0.12 * 0 + 0.01), 0.0, sz * 0.12 - 0.01) if sx else (-0.01, 0.0, sz * 0.12 - 0.01),
+               (sx * 0.22 + 0.01, 0.3, sz * 0.12 + 0.01) if sx else (0.01, 0.3, sz * 0.22 + 0.01), 2)
+    m.cylinder((0, 0.05, 0), 0.08, 0.1, "#5a5a60", voxel=0.02)
+    return m
+
+
+def coin() -> Model:
+    m = Model("coin", ["#e0b84a", "#c9c9cf", "#c97a3a"], ["#b8902a"])
+    m.cylinder((0, 0, 0), 0.012, 0.0025, 1, voxel=0.0025, axis="z")
+    return m
+
+
+def lightbulb() -> Model:
+    m = Model("lightbulb", ["#fff2b0"], ["#9a9aa0"])
+    m.cylinder((0, 0, 0), 0.016, 0.03, 2, voxel=0.004)
+    m.sphere((0, 0.065, 0), 0.04, 1, voxel=0.008, mat="glow")
+    return m
+
+
+def flame() -> Model:
+    m = Model("flame", ["#ff8a2a"], ["#ffd84a"])
+    m.part((-0.05, 0.0, -0.05), (0.05, 0.06, 0.05), 1, "glow")
+    m.part((-0.035, 0.06, -0.035), (0.035, 0.12, 0.035), 1, "glow")
+    m.part((-0.02, 0.12, -0.02), (0.02, 0.17, 0.02), 2, "glow")
+    m.part((-0.03, 0.01, -0.051), (0.03, 0.07, -0.05), 2, "glow")
+    return m
+
+
+def cloud() -> Model:
+    m = Model("cloud", ["#f4f6fa", "#dfe4ec"], ["#c8ced8"])
+    for (x, y, z), r in (((0, 0.5, 0), 0.5), ((-0.55, 0.35, 0), 0.38), ((0.55, 0.35, 0.05), 0.4),
+                         ((0.2, 0.75, 0), 0.35)):
+        m.sphere((x, y, z), r, 1, voxel=0.12)
+    return m
+
+
+def ball() -> Model:
+    m = Model("ball", ["#e0473f", "#2f6fd6", "#f2c94c", "#3aa45a", "#f2f2f2"], ["#ffffff"])
+    m.sphere((0, 0.11, 0), 0.11, 1, voxel=0.022)
+    return m
+
+
+def germ() -> Model:
+    """세균·바이러스 (지름 약 0.3 — 확대 모형)"""
+    m = Model("germ", ["#6abf4a", "#8a4ab8", "#e07b39"], ["#3f7d2a", "#5a2a7a"])
+    m.sphere((0, 0.15, 0), 0.12, 1, voxel=0.024)
+    for d in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1), (0.7, 0.7, 0), (-0.7, 0.7, 0),
+              (0, 0.7, 0.7), (0, 0.7, -0.7), (0.7, -0.7, 0), (-0.7, -0.7, 0)):
+        c = [0.15 * d[0], 0.15 + 0.15 * d[1], 0.15 * d[2]]
+        m.part((c[0] - 0.018, c[1] - 0.018, c[2] - 0.018), (c[0] + 0.018, c[1] + 0.018, c[2] + 0.018), 2)
+    return m
+
+
+def table() -> Model:
+    """식탁 (1.6 x 0.9 높이, 0.9 깊이)"""
+    m = Model("table", ["#8a5a3a", "#a8784a", "#e8e4dc"], ["#6b4228"])
+    m.part((-0.8, 0.86, -0.45), (0.8, 0.9, 0.45), 1, "stone")
+    for x in (-0.74, 0.68):
+        for z in (-0.40, 0.34):
+            m.part((x, 0.0, z), (x + 0.06, 0.86, z + 0.06), 2)
+    return m
+
+
 MODELS = {"person": person, "cat": cat, "dog": dog, "car": car, "train": train_car,
           "tree": tree, "astronaut": astronaut, "bed": bed,
-          "fly": fly, "swatter": swatter}
+          "fly": fly, "swatter": swatter,
+          "snack_bag": snack_bag, "snack_bag_cut": lambda: snack_bag(cut=True), "chip": chip,
+          "molecule_n2": molecule_n2, "molecule_o2": molecule_o2, "molecule_co2": molecule_co2,
+          "molecule_h2o": molecule_h2o, "bottle": bottle, "cup": cup, "phone": phone, "book": book,
+          "parcel": parcel, "rocket": rocket, "coin": coin, "lightbulb": lightbulb, "flame": flame,
+          "cloud": cloud, "ball": ball, "germ": germ, "table": table}
+
+# 대본 작성 AI에게 보여줄 설명 (모델 이름 → 무엇인지, 기본 크기)
+DESCRIPTIONS = {
+    "person": "사람 (키 1.75m)", "cat": "고양이 (0.5m)", "dog": "강아지 (0.7m)", "car": "자동차 (4.2m)",
+    "train": "지하철 한 량 (18m)", "tree": "나무 (5m)", "astronaut": "우주비행사 (1.8m)", "bed": "침대",
+    "fly": "파리 (0.45 — scale 0.2 권장)", "swatter": "파리채", "snack_bag": "과자 봉지 (0.3x0.4m, 빵빵함)",
+    "snack_bag_cut": "과자 봉지 단면 (앞면이 잘려 안이 보임 — 내부 분자·과자 보여줄 때)",
+    "chip": "감자칩 한 조각 (5cm)", "molecule_n2": "질소 분자 N₂ (파랑, 확대 모형 0.3m)",
+    "molecule_o2": "산소 분자 O₂ (빨강)", "molecule_co2": "이산화탄소 CO₂", "molecule_h2o": "물 분자 H₂O",
+    "bottle": "병 (0.23m)", "cup": "컵 (0.1m)", "phone": "스마트폰 (0.15m)", "book": "책 (0.22m)",
+    "parcel": "택배 상자 (0.4m)", "rocket": "로켓 모형 (1.2m)", "coin": "동전 (2.4cm, 세워진 모양)",
+    "lightbulb": "전구 (빛남)", "flame": "불꽃 (빛남)", "cloud": "구름 (1.5m)", "ball": "공 (0.22m)",
+    "germ": "세균·바이러스 확대 모형 (0.3m)", "table": "식탁 (윗면 높이 0.9m)",
+}
 
 
 def get(name: str) -> Model:

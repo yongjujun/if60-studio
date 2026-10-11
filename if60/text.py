@@ -55,11 +55,19 @@ def wrap(text: str, font: ImageFont.FreeTypeFont, max_w: int) -> list[str]:
     return lines
 
 
+_SUBSCRIPTS = str.maketrans("₀₁₂₃₄₅₆₇₈₉⁰¹²³⁴⁵⁶⁷⁸⁹", "01234567890123456789")
+
+
+def safe_text(s: str) -> str:
+    """대부분의 한글 폰트에 없는 아래·위첨자 숫자(N₂, m²)를 일반 숫자로 바꿔 □가 안 뜨게 한다."""
+    return str(s).translate(_SUBSCRIPTS)
+
+
 def chunk_caption(text: str, max_chars: int = 11) -> list[str]:
     """내레이션 자막을 2~5단어 덩어리로 자른다 (쇼츠에서 가장 읽기 쉬운 단위).
     문장부호(. ! ? ,) 뒤에서는 항상 끊는다."""
     chunks, cur = [], ""
-    for word in text.replace("\n", " ").split():
+    for word in safe_text(text).replace("\n", " ").split():
         trial = f"{cur} {word}".strip()
         if cur and len(trial) > max_chars:
             chunks.append(cur)
@@ -82,6 +90,7 @@ def render_badge(canvas: tuple[int, int], label: str, *, font_path: str, size: i
     img = Image.new("RGBA", canvas, (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     font = _font(font_path, size)
+    label = safe_text(label)
     tw = int(font.getlength(label))
     pad = max(3, size // 4)
     x1, y0 = int(w * x), int(h * y)
@@ -111,6 +120,7 @@ def render_text(canvas: tuple[int, int], text: str, *, font_path: str, size: int
     img = Image.new("RGBA", canvas, (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     font = _font(font_path, size)
+    text = safe_text(text)
     lines = wrap(text, font, int(w * 0.86))
     lh = int(size * 1.35)
     total_h = lh * len(lines)
