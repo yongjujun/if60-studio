@@ -84,3 +84,16 @@ def test_crowd_layer_animates_and_scrolls():
     assert a.shape == (200, 120, 4)
     assert (a[..., 3] == 255).sum() > 500
     assert not np.array_equal(a, b)
+
+
+def test_effects_accept_many_formats():
+    from if60.render import normalize_effects
+    got = normalize_effects([
+        "flash",
+        {"shake": {"at": 1, "amp": 4}},
+        {"shake": {"at": 2}, "flash": {"at": 3}},        # 한 항목에 여러 효과 (실제로 오류 났던 형식)
+        {"type": "tint", "color": "#ff0000"},
+        {"sparkle": {}},                                   # 모르는 효과는 건너뜀
+    ])
+    assert [n for n, _ in got] == ["flash", "shake", "shake", "flash", "tint"]
+    assert got[1][1] == {"at": 1, "amp": 4} and got[4][1] == {"color": "#ff0000"}

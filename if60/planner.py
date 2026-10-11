@@ -282,12 +282,30 @@ def choose_backend(interactive: bool = True) -> str:
         "  [별도 과금] API 키 저장:  python -m if60 key")
 
 
+_TEXT_KEY = re.compile(r"^(\s*(?:-\s+)?(?:caption|title|hud):\s+)(.+)$")
+
+
+def quote_text_values(ytxt: str) -> str:
+    """'caption: 연구: 60일' 처럼 값 안에 콜론·#이 있으면 YAML이 깨지므로 따옴표로 감싼다."""
+    out = []
+    for line in ytxt.splitlines():
+        m = _TEXT_KEY.match(line)
+        if m:
+            val = m.group(2).rstrip()
+            if val[0] not in "\"'{[|>&*!" and (": " in val or " #" in val or val.endswith(":")):
+                line = m.group(1) + '"' + val.replace("\\", "\\\\").replace('"', '\\"') + '"'
+        out.append(line)
+    return "\n".join(out) + "\n"
+
+
 def extract_yaml(text: str) -> str:
     blocks = re.findall(r"```(?:yaml|yml)?\s*\n(.*?)```", text, re.S)
     if blocks:
-        return max(blocks, key=len).strip() + "\n"
-    i = text.find("title:")
-    return (text[i:] if i >= 0 else text).strip() + "\n"
+        body = max(blocks, key=len).strip()
+    else:
+        i = text.find("title:")
+        body = (text[i:] if i >= 0 else text).strip()
+    return quote_text_values(body)
 
 
 # ------------------------------------------------------------------ 검증
@@ -325,6 +343,15 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
                         errs.append(f"장면 {i}: 카메라에 '{k}' 필요")
         else:
             errs.append(f"장면 {i}: shot 형식 오류")
+        effs = s.get("effects") or []
+        for e in (effs if isinstance(effs, list) else [effs]):
+            names = ([e] if isinstance(e, str) else
+                     [e.get("type") or e.get("name") or e.get("effect")] if isinstance(e, dict) and
+                     (e.get("type") or e.get("name") or e.get("effect")) else
+                     list(e) if isinstance(e, dict) else [str(e)])
+            for n in names:
+                if n not in ("shake", "flash", "tint"):
+                    errs.append(f"장면 {i}: 효과 '{n}' 지원 안 함 (shake/flash/tint만 가능, 형식: - shake: {{at: 1, length: 1.2, amp: 4}})")
         for j, c in enumerate(s.get("crowds") or [], 1):
             if not isinstance(c, dict):
                 errs.append(f"장면 {i} 군중 {j}: 형식 오류"); continue
@@ -346,6 +373,45 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
                 errs.append(f"장면 {i} 군중 {j}: count가 숫자가 아님")
     if target_len and not (target_len * 0.75 <= total <= target_len * 1.3):
         errs.append(f"전체 길이 {total:.0f}초 — 목표 {target_len:.0f}초에 맞춰 장면 길이를 조정")
+    return errs
+
+
+def smoke_test(ytxt: str) -> list[str]:
+    """장면마다 아주 작은 프레임을 실제로 그려 본다. 렌더링 중 날 오류를 미리 잡아 자동 수정 단계로 보낸다."""
+    from . import render as R
+    errs: list[str] = []
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "check.yaml"
+        path.write_text(ytxt, encoding="utf-8")
+        try:
+            spec, style, scenes = R.load_project(str(path))
+            font = R.text.find_font(style.font)
+        except Exception as e:
+            return [f"장면 파일을 불러오다 오류: {type(e).__name__}: {e}"]
+        vr = None
+        try:
+            from .voxel.renderer import VoxelRenderer
+            vr = VoxelRenderer(36, 64, samples=0, shadow_size=256)
+        except Exception:
+            vr = None   # OpenGL을 못 쓰는 환경이면 3D 확인은 건너뜀
+        for i, sc in enumerate(scenes, 1):
+            try:
+                for t in (0.0, sc.duration * 0.5):
+                    R._text_layer(sc, t, style, font)
+                    R.hud_label(sc.hud, t, sc.duration)
+                if sc.world and vr is not None:
+                    prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot)
+                    cam = sc.shot if isinstance(sc.shot, dict) else prep.shots.get(sc.shot or next(iter(prep.shots)))
+                    if cam is None:
+                        raise ValueError(f"샷 '{sc.shot}' 없음")
+                    R.render_3d_frame(vr, prep, cam, sc, sc.duration * 0.5)
+                    vr.release(prep)
+                elif not sc.world:
+                    R.compose_frame(sc, 0.0, style)
+            except Exception as e:
+                errs.append(f"장면 {i} 렌더링 시험 중 오류: {type(e).__name__}: {e}")
+        if vr is not None:
+            vr.close()
     return errs
 
 
@@ -376,6 +442,9 @@ def plan(topic: str, length: int = 60, *, interactive: bool = True, web_search: 
             errs = validate(spec, cat, length)
         except yaml.YAMLError as e:
             spec, errs = None, [f"YAML 문법 오류: {e}"]
+        if not errs:
+            log("  · 장면별 시험 렌더링으로 오류 확인 중")
+            errs = smoke_test(ytxt)
         if not errs:
             break
         log(f"▶ 장면 파일 자동 수정 중 ({attempt + 1}/3): " + "; ".join(errs[:3]) + (" …" if len(errs) > 3 else ""))

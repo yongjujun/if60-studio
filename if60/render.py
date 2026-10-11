@@ -200,11 +200,42 @@ def _ease(x: float) -> float:
     return 0.5 - 0.5 * math.cos(math.pi * min(max(x, 0.0), 1.0))
 
 
+EFFECTS = ("shake", "flash", "tint")
+
+
+def normalize_effects(raw) -> list[tuple[str, dict]]:
+    """효과 목록을 (이름, 옵션) 쌍으로 통일한다. AI가 쓰는 여러 형식을 모두 받아준다.
+      - "flash"
+      - {shake: {at: 1, amp: 4}}
+      - {shake: {...}, flash: {...}}           (한 항목에 여러 효과)
+      - {type: shake, at: 1, amp: 4}           (type/name/effect 키)
+    알 수 없는 효과는 경고만 하고 건너뛴다."""
+    out: list[tuple[str, dict]] = []
+    items = raw if isinstance(raw, list) else ([raw] if raw else [])
+    for e in items:
+        if isinstance(e, (tuple, list)) and len(e) == 2 and isinstance(e[0], str):
+            out.append((e[0], dict(e[1] or {})))
+        elif isinstance(e, str):
+            out.append((e, {}))
+        elif isinstance(e, dict):
+            kind = e.get("type") or e.get("name") or e.get("effect")
+            if isinstance(kind, str):
+                out.append((kind, {k: v for k, v in e.items() if k not in ("type", "name", "effect")}))
+                continue
+            for k, v in e.items():
+                out.append((str(k), dict(v) if isinstance(v, dict) else {}))
+    known = [(n, p) for n, p in out if n in EFFECTS]
+    for n, _ in out:
+        if n not in EFFECTS:
+            print(f"  ⚠ 알 수 없는 효과 '{n}'는 건너뜀 (가능: {', '.join(EFFECTS)})")
+    return known
+
+
 def _effect_params(e) -> tuple[str, dict]:
-    if isinstance(e, str):
-        return e, {}
-    (name, params), = e.items()
-    return name, params or {}
+    if isinstance(e, tuple):
+        return e
+    norm = normalize_effects([e])
+    return norm[0] if norm else ("none", {})
 
 
 def compose_frame(scene: Scene, t: float, style: Style) -> tuple[np.ndarray, list[dict]]:
@@ -283,7 +314,7 @@ def load_project(path: str, style_override: str | None = None,
         scenes.append(Scene(
             duration=float(s["duration"]) * ratio, layers=layers, caption=s.get("caption", ""),
             title=s.get("title", ""), camera=s.get("camera", {}) or {},
-            effects=s.get("effects", []) or [], typewriter=bool(s.get("typewriter", False)),
+            effects=normalize_effects(s.get("effects")), typewriter=bool(s.get("typewriter", False)),
             caption_mode=s.get("caption_mode", spec.get("caption_mode", "chunk")),
             captions=s.get("captions"), hud=s.get("hud"),
             world=s.get("world"), crowds=s.get("crowds", []) or [], shot=s.get("shot"),

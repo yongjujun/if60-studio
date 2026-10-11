@@ -156,3 +156,27 @@ def test_no_backend_gives_clear_instructions(tmp_path, monkeypatch):
     monkeypatch.delenv("IF60_BACKEND", raising=False)
     with pytest.raises(RuntimeError, match="claude.ai/install.sh"):
         planner.choose_backend(interactive=False)
+
+
+def test_colon_inside_caption_is_quoted():
+    raw = "```yaml\ntitle: 질소: 왜?\nscenes:\n  - duration: 5\n    caption: 한 연구: 질소 포장 60일, 일반 45일.\n    world: {template: room}\n```"
+    spec = yaml.safe_load(planner.extract_yaml(raw))
+    assert spec["title"] == "질소: 왜?"
+    assert spec["scenes"][0]["caption"] == "한 연구: 질소 포장 60일, 일반 45일."
+
+
+def test_validate_flags_unknown_effects(cat):
+    spec = yaml.safe_load(planner.extract_yaml(GOOD))
+    spec["scenes"][0]["effects"] = [{"zoom": {"at": 1}}]
+    assert any("zoom" in e for e in planner.validate(spec, cat, 60))
+    spec["scenes"][0]["effects"] = [{"shake": {"at": 1}, "flash": {"at": 2}}]
+    assert planner.validate(spec, cat, 60) == []
+
+
+def test_smoke_test_catches_render_errors():
+    ok = planner.extract_yaml(GOOD)
+    assert planner.smoke_test(ok) == []
+    broken = ok.replace("hud:", "x:")  # 무해한 변경
+    bad = ok.replace("    caption: 첫 장면이에요.", "    caption: 첫 장면이에요.\n    hud: {from: 시작, to: 끝}")
+    errs = planner.smoke_test(bad)
+    assert errs and "장면 1" in errs[0]

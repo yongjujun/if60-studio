@@ -105,7 +105,14 @@ def make(a) -> int:
     print(f"  · 제목: {spec.get('title', topic)}  ({len(spec['scenes'])}장면)")
     print("\n▶ 2/3 영상 렌더링 중")
     out = Path("out") / f"{scene_path.stem}{'_preview' if a.preview else ''}.mp4"
-    render(str(scene_path), str(out), preview=a.preview)
+    try:
+        render(str(scene_path), str(out), preview=a.preview)
+    except Exception as e:
+        rel = scene_path.relative_to(Path.cwd()) if scene_path.is_relative_to(Path.cwd()) else scene_path
+        print(f"\n✖ 렌더링 중 오류: {type(e).__name__}: {e}")
+        print(f"   대본(장면 파일)은 저장돼 있어요: {rel}")
+        print(f"   문제를 고친 뒤 다시 조사할 필요 없이:  python -m if60 render {rel}")
+        raise
     print("\n▶ 3/3 확인할 사실 (올리기 전에 꼭 확인!)")
     for f in spec.get("facts_to_check") or []:
         print(f"  - {f}")
