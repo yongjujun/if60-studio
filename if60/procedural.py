@@ -266,9 +266,101 @@ def paste(dst: RGBA, src: RGBA, ox: int, oy: int) -> None:
     d[m] = s[m]
 
 
+# ---------------------------------------------------------------- crowd
+# 군중용 미니 스프라이트 (원작 디자인). 문자 → 색 슬롯: B=몸/옷, D=어두운 색, H=머리, F=얼굴, P=바지, E=눈
+_CROWD_SPRITES = {
+    "person": ([".HH.", ".FF.", "BBBB", "BBBB", ".BB.", ".PP.", ".PP.", ".P.P"], 1),
+    "cat": (["B...B.", "BB..BB", "BBBBB.", "BEBEB.", "BBBBBB", ".B..B."], 1),
+    "dog": (["D.....", "DBBB..", "BEBBBB", "BBBBBB", ".BBBB.", ".B..B."], 1),
+    "car": (["..DDDD..", ".DFFFFD.", "BBBBBBBB", "BBBBBBBB", ".D....D."], 1),
+}
+_CROWD_COLORS = {
+    "person": {"B": ["#c8384a", "#2f6fd6", "#4fa05a", "#ffe07a", "#e8f4ff", "#7a2448", "#ff9f43"],
+               "H": ["#1a1414", "#3a2418", "#5a3b2e"], "F": ["#f2c9a0", "#d9a77a"],
+               "P": ["#221c47", "#3b3a8c", "#2a2a2a"]},
+    "cat": {"B": ["#ff9f43", "#f2f2f2", "#2a2a2a", "#8a8aa8", "#c98a4a", "#ffe0b0"], "E": ["#123018"]},
+    "dog": {"B": ["#c98a4a", "#f2f2f2", "#5a3b2e", "#e0c080", "#2a2a2a"], "D": ["#3a2418"],
+            "E": ["#101010"]},
+    "car": {"B": ["#c8384a", "#2f6fd6", "#e8f4ff", "#2a2a2a", "#ffe07a", "#8a8aa8"],
+            "D": ["#141414"], "F": ["#9fd3ff"]},
+}
+
+
+def _crowd_sprite(kind: str, rng: np.random.Generator) -> RGBA:
+    rows, _ = _CROWD_SPRITES[kind]
+    cols = {k: _c(rng.choice(v)) for k, v in _CROWD_COLORS[kind].items()}
+    spr = _rgba(len(rows), len(rows[0]))
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if ch in cols:
+                spr[y, x] = (*cols[ch], 255)
+    if rng.random() < 0.5:
+        spr = spr[:, ::-1]  # 좌우 반전으로 다양성
+    return spr
+
+
+def crowd(w: int, h: int, agent: str = "cat", count: int = 800, top: float = 0.55,
+          bottom: float = 1.0, near_scale: int = 2, vx: float = 0.0, bob: float = 0.35,
+          mix: dict | None = None, grid: float = 0.0, seed: int = 7, **_) -> Layer:
+    """수백~수천 개의 미니 스프라이트로 군중을 만든다 ('시뮬레이션' 느낌의 핵심).
+
+    agent: person | cat | dog | car (또는 mix: {cat: 0.8, person: 0.2})
+    top/bottom: 군중이 차지할 세로 범위(비율). 위쪽은 멀리(작게), 아래쪽은 가까이(크게).
+    vx: 군중 전체가 흘러가는 속도(px/초, +는 오른쪽). bob: 들썩이는 개체 비율.
+    grid: 0~1. 클수록 줄 맞춰 선 대열 (시험장, 행진 등).
+
+    성능: 개체를 매 프레임 그리지 않고 들썩임 4단계를 미리 렌더링해 두고 순환시킨다.
+    """
+    rng = np.random.default_rng(seed)
+    kinds = list((mix or {agent: 1.0}).items())
+    names = [k for k, _ in kinds]
+    probs = np.array([p for _, p in kinds], float)
+    probs /= probs.sum()
+    y0, y1 = int(h * top), int(h * bottom)
+    agents = []
+    for i in range(count):
+        if grid > 0:
+            cols_n = max(1, int(math.sqrt(count * w / max(1, (y1 - y0)))))
+            gx, gy = i % cols_n, i // cols_n
+            rows_n = math.ceil(count / cols_n)
+            x = (gx + 0.5) / cols_n * w + rng.normal(0, (1 - grid) * 4)
+            y = y0 + (gy + 0.5) / rows_n * (y1 - y0) + rng.normal(0, (1 - grid) * 3)
+        else:
+            # 원근: 아래쪽일수록 밀도가 낮고 크게 → y를 제곱근 분포로
+            y = y0 + (y1 - y0) * rng.random() ** 0.8
+            x = rng.random() * w
+        depth = (y - y0) / max(1, y1 - y0)
+        scale = near_scale if depth > 0.55 else 1
+        spr = _crowd_sprite(rng.choice(names, p=probs), rng)
+        if scale > 1:
+            spr = spr.repeat(scale, 0).repeat(scale, 1)
+        phase = int(rng.integers(0, 4)) if rng.random() < bob else -1
+        agents.append((y, int(x), spr, phase))
+    agents.sort(key=lambda a: a[0])  # 먼 개체부터 그려서 가까운 개체가 위로
+
+    variants = []
+    for v in range(4):
+        img = _rgba(h, w)
+        for y, x, spr, phase in agents:
+            lift = 1 if (phase >= 0 and (v + phase) % 4 < 2) else 0
+            yy = int(y) - spr.shape[0] - lift
+            paste(img, spr, x - spr.shape[1] // 2, yy)
+            if vx:  # 가로로 흐를 때 이음매가 생기지 않게 양쪽에도 그림
+                paste(img, spr, x - spr.shape[1] // 2 - w, yy)
+                paste(img, spr, x - spr.shape[1] // 2 + w, yy)
+        variants.append(img)
+
+    def animate(_: RGBA, t: float) -> RGBA:
+        img = variants[int(t * 6) % 4]
+        return np.roll(img, int(round(vx * t)), axis=1) if vx else img
+
+    return Layer(variants[0], speed=1.0, animator=animate)
+
+
 KINDS = {
     "sky": sky, "starfield": starfield, "planet": planet, "sun": sun,
     "mountains": mountains, "ground": ground, "ocean": ocean, "mascot": mascot,
+    "crowd": crowd,
 }
 
 

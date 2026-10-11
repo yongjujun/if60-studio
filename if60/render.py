@@ -138,6 +138,56 @@ class Scene:
     camera: dict = field(default_factory=dict)
     effects: list = field(default_factory=list)
     typewriter: bool = False
+    caption_mode: str = "chunk"           # chunk | full | typewriter
+    captions: list[str] | None = None     # 직접 나눈 자막 덩어리 (있으면 caption보다 우선)
+    hud: object = None                    # "+1년" 같은 고정 문구 또는 {from, to, format, step}
+
+
+# ------------------------------------------------------------------ HUD
+def _parse_clock(s) -> int | None:
+    if isinstance(s, str) and ":" in s:
+        h, m = s.split(":")
+        return int(h) * 60 + int(m)
+    return None
+
+
+def hud_label(hud, t: float, duration: float) -> str | None:
+    """시계('05:00'→'06:30')나 숫자(1670→0) 카운터를 장면 진행에 맞춰 보간한다."""
+    if hud is None or hud == "":
+        return None
+    if not isinstance(hud, dict):
+        return str(hud)
+    a, b = hud.get("from"), hud.get("to", hud.get("from"))
+    p = min(1.0, max(0.0, t / max(duration, 1e-6)))
+    if hud.get("ease", True):
+        p = _ease(p)
+    ca, cb = _parse_clock(a), _parse_clock(b)
+    if ca is not None and cb is not None:
+        if cb < ca:  # 자정을 넘어가는 경우 (23:30 → 00:30)
+            cb += 24 * 60
+        step = int(hud.get("step", 10))  # 시계는 10분 단위로 '딸깍' 넘어가게
+        m = int(round((ca + (cb - ca) * p) / step) * step) % (24 * 60)
+        return hud.get("format", "{}").format(f"{m // 60:02d}:{m % 60:02d}")
+    v = float(a) + (float(b) - float(a)) * p
+    if "step" in hud:
+        v = round(v / float(hud["step"])) * float(hud["step"])
+    return hud.get("format", "{:,.0f}").format(v)
+
+
+def caption_at(scene: "Scene", t: float) -> str:
+    """현재 시각에 보여줄 자막. chunk 모드는 글자 수에 비례해 덩어리를 순서대로 보여준다."""
+    if scene.captions:
+        chunks = scene.captions
+    elif scene.caption_mode == "chunk" and scene.caption and not scene.typewriter:
+        chunks = text.chunk_caption(scene.caption)
+    else:
+        return scene.caption
+    lead, tail = 0.15, 0.25
+    span = max(0.1, scene.duration - lead - tail)
+    weights = np.array([len(c) + 3 for c in chunks], float)
+    edges = lead + np.cumsum(weights) / weights.sum() * span
+    i = int(np.searchsorted(edges, t, side="right"))
+    return chunks[min(i, len(chunks) - 1)]
 
 
 def _ease(x: float) -> float:
@@ -226,7 +276,9 @@ def load_project(path: str, style_override: str | None = None,
         scenes.append(Scene(
             duration=float(s["duration"]) * ratio, layers=layers, caption=s.get("caption", ""),
             title=s.get("title", ""), camera=s.get("camera", {}) or {},
-            effects=s.get("effects", []) or [], typewriter=bool(s.get("typewriter", False))))
+            effects=s.get("effects", []) or [], typewriter=bool(s.get("typewriter", False)),
+            caption_mode=s.get("caption_mode", spec.get("caption_mode", "chunk")),
+            captions=s.get("captions"), hud=s.get("hud")))
     return spec, style, scenes
 
 
@@ -235,18 +287,28 @@ def _text_layer(scene: Scene, t: float, style: Style, font: str) -> np.ndarray |
     out = None
     if scene.title:
         out = text.render_text((tw, th), scene.title, font_path=font, size=style.title_size,
-                               y=0.16, color=(255, 236, 160), box=(16, 12, 40))
-    if scene.caption:
-        vis = None
-        if scene.typewriter:
-            vis = int(len(scene.caption) * min(1.0, t / max(0.6, scene.duration * 0.45))) + 1
-        cap = text.render_text((tw, th), scene.caption, font_path=font, size=style.caption_size,
-                               y=0.74, visible_chars=vis)
+                               y=0.2, color=(255, 236, 160), box=(16, 12, 40))
+    def merge(layer: np.ndarray) -> None:
+        nonlocal out
         if out is None:
-            out = cap
+            out = layer
         else:
-            m = cap[..., 3] == 255
-            out[m] = cap[m]
+            m = layer[..., 3] == 255
+            out[m] = layer[m]
+
+    cap_text = caption_at(scene, t) if (scene.caption or scene.captions) else ""
+    if cap_text:
+        vis = None
+        if scene.typewriter or scene.caption_mode == "typewriter":
+            vis = int(len(cap_text) * min(1.0, t / max(0.6, scene.duration * 0.45))) + 1
+        size = style.caption_size if (scene.typewriter or scene.caption_mode != "chunk") \
+            else int(style.caption_size * 1.25)  # 덩어리 자막은 짧으니 더 크게
+        merge(text.render_text((tw, th), cap_text, font_path=font, size=size, y=0.74,
+                               visible_chars=vis))
+    label = hud_label(scene.hud, t, scene.duration)
+    if label:
+        merge(text.render_badge((tw, th), label, font_path=font,
+                                size=int(style.caption_size * 0.8)))
     return out
 
 

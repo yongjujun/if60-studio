@@ -16,7 +16,9 @@ AI가 만든 이미지·영상을 '도트풍'이 아닌 **진짜 도트**로 바
 | **AI 영상 안정화** | 프레임 간 미세 노이즈 무시(hold) + 색 경계 히스테리시스로 AI 영상의 지글거림 제거 |
 | **레이어 패럴랙스** | 배경·중경·전경을 다른 속도로 움직이는 '하이브리드 카메라 효과'. AI 영상 비용 0원 |
 | **절차적 레이어** | 별, 자전하는 행성, 산맥, 바다, 태양, 마스코트를 코드로 생성 → 키 없이 전 과정 테스트 |
-| **도트 한글 자막** | 안티앨리어싱 없는 외곽선 자막, 타이틀 카드, 타자기 효과 |
+| **군중 레이어** | 사람·고양이·강아지·자동차 미니 스프라이트 수백~수천 개를 원근감 있게 배치·이동 ('시뮬레이션' 느낌, AI 비용 0원) |
+| **시계·카운터 HUD** | `05:00 → 23:30`, `1,670 → 0km/h`, `+1년` 같은 진행 배지 — 끝까지 보게 만드는 장치 |
+| **도트 한글 자막** | 내레이션처럼 2~5단어씩 끊어 보여주는 자막(기본), 타이틀 카드, 타자기 효과 |
 | **칩튠 BGM·효과음** | 분위기(wonder/tense/calm/epic)별 8비트 음악을 코드로 생성 → 저작권 걱정 없음 |
 | **효과** | 흔들림(+폭발음), 플래시, 경보 틴트, 디더 페이드 인/아웃 |
 | **장면 초안 생성** | 주제 → 장면 YAML 초안 (Claude API, 선택) |
@@ -53,6 +55,7 @@ python -m if60 render examples/earth_rotation_stop.yaml --stills out/stills
 
 # 스타일·길이 바꾸기 (UI의 '영상 스타일', '영상 길이' 옵션)
 python -m if60 render examples/earth_rotation_stop.yaml --style retro_dot --length 30
+python -m if60 render examples/earth_rotation_stop.yaml --length 120   # 2분짜리로 늘리기
 
 # AI로 만든 이미지/영상 하나만 도트로 후처리
 python -m if60 pixelate kling_clip.mp4 -o out/clip_dot.mp4 --style retro_dot
@@ -83,6 +86,8 @@ scenes:
       - {source: ai, prompt: "a lone astronaut on a cliff", speed: 0.6}
       - {source: image, path: assets/city.png, speed: 0.3}
       - {source: video, path: clips/tsunami.mp4}   # AI 영상 클립 → 자동 도트 후처리
+      - {kind: crowd, params: {mix: {cat: 0.8, person: 0.2}, count: 1200, top: 0.6, vx: 20}}
+    hud: {from: "05:00", to: "06:30"}           # 또는 hud: "+1년" / {from: 1670, to: 0, format: "{:,.0f}km/h"}
     camera: {pan: [40, 0], fade_in: 0.35, fade_out: 0.35}
     effects:
       - flash: {at: 1.5, length: 0.17}
@@ -91,7 +96,9 @@ scenes:
 
 - `speed`: 카메라 이동에 대한 패럴랙스 배율 (0 = 고정, 1 = 카메라와 같이 이동)
 - `camera.pan`: 장면 동안 이동할 거리 (저해상도 픽셀 단위, 부드럽게 가감속)
-- 절차적 `kind`: `sky`, `starfield`, `planet`, `sun`, `mountains`, `ground`, `ocean`, `mascot`
+- 절차적 `kind`: `sky`, `starfield`, `planet`, `sun`, `mountains`, `ground`, `ocean`, `mascot`, `crowd`
+- 자막: 기본은 `caption`을 2~5단어 덩어리로 자동 분할. 직접 나누려면 `captions: [..]`, 문장 통째로는 `caption_mode: full`
+- `crowd` 옵션: `agent`(person/cat/dog/car) 또는 `mix`, `count`, `top`/`bottom`(세로 범위), `vx`(흐르는 속도), `grid`(0~1, 줄 맞춘 대열)
 
 ## 스타일 프리셋
 
@@ -139,6 +146,7 @@ YouTube는 템플릿으로 찍어낸 듯 영상 간 차이가 거의 없는 대�
 
 ## 로드맵
 
+- [x] 군중 레이어, 시계·카운터 HUD, 끊어 읽는 자막
 - [ ] 웹 UI (주제 / 스타일 / 길이 / 애니메이션 방식 선택 화면)
 - [ ] 한국어 TTS 내레이션 + 음성 기반 자막 타이밍
 - [ ] Kling / Veo 영상 API 직접 호출 + 비용 표시

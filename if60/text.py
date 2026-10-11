@@ -55,6 +55,50 @@ def wrap(text: str, font: ImageFont.FreeTypeFont, max_w: int) -> list[str]:
     return lines
 
 
+def chunk_caption(text: str, max_chars: int = 11) -> list[str]:
+    """내레이션 자막을 2~5단어 덩어리로 자른다 (쇼츠에서 가장 읽기 쉬운 단위).
+    문장부호(. ! ? ,) 뒤에서는 항상 끊는다."""
+    chunks, cur = [], ""
+    for word in text.replace("\n", " ").split():
+        trial = f"{cur} {word}".strip()
+        if cur and len(trial) > max_chars:
+            chunks.append(cur)
+            cur = word
+        else:
+            cur = trial
+        if cur and cur[-1] in ".!?,":
+            chunks.append(cur.rstrip(","))
+            cur = ""
+    if cur:
+        chunks.append(cur)
+    return chunks
+
+
+def render_badge(canvas: tuple[int, int], label: str, *, font_path: str, size: int = 16,
+                 x: float = 0.94, y: float = 0.075, fg=(255, 255, 255),
+                 bg=(214, 40, 72)) -> np.ndarray:
+    """화면 구석의 HUD 배지 (시계, 카운터, '+1년' 등). x,y는 배지 오른쪽 위 기준 비율."""
+    w, h = canvas
+    img = Image.new("RGBA", canvas, (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    font = _font(font_path, size)
+    tw = int(font.getlength(label))
+    pad = max(3, size // 4)
+    x1, y0 = int(w * x), int(h * y)
+    x0 = x1 - tw - pad * 2
+    d.rectangle((x0, y0, x1, y0 + size + pad), fill=(*bg, 255))
+    d.text((x0 + pad, y0 + pad // 2 - 1), label, font=font, fill=(*fg, 255))
+    arr = np.asarray(img).copy()
+    a = arr[..., 3]
+    arr[..., 3] = np.where(a > 110, 255, 0).astype(np.uint8)
+    on = arr[..., 3] == 255
+    rgb = arr[..., :3].astype(np.int32)
+    near_fg = ((rgb - np.array(fg)) ** 2).sum(-1) < ((rgb - np.array(bg)) ** 2).sum(-1)
+    arr[on & near_fg, :3] = fg
+    arr[on & ~near_fg, :3] = bg
+    return arr
+
+
 def render_text(canvas: tuple[int, int], text: str, *, font_path: str, size: int = 22,
                 y: float = 0.72, color=(255, 255, 255), outline=(10, 8, 24),
                 box: tuple[int, int, int] | None = None, align: str = "center",

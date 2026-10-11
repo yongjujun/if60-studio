@@ -58,3 +58,29 @@ def test_quantize_fixed_palette():
     pal = np.array([[0, 0, 0], [255, 255, 255]], np.float32)
     rgb = np.array([[[10, 10, 10], [240, 240, 240]]], np.float32)
     assert quantize(rgb, pal).tolist() == [[0, 1]]
+
+
+def test_chunk_caption_splits_into_short_pieces():
+    from if60.text import chunk_caption
+    chunks = chunk_caption("땅에 붙어있지 않은 모든 것은 관성으로 동쪽으로 날아갑니다. 음속보다 빠르게요.")
+    assert len(chunks) >= 4
+    assert all(len(c) <= 14 for c in chunks)
+    assert chunks[-1] == "음속보다 빠르게요."
+
+
+def test_hud_clock_and_counter():
+    from if60.render import hud_label
+    assert hud_label({"from": "05:00", "to": "06:00", "ease": False}, 0, 10) == "05:00"
+    assert hud_label({"from": "05:00", "to": "06:00", "ease": False}, 5, 10) == "05:30"
+    assert hud_label({"from": "23:30", "to": "00:30", "ease": False}, 10, 10) == "00:30"
+    assert hud_label({"from": "23:30", "to": "00:30", "ease": False}, 5, 10) == "00:00"
+    assert hud_label({"from": 1670, "to": 0, "format": "{:,.0f}km/h", "ease": False}, 10, 10) == "0km/h"
+    assert hud_label("+1년", 3, 10) == "+1년"
+
+
+def test_crowd_layer_animates_and_scrolls():
+    layer = procedural.make("crowd", 120, 200, agent="cat", count=150, vx=30, seed=1)
+    a, b = layer.frame(0.0), layer.frame(1.0)
+    assert a.shape == (200, 120, 4)
+    assert (a[..., 3] == 255).sum() > 500
+    assert not np.array_equal(a, b)

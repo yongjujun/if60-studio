@@ -11,7 +11,7 @@ scenes:
   - duration: 4
     title: 지구 자전이 1초 멈춘다면?
     caption: 단 1초. 그걸로 충분합니다.
-    typewriter: true
+    hud: "적도 1,670km/h"
     layers:
       - {kind: sky, params: {colors: ["#05040f", "#0b0a24", "#141238"]}}
       - {kind: starfield, params: {seed: 11}}
@@ -20,7 +20,7 @@ scenes:
 
   - duration: 8
     caption: 지구는 적도 기준 시속 약 1,670km로 돌고 있어요.
-    typewriter: true
+    hud: "적도 1,670km/h"
     layers:
       - {kind: sky, params: {colors: ["#05040f", "#0b0a24", "#141238"]}}
       - {kind: starfield, params: {seed: 12}}
@@ -30,19 +30,21 @@ scenes:
 
   - duration: 8
     caption: 서울은 그보다 조금 느린 시속 약 1,300km. 우리도 함께 돌고 있죠.
-    typewriter: true
+    hud: "서울 1,320km/h"
     layers:
       - {kind: sky, params: {colors: ["#141238", "#2a2366", "#5a3f96", "#c46b7a", "#f2a65a"]}}
       - {kind: starfield, params: {seed: 13, density: 0.004}}
       - {kind: sun, params: {cx: 0.3, cy: 0.5, radius: 16}}
-      - {kind: mountains, params: {color: "#3a2b6e", top: 0.66, seed: 21}, speed: 0.3}
-      - {kind: mountains, params: {color: "#1f1745", top: 0.76, seed: 22}, speed: 0.6}
-      - {kind: ground, params: {top: 0.84}}
-      - {kind: mascot, params: {cy: 0.78}}
+      - {kind: mountains, params: {color: "#3a2b6e", top: 0.6, seed: 21}, speed: 0.3}
+      - {kind: mountains, params: {color: "#1f1745", top: 0.68, seed: 22}, speed: 0.6}
+      - {kind: ground, params: {top: 0.74}}
+      - {kind: crowd, params: {agent: person, count: 380, top: 0.75, bottom: 0.95, seed: 3}}
+      - {kind: mascot, params: {cy: 0.5}}
     camera: {pan: [40, 0]}
 
   - duration: 7
     caption: 그런데 땅이 갑자기 멈춘다면?
+    hud: {from: 1670, to: 0, format: "적도 {:,.0f}km/h", ease: false}
     layers:
       - {kind: sky, params: {colors: ["#05040f", "#0b0a24", "#141238"]}}
       - {kind: starfield, params: {seed: 14}}
@@ -54,13 +56,14 @@ scenes:
 
   - duration: 9
     caption: 땅에 붙어있지 않은 모든 것은 관성으로 동쪽으로 날아갑니다. 음속보다 빠르게요.
-    typewriter: true
+    hud: "지면 0km/h"
     layers:
       - {kind: sky, params: {colors: ["#2a0f1e", "#5a1a2e", "#8f2c38", "#d8573f"]}}
       - {kind: mountains, params: {color: "#3d1730", top: 0.64, seed: 31}, speed: 0.4}
       - {kind: mountains, params: {color: "#22102a", top: 0.75, seed: 32}, speed: 0.7}
       - {kind: ground, params: {top: 0.84, color: "#140a1a", detail: "#3a1a2e"}}
-      - {kind: mascot, params: {cx: 0.35, cy: 0.6, float_amp: 6}}
+      - {kind: crowd, params: {mix: {person: 0.6, car: 0.3, cat: 0.1}, count: 700, top: 0.62, bottom: 0.96, vx: 140, seed: 5}}
+      - {kind: mascot, params: {cx: 0.35, cy: 0.45, float_amp: 6}}
     effects:
       - shake: {at: 0.0, length: 9, amp: 3}
       - tint: {color: "#c8384a", at: 0, length: 3}
@@ -68,7 +71,6 @@ scenes:
 
   - duration: 8
     caption: 바다도 멈추지 않아요. 거대한 해일이 대륙을 덮칩니다.
-    typewriter: true
     layers:
       - {kind: sky, params: {colors: ["#0c1328", "#1a2c52", "#2d4a7a"]}}
       - {kind: mountains, params: {color: "#1d2a44", top: 0.62, seed: 41}, speed: 0.3}
@@ -79,7 +81,6 @@ scenes:
 
   - duration: 8
     caption: 대기도 그대로 움직여 초음속 강풍이 지표를 휩쓸어요.
-    typewriter: true
     layers:
       - {kind: sky, params: {colors: ["#1b1b24", "#2e2e40", "#4a4a66", "#6b6b8c"]}}
       - {kind: starfield, params: {seed: 15, density: 0.03, colors: ["#8a8aa8", "#b9b9d6"]}, speed: 2.0}
@@ -91,7 +92,7 @@ scenes:
 
   - duration: 8
     caption: 다행히 지구는 멈추지 않아요. 오늘도 시속 1,300km로 안전하게 여행 중!
-    typewriter: true
+    hud: "서울 1,320km/h"
     layers:
       - {kind: sky, params: {colors: ["#05040f", "#0b0a24", "#141238"]}}
       - {kind: starfield, params: {seed: 16}}

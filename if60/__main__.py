@@ -21,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("scenes")
     r.add_argument("-o", "--out", default=None)
     r.add_argument("--style", help="스타일 프리셋 (YAML의 style 대신)")
-    r.add_argument("--length", type=float, choices=[30, 45, 60], help="총 길이(초)로 장면 길이를 비례 조정")
+    r.add_argument("--length", type=float, help="총 길이(초)로 장면 길이를 비례 조정 (예: 30, 60, 120)")
     r.add_argument("--provider", help="이미지 생성 제공자: mock | openai")
     r.add_argument("--preview", action="store_true", help="1/3 해상도로 빠르게 확인")
     r.add_argument("--stills", help="장면별 대표 프레임 PNG를 저장할 폴더")
