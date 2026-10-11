@@ -18,9 +18,16 @@ AI 영상 생성 크레딧 없이 컴퓨터에서 직접 렌더링하므로 편�
 3. 기다리면 끝: **웹 조사 → 대본·연출 작성 → 렌더링 → 영상 자동 재생**
    (조사·작성 1~3분 + 렌더링 수 분)
 
-- 처음 한 번은 Anthropic API 키를 물어봅니다. https://console.anthropic.com → API Keys → Create Key로 만든 키를 붙여넣으면
-  이 컴퓨터의 `.env` 파일에만 저장되고 GitHub에는 올라가지 않아요. (바꾸려면 `python -m if60 key`)
-- 비용: 편당 조사·대본 작성에 대략 수백 원 수준 (Sonnet 5.5 + 웹 검색 기준 추정). 렌더링은 무료.
+- **대본 작성에 Claude가 필요해요. Pro/Max 구독이 있으면 추가 비용 없이 쓸 수 있어요 (추천).**
+  처음 한 번만 Claude Code를 설치하고 로그인하세요:
+  ```bash
+  curl -fsSL https://claude.ai/install.sh | bash     # Windows PowerShell: irm https://claude.ai/install.ps1 | iex
+  # 새 터미널 창을 열고
+  claude                                             # 브라우저가 열리면 Pro 계정으로 로그인 → /exit 로 종료
+  ```
+  이후 `make`는 Claude Code를 통해 **구독 사용량**으로 조사·대본을 작성합니다. (Pro는 5시간마다 사용량이 초기화돼요)
+- 구독 대신 API로 쓰고 싶으면 `python -m if60 key`로 API 키를 저장하세요 (사용량만큼 별도 과금, 편당 대략 수백 원 추정).
+  둘 다 있으면 Claude Code(구독)를 먼저 씁니다. `.env`에 `IF60_BACKEND=api`를 넣으면 API로 고정돼요.
 - 완성되면 터미널에 **확인할 사실 목록과 출처**가 나옵니다. 올리기 전에 꼭 확인하세요.
 - Mac에서 "확인되지 않은 개발자" 경고가 뜨면: 파일을 우클릭 → 열기 → 열기.
 
@@ -177,7 +184,7 @@ shot: {type: topdown, center: [0, 0, 0], height: 90, height_to: 75}
 | 칩튠 배경음악 | `music: {mood: wonder, bpm: 104, seed: 16}` (wonder/tense/calm/epic) |
 | 효과 | `shake`(카메라 흔들림+효과음) `flash` `tint` / `camera: {fade_in: 0.5, fade_out: 0.8}` |
 
-### API 키 (선택 기능에만 필요)
+### API 키 (선택 — Claude Code를 쓰면 필요 없음)
 키는 **절대 YAML이나 코드에 적지 말고** 환경변수로만 넣으세요. `.env` 파일은 `.gitignore`로 저장소에서 제외됩니다.
 ```bash
 python -m if60 key                # Anthropic 키 저장/변경 (make·plan용, .env에 저장)

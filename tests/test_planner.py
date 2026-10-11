@@ -67,6 +67,7 @@ def test_plan_repairs_invalid_yaml(monkeypatch):
         return _resp(GOOD)
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
     ytxt, spec, cites = planner.plan("테스트 주제", 60, interactive=False, log=lambda *a: None)
     assert len(calls) == 2                       # 처음 작성 + 자동 수정 1회
@@ -78,6 +79,7 @@ def test_plan_repairs_invalid_yaml(monkeypatch):
 def test_plan_continues_after_pause_turn(monkeypatch):
     seq = [_resp("검색 중…", stop="pause_turn"), _resp(GOOD)]
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", lambda body, key: seq.pop(0))
     _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
     assert spec["title"] == "테스트 주제"
@@ -93,6 +95,7 @@ def test_web_search_falls_back_on_400(monkeypatch):
         return _resp(GOOD)
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
     _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
     assert seen[-1] == "null" and len(seen) == 3
@@ -107,3 +110,49 @@ def test_key_saved_to_env_file(tmp_path, monkeypatch):
     planner.load_env()
     import os
     assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-def"
+
+
+FAKE_CLAUDE = r"""#!/usr/bin/env python3
+import json, os, sys
+args = sys.argv[1:]
+if args[:2] == ["auth", "status"]:
+    sys.exit(0)
+log = os.environ.get("FAKE_LOG")
+with open(log, "a") as f:
+    f.write(json.dumps({"args": args, "has_key": "ANTHROPIC_API_KEY" in os.environ}) + "\n")
+print(open(os.environ["FAKE_REPLY"]).read())
+"""
+
+
+def test_claude_code_backend_uses_subscription(tmp_path, monkeypatch):
+    import os
+    import stat
+    fake = tmp_path / "claude"
+    fake.write_text(FAKE_CLAUDE)
+    fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+    reply = tmp_path / "reply.txt"
+    reply.write_text(GOOD)
+    log = tmp_path / "log.jsonl"
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setenv("FAKE_REPLY", str(reply))
+    monkeypatch.setenv("FAKE_LOG", str(log))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-should-not-leak")
+    monkeypatch.delenv("IF60_BACKEND", raising=False)
+    monkeypatch.setattr(planner, "_post", lambda *a: (_ for _ in ()).throw(AssertionError("API를 쓰면 안 됨")))
+    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
+    assert spec["title"] == "테스트 주제"
+    call = json.loads(log.read_text().splitlines()[0])
+    a = call["args"]
+    assert a[0] == "-p" and "--append-system-prompt-file" in a
+    assert a[a.index("--tools") + 1] == "WebSearch,WebFetch"      # 웹 도구만 (파일 수정·명령 실행 불가)
+    assert call["has_key"] is False                                # 구독으로 처리되도록 API 키 제거
+
+
+def test_no_backend_gives_clear_instructions(tmp_path, monkeypatch):
+    monkeypatch.setenv("PATH", str(tmp_path))
+    monkeypatch.setattr(planner, "ROOT", tmp_path)
+    monkeypatch.setattr(planner.Path, "home", staticmethod(lambda: tmp_path))
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("IF60_BACKEND", raising=False)
+    with pytest.raises(RuntimeError, match="claude.ai/install.sh"):
+        planner.choose_backend(interactive=False)

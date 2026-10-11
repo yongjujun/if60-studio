@@ -3,14 +3,19 @@
 Claude API의 웹 검색 도구로 사실을 확인한 뒤, IF 60 Studio가 렌더링할 수 있는 장면 파일을 만든다.
 대본 수치와 근거 URL은 facts_to_check에 남겨 사람이 확인할 수 있게 한다.
 
-필요: ANTHROPIC_API_KEY (환경변수 또는 저장소 루트의 .env 파일)
-모델 변경: IF60_PLANNER_MODEL (기본 claude-sonnet-5-5, 더 높은 품질은 claude-opus-5-5)
+두 가지 방식으로 Claude를 부른다 (자동 선택, IF60_BACKEND=claude-code|api로 고정 가능)
+  1) claude-code: 컴퓨터에 설치된 Claude Code(`claude -p`)를 사용 → Pro/Max 구독 사용량으로 처리, 추가 비용 없음
+  2) api: ANTHROPIC_API_KEY(.env)로 Claude API 직접 호출 → 사용량만큼 별도 과금
+모델 변경: IF60_PLANNER_MODEL (api 기본 claude-sonnet-5-5 / claude-code 기본 sonnet)
 """
 from __future__ import annotations
 
 import json
 import os
 import re
+import shutil
+import subprocess
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -204,6 +209,79 @@ def ask(system: str, user: str, key: str, web_search: bool = True, max_tokens: i
     raise last_err or RuntimeError("Claude API 호출 실패")
 
 
+def claude_cli() -> str | None:
+    """설치된 Claude Code 실행 파일 경로 (없으면 None)"""
+    found = shutil.which("claude")
+    if found:
+        return found
+    for cand in (Path.home() / ".local" / "bin" / "claude", Path.home() / ".local" / "bin" / "claude.exe"):
+        if cand.exists():
+            return str(cand)
+    return None
+
+
+def _cli_env() -> dict:
+    # API 키가 환경에 있으면 Claude Code가 구독 대신 API로 과금하므로 하위 프로세스에서는 뺀다
+    env = dict(os.environ)
+    env.pop("ANTHROPIC_API_KEY", None)
+    return env
+
+
+def claude_code_logged_in(cli: str) -> bool:
+    try:
+        r = subprocess.run([cli, "auth", "status"], capture_output=True, text=True, timeout=30, env=_cli_env())
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
+def ask_cli(system: str, user: str, web_search: bool = True) -> tuple[str, list]:
+    """Claude Code 비대화 모드로 질문. 웹 검색·웹 읽기 도구만 허용(파일 수정·명령 실행 불가)."""
+    cli = claude_cli()
+    if not cli:
+        raise RuntimeError("Claude Code가 설치되어 있지 않아요.")
+    tools = "WebSearch,WebFetch" if web_search else ""
+    with tempfile.TemporaryDirectory() as tmp:
+        sp = Path(tmp) / "system.txt"
+        sp.write_text(system, encoding="utf-8")
+        cmd = [cli, "-p", user, "--append-system-prompt-file", str(sp), "--tools", tools,
+               "--output-format", "text", "--no-session-persistence",
+               "--model", os.environ.get("IF60_PLANNER_MODEL", "sonnet")]
+        if tools:
+            cmd += ["--allowedTools", tools]
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=1200, cwd=tmp, env=_cli_env(),
+                               encoding="utf-8", errors="replace")
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("Claude Code 응답이 20분 안에 오지 않았어요. 잠시 후 다시 시도하세요.") from None
+    if r.returncode != 0:
+        msg = (r.stderr or r.stdout or "").strip()[-600:]
+        if "limit" in msg.lower():
+            msg += "\n(Pro 사용량 한도에 도달했을 수 있어요. 5시간 주기로 초기화됩니다.)"
+        raise RuntimeError(f"Claude Code 오류: {msg}")
+    return r.stdout, []
+
+
+def choose_backend(interactive: bool = True) -> str:
+    forced = os.environ.get("IF60_BACKEND", "").strip()
+    load_env()
+    if forced in ("claude-code", "api"):
+        return forced
+    cli = claude_cli()
+    if cli and claude_code_logged_in(cli):
+        return "claude-code"
+    if os.environ.get("ANTHROPIC_API_KEY", "").strip():
+        return "api"
+    if cli:
+        raise RuntimeError("Claude Code가 설치돼 있지만 로그인이 안 되어 있어요.\n"
+                           "  터미널에서 `claude` 를 한 번 실행해 Pro 계정으로 로그인한 뒤 다시 시도하세요.")
+    raise RuntimeError(
+        "대본을 쓸 Claude를 찾지 못했어요. 둘 중 하나를 준비하세요:\n"
+        "  [추천·Pro 구독으로 무료] Claude Code 설치:  curl -fsSL https://claude.ai/install.sh | bash\n"
+        "      → 새 터미널에서 `claude` 실행 → Pro 계정으로 로그인\n"
+        "  [별도 과금] API 키 저장:  python -m if60 key")
+
+
 def extract_yaml(text: str) -> str:
     blocks = re.findall(r"```(?:yaml|yml)?\s*\n(.*?)```", text, re.S)
     if blocks:
@@ -275,14 +353,21 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
 def plan(topic: str, length: int = 60, *, interactive: bool = True, web_search: bool = True,
          log=print) -> tuple[str, dict, list]:
     """주제 → 검증된 장면 YAML 텍스트, 파싱된 spec, 인용 목록"""
-    key = require_key(interactive)
+    backend = choose_backend(interactive)
+    if backend == "api":
+        key = require_key(interactive)
+        call = lambda u, ws: ask(system, u, key, web_search=ws)
+        log("  · Claude API 사용 (사용량만큼 별도 과금)")
+    else:
+        call = lambda u, ws: ask_cli(system, u, web_search=ws)
+        log("  · Claude Code + 내 Claude 구독 사용 (추가 비용 없음, 구독 사용량에서 차감)")
     cat = catalog()
     system = system_prompt(cat)
     user = (f"주제: {topic}\n목표 길이: 약 {length}초\n"
             f"먼저 웹 검색으로 핵심 사실과 수치를 확인한 뒤, 지정한 형식의 YAML만 출력해.")
-    log("▶ 1/3 자료 조사 + 대본·연출 작성 중 (1~3분)")
+    log("▶ 1/3 자료 조사 + 대본·연출 작성 중 (1~5분)")
     t0 = time.time()
-    text, cites = ask(system, user, key, web_search=web_search)
+    text, cites = call(user, web_search)
     log(f"  · 완료 ({time.time() - t0:.0f}초)")
     ytxt = extract_yaml(text)
     for attempt in range(3):
@@ -296,7 +381,7 @@ def plan(topic: str, length: int = 60, *, interactive: bool = True, web_search: 
         log(f"▶ 장면 파일 자동 수정 중 ({attempt + 1}/3): " + "; ".join(errs[:3]) + (" …" if len(errs) > 3 else ""))
         fix = (f"아래 YAML을 렌더러가 읽을 수 있게 고쳐. 문제:\n- " + "\n- ".join(errs) +
                f"\n\n내용(대본·사실)은 유지하고 문제만 고쳐서 ```yaml 블록 하나로 출력해.\n\n```yaml\n{ytxt}```")
-        text2, _ = ask(system, fix, key, web_search=False)
+        text2, _ = call(fix, False)
         ytxt = extract_yaml(text2)
     else:
         raise RuntimeError("장면 파일을 자동으로 고치지 못했어요: " + "; ".join(errs))
