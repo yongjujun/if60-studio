@@ -1,0 +1,327 @@
+# 촉법소년 제도가 폐지된 대한민국? (약 95초, 17장면) — 블랙코미디·풍자 예시
+# 구조: 콜드 오픈(지우개 재판) → 되감기 → 사실 설정 → 가상 전개(황당함이 커짐) → 찬성·반대 양쪽 → 실제 상황 → 질문 카드
+# 풍자의 과녁은 '제도와 숫자'. 아이·피해자를 웃음거리로 쓰지 않고, 찬반 어느 편도 들지 않는다.
+#
+# facts_to_check (2026년 7월 기준 — 올리기 전에 최신 상황 다시 확인!)
+#   - 촉법소년: 만 10세 이상 14세 미만, 형사처벌 대신 소년법상 보호처분. 1953년 형법 제정 때부터 14세 기준
+#     — 뉴시스 2026.07.14 https://www.newsis.com/view/NISX20260714_0003708015
+#   - 촉법소년 소년부 송치: 2021년 11,677명 → 2025년 21,095명 (경찰청, 파이낸셜뉴스) https://www.fnnews.com/news/202607160631094884
+#   - 2025년 송치 21,095명 중 절도 10,110건 (약 48%) — 뉴시스 같은 기사
+#   - 살인: 2021년 2건 → 2025년 0건 (파이낸셜뉴스)
+#   - 소년원 등 수용률 전국 평균 112% (뉴시스, 정부 자료)
+#   - 소년부 판사 약 25명 — 한 법학 교수의 지적 (파이낸셜뉴스) / 21,095 ÷ 25 ≈ 843건, ÷ 365 ≈ 2.3건 (계산)
+#   - 정부안(2026.7): 강력·중대·반복 범죄에 한해 13세부터 형사처벌 추진, 법 개정 전 (뉴시스)
+#   - 3층 침대·지우개 재판 장면은 상상(가상 상황)이며 실제 정책이 아님
+title: 촉법소년이 사라진 대한민국?
+style: voxel
+layout:
+  title: ["촉법소년이", "사라진다면?"]
+  series: 만물 가상실험 2편
+facts_to_check:
+  - "촉법소년 = 만 10세 이상 14세 미만, 보호처분 — https://www.newsis.com/view/NISX20260714_0003708015"
+  - "송치 2021년 11,677명 → 2025년 21,095명 — https://www.fnnews.com/news/202607160631094884"
+  - "2025년 절도 10,110건(약 48%), 살인 0건 — 위 두 기사"
+  - "소년원 수용률 평균 112% — 뉴시스 위 기사"
+  - "소년부 판사 약 25명(전문가 지적) → 1인당 약 843건 (계산)"
+  - "정부안: 강력·중대·반복 범죄 13세 하향 추진, 아직 법 개정 전 (2026.7 기준) — 최신 상황 재확인"
+
+scenes:
+  # ── 1막: 콜드 오픈 + 사실 ─────────────────────────────
+  # 1. 콜드 오픈 — 거대한 판사석 앞, 책을 쌓고 올라선 작은 피고인
+  - duration: 4
+    visual: 거대한 판사석 앞에 책 더미를 밟고 선 작은 아이, 판사석 위로 빨간 '유죄' 도장이 쾅
+    caption: 피고인, 만 10세. 혐의는 지우개 절도. 판결은…
+    narration: 피고인, 만 열 살. 혐의는 지우개 절도. 판결은…
+    world: {template: studio, seed: 11, params: {color: "#2a2230"}}
+    shot: {from: [1.3, 1.9, -3.9], to: [1.1, 1.8, -3.4], target: [0, 0.85, 0.4], fov: 48}
+    props:
+      - {shape: box, size: [1.6, 1.25, 0.5], at: [0, 0, 0.7], color: "#6b4a2e"}
+      - {shape: box, size: [1.7, 0.06, 0.6], at: [0, 1.25, 0.7], color: "#8a6440"}
+      - {model: person, at: [0, 0.25, 1.15], yaw: 180, color: "#1c1c22", color2: "#1c1c22"}
+      - {shape: box, size: [0.4, 0.22, 0.3], at: [0.15, 0, -0.35], color: "#3b5ea8"}
+      - {model: person, at: [0.15, 0.22, -0.35], scale: 0.62, color: "#f2c94c"}
+      - {shape: box, size: [0.06, 0.04, 0.03], at: [0.45, 1.31, 0.6], color: "#f4f4f4"}
+    labels:
+      - {text: "증거물: 지우개", at: [0.45, 1.36, 0.6], from: 1.0}
+    big_text:
+      - {text: "유죄", style: stamp, from: 2.8, pos: [0.5, 0.36]}
+    effects:
+      - punch: {at: 2.8, length: 1.2, zoom: 1.2, center: [0.5, 0.45]}
+      - whiteout: {at: 3.5, length: 0.6, hold: true}
+
+  # 2. 되감기
+  - duration: 3.5
+    visual: 되감기 화면과 함께 평범한 오후의 광장, 학생들이 지나다님
+    caption: 어쩌다 이렇게 됐을까요? 처음부터 볼게요.
+    world: {template: plaza, seed: 12}
+    time: "15:30"
+    shot: forward
+    crowds:
+      - {agent: person, count: 900, area: plaza, scale: [0.62, 0.72], velocity: [0, 1.2], speed_jitter: 0.3}
+      - {agent: person, count: 500, area: plaza}
+    effects:
+      - rewind: {at: 0, length: 1.1}
+
+  # 3. 촉법소년이란
+  - duration: 6
+    visual: 단색 무대 위 키가 다른 아이 네 명이 나란히, 머리 위에 10·11·12·13세 이름표
+    caption: 지금 대한민국에서 만 10살부터 14살 미만은 '촉법소년'이에요.
+    narration: 지금 대한민국에서 만 열 살부터 열네 살 미만은 촉법소년이에요.
+    world: {template: studio, seed: 13, params: {color: "#e9e4da"}}
+    shot: front
+    props:
+      - {model: person, at: [-0.48, 0, 0], yaw: 180, scale: 0.6}
+      - {model: person, at: [-0.16, 0, 0], yaw: 180, scale: 0.64}
+      - {model: person, at: [0.16, 0, 0], yaw: 180, scale: 0.68}
+      - {model: person, at: [0.48, 0, 0], yaw: 180, scale: 0.73}
+    labels:
+      - {text: "10세", at: [-0.48, 1.08, 0], from: 0.8}
+      - {text: "11세", at: [-0.16, 1.15, 0], from: 1.1}
+      - {text: "12세", at: [0.16, 1.22, 0], from: 1.4}
+      - {text: "13세", at: [0.48, 1.3, 0], from: 1.7}
+
+  # 4. 보호처분 — 1953년부터
+  - duration: 5.5
+    visual: 같은 무대, 아이들 앞에 '보호처분'이라 적힌 파란 서류 상자가 놓이고 대시보드에 1953년
+    caption: 죄를 지어도 형사처벌 대신 보호처분. 1953년부터 쭉 그랬죠.
+    narration: 죄를 지어도 형사처벌 대신 보호처분. 천구백오십삼 년부터 쭉 그랬죠.
+    world: {template: studio, seed: 13, params: {color: "#e9e4da"}}
+    shot: front
+    props:
+      - {model: person, at: [-0.3, 0, 0.3], yaw: 180, scale: 0.64}
+      - {model: person, at: [0.3, 0, 0.3], yaw: 180, scale: 0.7}
+      - {shape: box, size: [0.5, 0.3, 0.35], at: [0, 0, -0.3], color: "#2f6fd6"}
+    labels:
+      - {text: "보호처분", at: [0, 0.32, -0.3], from: 0.8, color: "#2f6fd6"}
+    panel:
+      title: 기준이 정해진 해
+      value: {from: 2026, to: 1953, format: "{:.0f}년", ease: true}
+      stats: ["형법 제정 이후 그대로"]
+
+  # 5. 늘어나는 숫자
+  - duration: 6.5
+    visual: 광장에 작은 아이들 무리가 점점 불어나고, 대시보드 숫자가 1만 1천에서 2만 1천으로 올라감
+    caption: 그런데 소년부로 간 촉법소년은 4년 새 1만 1천 명에서 2만 1천 명.
+    narration: 그런데 소년부로 간 촉법소년은 사 년 새 일만 천 명에서 이만 천 명으로 늘었어요.
+    world: {template: plaza, seed: 14}
+    time: "17:00"
+    shot: aerial
+    crowds:
+      - {agent: person, count: 1100, area: plaza, scale: [0.62, 0.72]}
+      - {agent: person, count: 1000, area: plaza, scale: [0.62, 0.72], grow: {from: 2.0, to: 4.5}}
+    panel:
+      title: 소년부 송치 (경찰청)
+      value: {from: 11677, to: 21095, unit: 명, scale: linear, at: 1.5, length: 3.5}
+      bars:
+        - {label: 2021년, from: 0, to: 0.55, color: blue, text: "11,677명"}
+        - {label: 2025년, from: 0, to: 1.0, color: red, text: "21,095명", at: 1.5}
+
+  # ── 2막: 가상 전개 ─────────────────────────────────
+  # 6. 가상 속보
+  - duration: 5
+    visual: 뉴스 자막띠 '가상 상황 | 촉법소년 제도 전면 폐지'가 밀려 들어오고 판사봉 대신 거대한 도장
+    caption: 그래서 상상해 봤습니다. 이 제도를 아예 없애 버리면?
+    world: {template: studio, seed: 16, params: {color: "#141a33"}}
+    shot: wide
+    props:
+      - {shape: cylinder, r: 0.35, h: 0.5, at: [0, 0, 0], color: "#d7262e"}
+      - {shape: cylinder, r: 0.08, h: 0.7, at: [0, 0.5, 0], color: "#6b4a2e"}
+      - {shape: sphere, r: 0.16, at: [0, 1.3, 0], color: "#6b4a2e"}
+    chyron:
+      - {tag: 가상 상황, text: "정부, 촉법소년 제도 전면 폐지", from: 0.6}
+    effects:
+      - flash: {at: 0.6, length: 0.1}
+
+  # 7. 폐지 첫날 — 법원 앞 줄
+  - duration: 5.5
+    visual: 성문 앞까지 이어진 작은 아이들의 긴 줄, 부모들이 옆에 서 있음, 우측 상단 D+1
+    caption: 폐지 첫날. 법원 앞에 줄이 섰습니다. 책가방을 멘 채로요.
+    hud: "D+1"
+    world: {template: plaza, seed: 17}
+    time: "08:30"
+    shot: {from: [6, 3, 150], to: [6, 3.5, 175], target: [0, 1, 300], fov: 50}
+    crowds:
+      - {agent: person, count: 180, area: [-1.2, 160, 1.2, 330], layout: queue, gap: 0.9, facing: 0, scale: [0.6, 0.7], jitter: 0.15}
+      - {agent: person, count: 120, area: [2, 160, 4, 330], layout: queue, gap: 1.4, facing: 0, jitter: 0.2}
+    chyron:
+      - {tag: 가상 상황, text: "소년 피고인 대기 줄 300m… 학원 지각 속출", from: 1.0}
+
+  # 8. 판사 수
+  - duration: 6.5
+    visual: 판사 한 명이 앉은 책상 옆으로 흰 서류 더미가 점점 높이 솟아오름, 대시보드에 1인당 843건
+    caption: 문제는 판사예요. 소년부 판사는 약 25명. 1명당 843건.
+    narration: 문제는 판사예요. 소년부 판사는 약 스물다섯 명. 한 명당 팔백사십삼 건.
+    world: {template: studio, seed: 18, params: {color: "#e9e4da"}}
+    shot: wide
+    props:
+      - {shape: box, size: [1.2, 0.75, 0.6], at: [0, 0, 0], color: "#6b4a2e"}
+      - {model: person, at: [0, 0, 0.5], yaw: 180, color: "#1c1c22", color2: "#1c1c22"}
+      - {shape: box, size: [0.5, 2.2, 0.4], at: [-1.0, 0, 0], color: "#f6f6f2", grow: {from: 1.0, to: 4.5}}
+      - {shape: box, size: [0.5, 3.0, 0.4], at: [1.0, 0, 0.1], color: "#f6f6f2", grow: {from: 1.5, to: 5.0}}
+      - {shape: box, size: [0.45, 1.4, 0.4], at: [-0.5, 0.75, -0.05], color: "#f6f6f2", grow: {from: 2.0, to: 4.0}}
+    panel:
+      title: 판사 1명당 사건
+      value: {from: 0, to: 843, unit: 건, scale: linear, at: 1.5, length: 3}
+      stats: ["2025년 송치 21,095명 ÷ 판사 약 25명"]
+
+  # 9. 하루 2.3건 — 담담한 반전
+  - duration: 6
+    visual: 서류 더미에 파묻힌 판사 클로즈업, '야근' 도장이 쾅, 순간 줌인
+    caption: 하루 2.3건씩 1년이면 끝나긴 합니다. 주말을 반납하면요.
+    narration: 하루 이 점 삼 건씩, 일 년이면 끝나긴 합니다. 주말을 반납하면요.
+    beat: 0.8
+    world: {template: studio, seed: 18, params: {color: "#e9e4da"}}
+    shot: {from: [0, 1.5, -3.4], to: [0, 1.4, -2.9], target: [0, 1.0, 0.3], fov: 50}
+    props:
+      - {shape: box, size: [1.2, 0.75, 0.6], at: [0, 0, 0.3], color: "#6b4a2e"}
+      - {model: person, at: [0, 0, 0.75], yaw: 180, color: "#1c1c22", color2: "#1c1c22"}
+      - {shape: box, size: [0.4, 1.6, 0.35], at: [-0.45, 0.75, 0.25], color: "#f6f6f2"}
+      - {shape: box, size: [0.4, 1.9, 0.35], at: [0.45, 0.75, 0.25], color: "#f6f6f2"}
+    big_text:
+      - {text: "주말 반납", style: stamp, from: 3.4, pos: [0.5, 0.4], angle: 7}
+    effects:
+      - punch: {at: 3.4, length: 2.4, zoom: 1.25}
+
+  # 10. 소년원 112%
+  - duration: 5.5
+    visual: 방 안에 작은 아이들이 빼곡히 들어찬 모습, 대시보드 막대가 정원선을 넘어 빨갛게
+    caption: 갈 곳은요? 소년원은 이미 정원의 112%가 차 있어요.
+    narration: 갈 곳은요? 소년원은 이미 정원의 백십이 퍼센트가 차 있어요.
+    world: {template: room, seed: 19}
+    time: "20:00"
+    shot: inside
+    crowds:
+      - {agent: person, count: 26, area: floor, scale: [0.6, 0.7], facing: random}
+    panel:
+      title: 소년원 수용률 (전국 평균)
+      bars:
+        - {label: 정원, from: 0, to: 0.89, color: blue, text: "100%"}
+        - {label: 현재, from: 0, to: 1.0, color: red, text: "112%", at: 1.0}
+      status: 초과
+      status_color: red
+
+  # 11. 3층 침대 — 황당함 최고조
+  - duration: 5.5
+    visual: 무대 위 침대가 한 층씩 쌓여 올라가 3층 침대가 되고, '검토 중' 도장
+    caption: 남은 공간은 위쪽뿐. 3층 침대 시대가 열립니다.
+    narration: 남은 공간은 위쪽뿐. 삼 층 침대 시대가 열립니다.
+    beat: 0.6
+    world: {template: studio, seed: 20, params: {color: "#e9e4da"}}
+    shot: wide
+    props:
+      - {model: bed, at: [0, 0, 0], scale: 0.8, color: "#e8e4dc", color2: "#2f6fd6"}
+      - {model: bed, at: [0, 0.82, 0], scale: 0.8, color: "#e8e4dc", color2: "#2f6fd6", grow: {from: 1.0, to: 1.4}}
+      - {model: bed, at: [0, 1.64, 0], scale: 0.8, color: "#e8e4dc", color2: "#2f6fd6", grow: {from: 2.0, to: 2.4}}
+    chyron:
+      - {tag: 가상 상황, text: "법무부(가상), 3층 침대 도입 '긍정 검토'", from: 2.4}
+    big_text:
+      - {text: "검토 중", style: stamp, from: 3.2, pos: [0.5, 0.36], angle: -6}
+
+  # ── 3막: 양쪽 + 현실 + 반전 ───────────────────────────
+  # 12. 찬성 쪽 기대
+  - duration: 6
+    visual: 무대 위 피해자 쪽 의자와 저울, 저울이 한쪽으로 기울며 '변명 불가' 글자
+    caption: 물론 기대하는 효과도 있어요. "어리니까 괜찮아"는 이제 안 통하죠.
+    narration: 물론 기대하는 효과도 있어요. 어리니까 괜찮아는 이제 안 통하죠.
+    world: {template: studio, seed: 21, params: {color: "#141a33"}}
+    shot: wide
+    props:
+      - {shape: box, size: [0.6, 0.08, 0.4], at: [0, 0, 0], color: "#b8923a"}
+      - {shape: cylinder, r: 0.05, h: 1.5, at: [0, 0, 0], color: "#d9b44a"}
+      - {shape: box, size: [1.5, 0.06, 0.08], at: [0, 1.5, 0], color: "#d9b44a"}
+      - {shape: cylinder, r: 0.012, h: 0.6, at: [-0.7, 0.9, 0], color: "#d9b44a"}
+      - {shape: cylinder, r: 0.012, h: 0.8, at: [0.7, 0.7, 0], color: "#d9b44a"}
+      - {shape: cylinder, r: 0.26, h: 0.05, at: [-0.7, 0.88, 0], color: "#d9b44a"}
+      - {shape: cylinder, r: 0.26, h: 0.05, at: [0.7, 0.68, 0], color: "#d9b44a"}
+      - {shape: box, size: [0.25, 0.2, 0.2], at: [0.7, 0.73, 0], color: "#9aa4b2"}
+    big_text:
+      - {text: "변명 불가", from: 2.6, pos: [0.5, 0.58], size: 0.85}
+
+  # 13. 피해자 쪽
+  - duration: 5.5
+    visual: 같은 저울 옆, 빛나는 '처벌 불가' 글자가 깨지듯 사라짐
+    caption: 피해자 가족이 "처벌할 수 없다"는 말을 더는 안 들어도 되고요.
+    narration: 피해자 가족이 처벌할 수 없다는 말을 더는 안 들어도 되고요.
+    world: {template: studio, seed: 21, params: {color: "#141a33"}}
+    shot: wide
+    props:
+      - {shape: box, size: [0.6, 0.08, 0.4], at: [0, 0, 0], color: "#b8923a"}
+      - {shape: cylinder, r: 0.05, h: 1.5, at: [0, 0, 0], color: "#d9b44a"}
+      - {shape: box, size: [1.5, 0.06, 0.08], at: [0, 1.5, 0], color: "#d9b44a"}
+      - {shape: cylinder, r: 0.012, h: 0.6, at: [-0.7, 0.9, 0], color: "#d9b44a"}
+      - {shape: cylinder, r: 0.012, h: 0.8, at: [0.7, 0.7, 0], color: "#d9b44a"}
+      - {shape: cylinder, r: 0.26, h: 0.05, at: [-0.7, 0.88, 0], color: "#d9b44a"}
+      - {shape: cylinder, r: 0.26, h: 0.05, at: [0.7, 0.68, 0], color: "#d9b44a"}
+      - {shape: box, size: [0.25, 0.2, 0.2], at: [0.7, 0.73, 0], color: "#9aa4b2"}
+    big_text:
+      - {text: "처벌 불가", from: 0.5, to: 3.0, pos: [0.5, 0.42], color: "#9fd8ff", size: 0.8}
+    effects:
+      - flash: {at: 3.0, length: 0.08}
+
+  # 14. 반대 쪽 숫자 — 절반은 절도
+  - duration: 6
+    visual: 대시보드에 절도 48%, 살인 0건, 무대 위 작은 지우개·젤리·필통
+    caption: 그런데 작년 촉법소년 사건의 절반 가까이는 절도. 살인은 0건이었어요.
+    narration: 그런데 작년 촉법소년 사건의 절반 가까이는 절도. 살인은 영 건이었어요.
+    world: {template: tabletop, seed: 22}
+    shot: close
+    props:
+      - {shape: box, size: [0.1, 0.04, 0.06], at: [-0.12, 0.9, 0], color: "#f4f4f4"}
+      - {shape: box, size: [0.22, 0.05, 0.07], at: [0.1, 0.9, 0.06], color: "#2f6fd6", yaw: 20}
+      - {model: ball, at: [-0.02, 0.9, -0.12], scale: 0.25, color: "#e0473f"}
+      - {model: ball, at: [0.05, 0.9, -0.14], scale: 0.25, color: "#3aa45a"}
+      - {model: ball, at: [0.0, 0.9, -0.18], scale: 0.25, color: "#f2c94c"}
+    panel:
+      title: 2025년 촉법소년 송치 21,095명
+      bars:
+        - {label: 절도, from: 0, to: 0.48, color: yellow, text: "10,110건"}
+        - {label: 살인, from: 0, to: 0.0, color: red, text: "0건"}
+
+  # 15. 반전 펀치라인
+  - duration: 6
+    visual: 젤리 세 알에 노란 표적 링, '재판 회부' 도장 + 순간 줌인
+    caption: 그러니까 이 거대한 법원과 교도소가 주로 맞서게 될 상대는… 젤리 도둑.
+    narration: 그러니까 이 거대한 법원과 교도소가 주로 맞서게 될 상대는… 젤리 도둑.
+    beat: 0.9
+    world: {template: tabletop, seed: 22}
+    shot: close
+    props:
+      - {model: ball, at: [-0.02, 0.9, -0.02], scale: 0.3, color: "#e0473f"}
+      - {model: ball, at: [0.06, 0.9, -0.04], scale: 0.3, color: "#3aa45a"}
+      - {model: ball, at: [0.01, 0.9, -0.09], scale: 0.3, color: "#f2c94c"}
+    markers:
+      - {at: [0.02, 0.95, -0.05], from: 1.0, text: 피고인(젤리)}
+    big_text:
+      - {text: "재판 회부", style: stamp, from: 4.0, pos: [0.5, 0.36]}
+    effects:
+      - punch: {at: 4.0, length: 2.0, zoom: 1.3}
+
+  # 16. 실제 상황
+  - duration: 7
+    visual: 뉴스 자막띠 '실제 상황', 대시보드에 14세 → 13세(강력·중대·반복 범죄), 국회 계류 배지
+    caption: 실제 정부안은 폐지가 아니라, 강력·중대 범죄만 13세로 낮추는 것. 아직 법 개정 전이에요.
+    narration: 실제 정부안은 폐지가 아니라, 강력하고 중대한 범죄만 열세 살로 낮추는 것. 아직 법 개정 전이에요.
+    world: {template: studio, seed: 23, params: {color: "#e9e4da"}}
+    shot: front
+    props:
+      - {model: person, at: [-0.3, 0, 0], yaw: 180, scale: 0.68}
+      - {model: person, at: [0.3, 0, 0], yaw: 180, scale: 0.73}
+    labels:
+      - {text: "13세", at: [0.3, 1.3, 0], from: 2.0}
+    chyron:
+      - {tag: 실제 상황, text: "정부, 강력·중대·반복 범죄 13세부터 처벌 추진 (2026.7)", from: 0.5}
+    panel:
+      title: 형사처벌 시작 나이
+      value: {from: 14, to: 13, unit: 세, scale: linear, at: 1.5, length: 1.5}
+      stats: ["강력·중대·반복 범죄에 한해", "국회 통과 전"]
+      status: 논의 중
+      status_color: orange
+
+  # 17. 질문 카드
+  - duration: 7
+    visual: 어두운 배경 위 질문과 번호 선택지 3개가 차례로 등장
+    caption: 여러분 생각은 어때요? 번호로 남겨 주세요.
+    card:
+      question: 촉법소년, 어떻게 해야 할까?
+      options: ["완전 폐지", "강력범죄만 13세로", "지금 기준 + 교화 강화"]
+      cta: 댓글로 번호를 남겨주세요

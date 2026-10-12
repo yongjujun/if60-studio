@@ -93,3 +93,30 @@ def test_render_without_voice_is_silent(tmp_path):
                                      capture_output=True, text=True).stdout)
     kinds = [s["codec_type"] for s in info["streams"]]
     assert kinds == ["video"]
+
+
+def test_satire_devices_render():
+    font = R.text.find_font()
+    img = np.full((640, 360, 3), 200, np.uint8)
+    stamped = img.copy()
+    overlay.draw_big_text(stamped, {"text": "기각", "style": "stamp", "from": 0}, 1.0, 5, font, 1 / 3)
+    red = (stamped[..., 0].astype(int) - stamped[..., 1] > 80).sum()
+    assert red > 200                                              # 빨간 도장이 찍힘
+    ch = img.copy()
+    overlay.draw_chyron(ch, {"tag": "속보", "text": "정부 발표"}, 1.0, 5, font, 1 / 3)
+    assert (ch != img).any(axis=-1)[int(640 * 0.815):].mean() > 0.01
+    z = overlay.punch_zoom(np.arange(640 * 360 * 3, dtype=np.uint8).reshape(640, 360, 3), {"at": 0, "zoom": 1.5}, 0.5)
+    assert z.shape == (640, 360, 3)
+
+
+def test_beat_adds_pause_and_example_is_valid(tmp_path, monkeypatch):
+    from if60 import tts
+    monkeypatch.setattr(tts, "CACHE", tmp_path)
+    monkeypatch.setitem(tts.SYNTH, "supertonic", lambda text, v, c: (np.full(24000, 0.3, np.float32), 24000))
+    a = R.Scene(duration=3, layers=[], caption="펀치라인.")
+    b = R.Scene(duration=3, layers=[], caption="펀치라인.", beat=0.8)
+    R.apply_voice([a], "supertonic:M1", log=lambda *x: None)
+    R.apply_voice([b], "supertonic:M1", log=lambda *x: None)
+    assert b.duration - a.duration == pytest.approx(0.8)
+    ytxt = open("scenes/juvenile_law_abolished.yaml", encoding="utf-8").read()
+    assert planner.validate(yaml.safe_load(ytxt), planner.catalog(), 90) == []

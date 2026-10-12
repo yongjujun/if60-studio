@@ -155,6 +155,8 @@ class Scene:
     big_text: list = field(default_factory=list) # 빛나는 큰 글자 {text, from, to, pos | at, color, size}
     markers: list = field(default_factory=list)  # 빛나는 표적 링 {at: [x,y,z], from, to, text, color}
     card: dict | None = None                     # 마무리 카드 {question, options, cta}
+    chyron: list = field(default_factory=list)   # 뉴스 자막띠 {tag: 속보, text, from, to}
+    beat: float = 0.0                            # 대사 뒤 '정적'(초) — 펀치라인 뒤 웃음 틈
     look: str = "voxel"                          # voxel | smooth
     # --- 내레이션 (TTS)
     narration: str | None = None                 # 읽을 문장 (없으면 caption). 숫자·기호를 읽는 그대로 쓸 때
@@ -217,7 +219,7 @@ def _ease(x: float) -> float:
     return 0.5 - 0.5 * math.cos(math.pi * min(max(x, 0.0), 1.0))
 
 
-EFFECTS = ("shake", "flash", "tint", "whiteout", "rewind")
+EFFECTS = ("shake", "flash", "tint", "whiteout", "rewind", "punch")
 
 
 def normalize_effects(raw) -> list[tuple[str, dict]]:
@@ -340,6 +342,7 @@ def load_project(path: str, style_override: str | None = None,
             props=s.get("props", []) or [], labels=s.get("labels", []) or [],
             vfx=s.get("vfx", []) or [], panel=s.get("panel"), big_text=_as_list(s.get("big_text")),
             markers=_as_list(s.get("markers")), card=s.get("card"), narration=s.get("narration"),
+            chyron=_as_list(s.get("chyron")), beat=float(s.get("beat", 0) or 0),
             look=str(s.get("look", spec.get("look", "voxel"))),
             bloom=float(s.get("bloom", spec.get("bloom", 0.7 if spec.get("look") == "smooth" else 0.45)))))
     return spec, style, scenes
@@ -420,6 +423,9 @@ class Composer:
             else:
                 big = np.asarray(Image.fromarray(small).resize((W, H), Image.Resampling.NEAREST)).copy()
         big = np.ascontiguousarray(big)
+        for name, prm in sc.effects:
+            if name == "punch":
+                big = overlay.punch_zoom(big, prm, t)
         top, bottom = self.viewport()
         if prep is not None:
             for mk in sc.markers:
@@ -428,6 +434,9 @@ class Composer:
         for bt in sc.big_text:
             pt = self.vr.project([bt["at"]])[0] if (prep is not None and bt.get("at") is not None) else None
             overlay.draw_big_text(big, bt, t, sc.duration, self.font, self.u, pt)
+        for ch in sc.chyron:
+            overlay.draw_chyron(big, ch, t, sc.duration, self.font, self.u,
+                                y_frac=(bottom - int(64 * self.u) - int(14 * self.u)) / self.h)
         if sc.panel:
             overlay.draw_panel(big, sc.panel, t, sc.duration, self.font, top + int(28 * self.u), self.u)
         if sc.card is not None:
@@ -473,7 +482,7 @@ def scale_times(sc: Scene, k: float) -> None:
         mul(prm)
     for v in sc.vfx:
         mul(v, ("from", "to"))
-    for item in sc.big_text + sc.markers + sc.labels:
+    for item in sc.big_text + sc.markers + sc.labels + sc.chyron:
         mul(item, ("from", "to"))
     for g in [p.get("grow") for p in sc.props] + [c.get("grow") for c in sc.crowds]:
         if isinstance(g, dict):
@@ -511,7 +520,7 @@ def apply_voice(scenes: list[Scene], voice, log=print) -> np.ndarray:
             continue
         sec = len(clip) / tts.SR
         lead = 0.08 if i == 0 else LEAD
-        need = lead + sec + TAIL
+        need = lead + sec + TAIL + sc.beat
         if sc.card:                                   # 선택지가 다 나올 시간은 남긴다
             need = max(need, 1.6 + 0.35 * len(sc.card.get("options") or []))
         new = max(need, GAP_MIN)

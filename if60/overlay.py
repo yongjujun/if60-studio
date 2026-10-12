@@ -387,6 +387,8 @@ def draw_big_text(img: np.ndarray, item: dict, t: float, duration: float, font_p
     a, b = window(item, duration)
     if not (a <= t <= b) or not item.get("text"):
         return
+    if item.get("style") == "stamp":
+        return draw_stamp(img, item, t, duration, font_path, u, point)
     H, W = img.shape[:2]
     color = hexrgb(item.get("color", "#ffd23f"))
     px = int(130 * u * float(item.get("size", 1.0)))
@@ -408,6 +410,94 @@ def draw_big_text(img: np.ndarray, item: dict, t: float, duration: float, font_p
     pulse = 1.0 + 0.15 * math.sin(t * 6.0)
     add_light(img, glow, x, y, k * out * pulse)
     paste_rgba(img, core, x, y, opacity=k * out)
+
+
+@lru_cache(maxsize=32)
+def _stamp(text: str, px: int, color: tuple, angle: float, font_path: str) -> np.ndarray:
+    """빨간 도장: 두 겹 테두리 + 굵은 글씨 + 잉크가 덜 묻은 얼룩, 살짝 기울임"""
+    f = font(font_path, px)
+    tw = int(f.getlength(text))
+    pad = int(px * 0.45)
+    w, h = tw + pad * 2, int(px * 1.25) + pad * 2
+    im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    lw = max(2, px // 11)
+    d.rounded_rectangle([lw, lw, w - lw, h - lw], radius=px // 5, outline=(*color, 255), width=lw)
+    d.rounded_rectangle([lw * 3, lw * 3, w - lw * 3, h - lw * 3], radius=px // 7, outline=(*color, 255),
+                        width=max(1, lw // 2))
+    bold(d, (pad, pad + px * 0.05), text, f, (*color, 255))
+    arr = np.asarray(im).copy()
+    rng = np.random.default_rng(len(text) * 7 + px)
+    holes = rng.random(arr.shape[:2]) < 0.10                     # 잉크 얼룩
+    arr[..., 3] = np.where(holes, (arr[..., 3] * 0.35).astype(np.uint8), arr[..., 3])
+    return np.asarray(Image.fromarray(arr).rotate(angle, expand=True, resample=Image.Resampling.BICUBIC))
+
+
+def draw_stamp(img: np.ndarray, item: dict, t: float, duration: float, font_path: str, u: float,
+               point=None) -> None:
+    """'쾅' 찍히는 도장 (판결·기각·승인 같은 풍자 포인트). 크게 떨어져 내려와 꽝 박힌다."""
+    a, b = window(item, duration)
+    H, W = img.shape[:2]
+    color = hexrgb(item.get("color", "#e0303a"))
+    px = max(8, int(110 * u * float(item.get("size", 1.0))))
+    st = _stamp(safe_text(str(item["text"])), px, color, float(item.get("angle", -8)), font_path)
+    p = (t - a) / 0.16
+    s = 2.2 - 1.2 * min(1.0, p) ** 2                              # 위에서 떨어지듯 커졌다가 탁
+    op = min(1.0, p * 1.5) * 0.92
+    if abs(s - 1) > 0.01:
+        st = np.asarray(Image.fromarray(st).resize((max(1, int(st.shape[1] * s)), max(1, int(st.shape[0] * s))),
+                                                   Image.Resampling.BILINEAR))
+    if point is not None:
+        cx, cy = point
+    else:
+        pos = item.get("pos", [0.5, 0.42])
+        cx, cy = float(pos[0]) * W, float(pos[1]) * H
+    if 1.0 <= p < 2.2:                                            # 찍히는 순간 살짝 흔들림
+        cx += math.sin(t * 90) * 6 * u * (2.2 - p)
+    paste_rgba(img, st, int(cx - st.shape[1] / 2), int(cy - st.shape[0] / 2), opacity=op)
+
+
+# ------------------------------------------------------------------ 뉴스 자막띠
+def draw_chyron(img: np.ndarray, item: dict, t: float, duration: float, font_path: str, u: float,
+                y_frac: float = 0.815) -> None:
+    """뉴스 하단 자막띠: [속보] 빨간 꼬리표 + 흰 띠 문구. 왼쪽에서 밀려 들어온다."""
+    a, b = window(item, duration)
+    if not (a <= t <= b) or not item.get("text"):
+        return
+    H, W = img.shape[:2]
+    tag = safe_text(str(item.get("tag", "속보")))
+    txt = safe_text(str(item["text"]))
+    tc = hexrgb(item.get("color", "#d7262e"))
+    h = int(64 * u)
+    tf = font(font_path, int(34 * u))
+    tag_w = int(tf.getlength(tag) + 34 * u)
+    xf = fit(font_path, txt, 34 * u, W - tag_w - 60 * u)
+    im = Image.new("RGBA", (W, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, W, h], fill=(250, 250, 250, 240))
+    d.rectangle([0, 0, tag_w, h], fill=(*tc, 255))
+    bold(d, (17 * u, (h - tf.size) / 2 - 3 * u), tag, tf, (255, 255, 255, 255))
+    d.text((tag_w + 20 * u, (h - xf.size) / 2 - 3 * u), txt, font=xf, fill=(20, 20, 26, 255))
+    d.rectangle([0, h - max(1, int(4 * u)), W, h], fill=(*tc, 255))
+    k = ease_out((t - a) / 0.3)
+    x = int(-(1 - k) * W)
+    paste_rgba(img, np.asarray(im), x, int(H * float(item.get("y", y_frac))))
+
+
+# ------------------------------------------------------------------ 펀치 줌 (코미디 줌인)
+def punch_zoom(img: np.ndarray, prm: dict, t: float) -> np.ndarray:
+    """'정적… 줌인' — 화면을 순식간에 확대해 멈춘다. 펀치라인·황당한 순간에."""
+    at, length = float(prm.get("at", 0.0)), float(prm.get("length", 1.0))
+    if not (at <= t < at + length):
+        return img
+    z = 1 + (float(prm.get("zoom", 1.3)) - 1) * ease_out((t - at) / 0.12)
+    H, W = img.shape[:2]
+    cx, cy = prm.get("center", [0.5, 0.45])
+    cw, ch = int(W / z), int(H / z)
+    x0 = int(min(max(cx * W - cw / 2, 0), W - cw))
+    y0 = int(min(max(cy * H - ch / 2, 0), H - ch))
+    crop = Image.fromarray(img[y0:y0 + ch, x0:x0 + cw])
+    return np.asarray(crop.resize((W, H), Image.Resampling.BILINEAR)).copy()
 
 
 # ------------------------------------------------------------------ 표적 링

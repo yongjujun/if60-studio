@@ -36,7 +36,7 @@ AI 영상 생성 크레딧 없이 컴퓨터에서 직접 렌더링하므로 편�
 ```bash
 python -m if60 make "파리는 어떻게 그렇게 잘 도망칠까?"            # 1080×1920 완성본
 python -m if60 make "파리는 어떻게 그렇게 잘 도망칠까?" --preview  # 빠른 저화질 확인
-python -m if60 make "주제" --length 90                               # 길이 지정
+python -m if60 make "주제" --length 60                               # 길이 지정 (기본 90초)
 ```
 
 ### 🎙 내레이션 목소리
@@ -196,6 +196,20 @@ card:                                    # 마무리 카드 (world 없이도 됨
 3. **본편** — 숫자는 대시보드 카운터로, 핵심 수치는 빛나는 큰 글자로, 지점은 표적 링으로
 4. **반전 비교** 한 번 → **마무리 카드**로 댓글 유도
 
+### 블랙코미디·풍자 톤 (기본)
+대본은 **정색한 다큐 톤으로 사실을 짚고, 그 사실이 만드는 부조리에 피식 웃게** 쓰도록 되어 있습니다. 기본 길이는 **약 90초, 3막**
+(①콜드 오픈+사실 ②상상 전개 — 황당함이 점점 커짐 ③찬반 양쪽+현실 확인+질문 카드). 예시: `scenes/juvenile_law_abolished.yaml`
+- 풍자의 과녁은 제도·관료주의·모순. 피해자·약자·실존 인물은 조롱하지 않고, 의견이 갈리는 주제는 양쪽을 고르게 다룹니다.
+- 상상 장면은 `가상 상황` 자막띠로 표시해 실제 사실과 섞이지 않게 합니다.
+
+```yaml
+big_text: [{text: "기각", style: stamp, from: 2.0, angle: -8}]       # 빨간 도장이 쾅
+chyron: [{tag: 가상 상황, text: "정부, 촉법소년 제도 전면 폐지", from: 0.6}]   # 뉴스 하단 자막띠 (속보 / 가상 상황 / 실제 상황)
+effects:
+  - punch: {at: 3.4, length: 2.0, zoom: 1.3}                         # 순간 줌인 후 정지 (어이없는 순간)
+beat: 0.8                                                            # 대사 끝나고 0.8초 정적 — 펀치라인 뒤 웃을 틈
+```
+
 ### 사물·원리를 직접 보여주기 (자유 주제)
 과자 봉지, 분자, 음식, 물건처럼 **장소가 아닌 대상**은 `studio`(단색 무대)나 `tabletop`(식탁 위) 세트에 소품을 놓고,
 움직이는 입자는 군중으로, 이름표는 라벨로 붙입니다. 예시: `scenes/nitrogen_snack.yaml`
@@ -271,7 +285,7 @@ shot: {type: topdown, center: [0, 0, 0], height: 90, height_to: 75}
 | AI 이미지·영상 도트 후처리 | `python -m if60 pixelate 입력.mp4 -o out/결과.mp4` |
 | 주제 → 영상 한 번에 | `python -m if60 make "주제"` (위 '가장 쉬운 사용법') |
 | 주제로 장면 파일만 만들기 | `python -m if60 plan "주제" -o scenes/초안.yaml` |
-| 효과 | `shake`(카메라 흔들림) `flash` `tint` `whiteout` `rewind` / `camera: {fade_in: 0.5, fade_out: 0.8}` |
+| 효과 | `shake`(카메라 흔들림) `flash` `tint` `whiteout` `rewind` `punch`(줌인) / `camera: {fade_in: 0.5, fade_out: 0.8}` |
 
 ### API 키 (선택 — Claude Code를 쓰면 필요 없음)
 키는 **절대 YAML이나 코드에 적지 말고** 환경변수로만 넣으세요. `.env` 파일은 `.gitignore`로 저장소에서 제외됩니다.

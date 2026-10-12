@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
 
     mk = sub.add_parser("make", help="주제만 입력하면 조사 → 대본 → 렌더링까지 한 번에")
     mk.add_argument("topic", nargs="?", help="주제 (비우면 입력창이 뜸)")
-    mk.add_argument("--length", type=int, default=60, help="목표 길이(초), 기본 60")
+    mk.add_argument("--length", type=int, default=90, help="목표 길이(초), 기본 90")
     mk.add_argument("--preview", action="store_true", help="저화질 미리보기로만 빠르게")
     mk.add_argument("--no-open", action="store_true", help="완성 후 영상을 자동으로 열지 않기")
     mk.add_argument("--no-search", action="store_true", help="웹 검색 없이 작성 (비추천)")
@@ -61,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     pl = sub.add_parser("plan", help="주제로 장면 YAML 초안 만들기 (Claude API)")
     pl.add_argument("topic")
     pl.add_argument("-o", "--out", required=True)
-    pl.add_argument("--length", type=int, default=60)
+    pl.add_argument("--length", type=int, default=90)
 
     sub.add_parser("styles", help="스타일 프리셋 목록")
 

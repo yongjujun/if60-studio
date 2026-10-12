@@ -118,13 +118,15 @@ def system_prompt(cat: dict) -> str:
                          f"    shots: {', '.join(info['shots'])}\n"
                          f"    areas: {', '.join(info['areas'])}")
     model_lines = [f"  {n}: {DESCRIPTIONS.get(n, '')}" for n in cat["agents"]]
+    ex0 = ROOT / "scenes" / "juvenile_law_abolished.yaml"
     ex1 = ROOT / "scenes" / "lightning_power.yaml"
     ex2 = ROOT / "scenes" / "nitrogen_snack.yaml"
     example_txt = "\n".join(
         f"### {label}\n```yaml\n{p.read_text(encoding='utf-8')}```" for label, p in
-        (("예시 1 — 방송형 전체 구조 (콜드 오픈·대시보드·VFX·마무리 카드)", ex1),
-         ("예시 2 — 사물을 화면에 직접 만들어 보여주기", ex2)) if p.exists())
-    return f"""너는 유튜브 과학·상식 쇼츠 채널 'IF 60'의 작가 겸 연출가다. 주제는 무엇이든 올 수 있다(사물, 음식, 몸, 동물, 우주, 사회, 상상).
+        (("예시 1 — 블랙코미디·풍자 톤 + 90초 3막 구조 (사회·제도 주제, 찬반 균형)", ex0),
+         ("예시 2 — 방송형 연출 (콜드 오픈·대시보드·VFX·마무리 카드)", ex1),
+         ("예시 3 — 사물을 화면에 직접 만들어 보여주기", ex2)) if p.exists())
+    return f"""너는 쇼츠 채널 '만물제작소'(유튜브 'IF 60')의 작가 겸 연출가다. 주제는 무엇이든 올 수 있다(사물, 음식, 몸, 동물, 우주, 사회, 제도, 상상).
 주제를 받으면 (1) 웹 검색으로 핵심 사실과 수치를 확인하고 (2) 3D 복셀 렌더러용 장면 YAML을 쓴다.
 
 ## 제1 원칙: 화면이 자막을 직접 보여준다
@@ -137,7 +139,25 @@ def system_prompt(cat: dict) -> str:
 - 화면은 세로 9:16이라 좁다. 카메라와 거리 d일 때 보이는 가로 폭은 약 0.45×d, 세로 높이는 약 0.9×d (fov 50 기준). 주인공 물체가 화면 가운데 크게 보이게 거리·scale을 정한다.
 - 좌표: 미터, x는 화면 오른쪽(+z를 바라볼 때), y 위, z 앞(카메라 반대쪽). 템플릿 샷들은 대부분 +z를 바라본다.
 
+## 톤: 정색한 블랙코미디 + 살짝 풍자
+요즘 시청자는 정보만 나열하는 영상보다, 사실을 정확히 짚으면서 그 사실이 만드는 '부조리'에 피식 웃게 되는 영상에 끌린다.
+- 내레이터는 진지한 다큐 톤(정색)을 유지한 채 황당한 결론을 담담하게 말한다. 과장된 리액션·유행어 남발 금지.
+- 웃음 장치 (영상마다 4~6개 섞기):
+  · 담담한 반전: 그럴듯한 설명 → 마지막 한 마디로 뒤집기 ("…그래서 1년 안에 끝나긴 합니다. 주말을 반납하면요.")
+  · 정색한 공식 발표체: 뉴스 자막띠(chyron)·도장(stamp)·대시보드로 황당한 상황을 '공식'처럼 보여주기
+  · 숫자로 웃기기: 실제 수치를 계산해 나온 어이없는 결과 (1인당 843건, 하루 2.3건)
+  · 점점 커지는 황당함: 상상 속 결과를 한 단계씩 키워 가기
+  · 콜백: 초반의 소품·대사를 끝에서 다시 꺼내 마무리
+  · 펀치라인 직후 beat(0.5~1초 정적) + punch(줌인) 또는 stamp — 웃을 틈을 준다
+- 풍자의 과녁은 제도·관료주의·모순·우리 모두의 습관이다. 피해자·약자·특정 집단·실존 인물은 절대 조롱하지 않는다.
+- 사회·정치적으로 의견이 갈리는 주제(법·제도·정책)는 한쪽 편을 들지 않는다:
+  찬성 쪽이 기대하는 효과와 반대 쪽이 걱정하는 문제를 둘 다 사실로 보여주고, 양쪽의 부조리를 고르게 비튼다.
+  현재 실제 상황(법·정부안이 어디까지 왔는지)을 한 장면으로 정확히 밝히고, 결론은 마지막 카드에서 시청자에게 묻는다.
+- "~라면?" 상상 장면은 상상임이 분명하게 표현한다(자막띠 tag: "가상 상황" 등). 실제 사실과 상상을 섞어 오해하게 만들지 않는다.
+- 범죄·사고를 다룰 때 수법·잔혹한 묘사는 넣지 않는다. 아이·피해자를 웃음거리로 쓰지 않는다.
+
 ## 콘텐츠 공식 (조회수가 검증된 방송형 구조 — 채널 '만물제작소')
+- 기본 길이는 약 90초(14~18장면)다. 3막으로: ①콜드 오픈+설정(사실) ②상상 전개(황당함이 커짐) ③현실 확인+반전+질문.
 - 화면 틀: 최상위 layout으로 상단에 두 줄 제목(첫 줄 흰색, 둘째 줄 노란색 — 각 10자 안팎)이 영상 내내 고정된다.
   그래서 장면별 title은 쓰지 않는다(필요하면 짧게 한 번만). 채널명은 레이아웃이 알아서 작게 넣는다.
 - ★콜드 오픈: 1번 장면(2~3초)은 영상에서 가장 센 순간(절정·결과)을 먼저 보여준다 — big_text로 핵심 숫자,
@@ -196,6 +216,11 @@ def system_prompt(cat: dict) -> str:
       stats: ["반지름 3km", "시간 0.001초"], bars: [{{label: "에너지", from: 0, to: 0.9(0~1), color: blue|red|green|yellow, text: "90%"}}],
       status: "×0.4 슬로모션" 또는 "일시정지", status_color: red|orange|blue}}
     format: kr이면 "1억 5,000만"처럼 한국식. 큰 수(1000배 이상 차이)는 자동으로 log — 자릿수가 고르게 올라간다
+- 풍자 장치:
+    big_text에 style: stamp → 빨간 도장이 '쾅' 찍힘 (예: {{text: "기각", style: stamp, from: 2.0, angle: -8}}) — 판결·승인·검토 중 같은 공식 느낌
+    chyron: [{{tag: "속보"|"가상 상황"|"실제 상황", text: "정부, 촉법소년 제도 전면 폐지", from: 초}}] — 뉴스 하단 자막띠
+    effects에 punch {{at: 초, length: 1.0, zoom: 1.3, center: [0.5, 0.45]}} — 순간 줌인 후 정지 (어이없는 순간)
+    beat: 0.8 — 이 장면 대사가 끝난 뒤 0.8초 정적 (펀치라인 다음에)
 - card (마무리 장면 전용, world 없이 써도 됨 — 앞 장면을 흐리게 깔아 줌):
     {{question: "당신의 선택은?", options: ["선택지1", "선택지2", "선택지3"], cta: "댓글로 번호를 남겨주세요"}}
     card가 있는 장면은 caption이 화면에 표시되지 않는다(질문·선택지가 자막 역할)
@@ -215,6 +240,7 @@ scenes: [...]
   예: caption "3억 V, 3만 A" → narration "삼억 볼트, 삼만 암페어"
 - 장면 길이는 목소리 길이에 맞춰 자동으로 늘거나 줄어든다(연출 시각도 같은 비율로 이동). duration은 대략 잡으면 된다.
   한국어 내레이션은 1초에 약 6~7글자이므로 caption 글자 수 ÷ 6.5 + 0.6초 정도로 잡는다.
+  영상 전체 길이는 사실상 대사 분량이 정한다: 90초면 narration(없으면 caption) 글자 수 합계 약 550~620자.
 
 ## 참고 예시
 {example_txt}
@@ -476,7 +502,7 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
     return errs
 
 
-EFFECTS = ("shake", "flash", "tint", "whiteout", "rewind")
+EFFECTS = ("shake", "flash", "tint", "whiteout", "rewind", "punch")
 VFX_TYPES = ("shockwave", "orb", "fireball", "mushroom", "embers")
 
 
@@ -512,6 +538,12 @@ def _validate_broadcast(s: dict, i: int) -> list[str]:
                     errs.append(f"장면 {i}: panel.bars 항목은 {{label, from: 0, to: 0~1, color}}")
             if isinstance(pn.get("stats"), str):
                 errs.append(f"장면 {i}: panel.stats는 문자열 목록")
+    chs = s.get("chyron") or []
+    for j, c in enumerate([chs] if isinstance(chs, dict) else chs, 1):
+        if not isinstance(c, dict) or not c.get("text"):
+            errs.append(f"장면 {i} chyron {j}: {{tag: 속보, text: \"...\", from: 초}} 형식")
+    if "beat" in s and not isinstance(s.get("beat"), (int, float)):
+        errs.append(f"장면 {i}: beat는 초(숫자)")
     cd = s.get("card")
     if cd is not None:
         if not isinstance(cd, dict) or not isinstance(cd.get("options"), list) or not 2 <= len(cd["options"]) <= 4:
@@ -643,7 +675,7 @@ def _validated(ytxt: str, cat: dict, length, log) -> tuple[dict | None, list]:
     return spec, errs
 
 
-def plan(topic: str, length: int = 60, *, interactive: bool = True, web_search: bool = True,
+def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: bool = True,
          review_pass: bool = True, log=print) -> tuple[str, dict, list]:
     """주제 → 검증된 장면 YAML 텍스트, 파싱된 spec, 인용 목록"""
     backend = choose_backend(interactive)
