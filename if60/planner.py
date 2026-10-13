@@ -165,11 +165,26 @@ def system_prompt(cat: dict) -> str:
   "어떻게 이렇게 됐을까요? 처음부터 볼게요." 같은 caption으로 시작점부터 다시 보여준다.
 - 본편: 한 장면 = 한 가지 사실. 4~6초씩. 숫자가 나오면 panel(대시보드)의 카운터가 0부터 굴러 올라가게,
   핵심 수치는 big_text로 크게 빛나게, 가리키는 지점은 markers로 표시한다. 비유는 한국인에게 익숙한 것으로.
-- 후반 반전 1회(의외의 사실이나 비교), 마지막 장면은 card(질문 + 번호 선택지 3개 + "댓글로 번호를 남겨주세요").
+- 마지막 장면은 card(질문 + 번호 선택지 3개 + "댓글로 번호를 남겨주세요").
 - HUD(우측 상단 배지)는 시계·짧은 문구에만: 시계 {{from: "05:00", to: "05:30", step: 1}}, 고정 문구 "공기 = 질소 78%"
 - 말투: 친근한 존댓말. caption은 한 장면 45자 이내, 숫자는 구체적으로.
 - 사실은 검색으로 확인된 것만. 불확실하면 쓰지 않는다. 출처를 facts_to_check에 URL과 함께.
 - 위험한 행동을 따라 하게 만드는 내용, 실존 인물·상표·저작권 캐릭터는 넣지 않는다.
+
+## ★시청 유지 설계: 3초 훅 · 20초 반전 · 기억에 남는 끝
+쇼츠는 세 지점에서 시청자를 잃는다. 각 지점을 맡는 장면에 `role:`을 붙인다 (렌더링에는 영향 없음, 구조 검사용).
+- role: hook (1번 장면) — 스크롤을 멈추게 한다. 3초 안에 끝난다: caption(narration) 20자 안팎.
+  · 설명으로 시작하지 않는다. "궁금해서 못 넘기는 한 문장" — 결과를 먼저 던지고 이유는 숨긴다
+    (예: "만 10세, 지우개 절도. 판결은…", "이 캔 하나로 서울이 멈춥니다.").
+  · 첫 프레임부터 화면이 움직이고(vfx·punch·grow), 핵심 숫자나 도장이 big_text로 크게 뜬다.
+- role: twist (영상 시작 후 약 15~30초에 시작하는 장면, 보통 4~6번째) — 이탈을 막는 중간 반전.
+  · 지금까지 쌓은 예상을 한 번 뒤집는다: "그런데…", "문제는…", 예상과 반대인 숫자, 상황의 판이 커짐.
+  · 반전 직후 beat 또는 punch로 한 박자 준다. 후반(끝에서 2~4번째 장면)에도 반전을 한 번 더 둘 수 있다.
+- role: payoff (card 바로 앞, 끝에서 2~3번째 안) — 기억에 남을 한 줄. 영상이 끝나도 머리에 남는 문장이다.
+  · 첫 장면(hook)의 소품·숫자·대사를 다시 꺼내는 콜백이면 가장 좋다(처음 장면으로 되돌아가게 → 반복 재생).
+  · 짧고 단정하게, 펀치라인 뒤 beat 0.8초.
+- 마지막 card의 질문은 hook에서 던진 궁금증과 이어지게 한다.
+- 장면 시작 시각은 앞 장면들의 대사 길이(글자 수 ÷ 6.5 + 0.6초)를 더해 계산한다.
 
 ## 렌더러가 지원하는 것 (이 목록 밖의 이름을 쓰면 렌더링이 실패한다)
 템플릿(world.template):
@@ -179,7 +194,7 @@ def system_prompt(cat: dict) -> str:
 {chr(10).join(model_lines)}
 
 장면 필드:
-- duration(초), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
+- duration(초), role(선택: hook|twist|payoff), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
 - world: {{template: 이름, seed: 정수, params: {{...}}}}
 - shot: 템플릿 샷 이름, 또는 직접 카메라:
     {{from: [x,y,z], to: [x,y,z], target: [x,y,z], target_to: [x,y,z], fov: 50}}
@@ -502,6 +517,59 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
     return errs
 
 
+# ------------------------------------------------------------------ 시청 유지 구조
+HOOK_MAX_SEC = 3.5          # 1번 장면(훅)은 이 안에 끝나야 함
+TWIST_WINDOW = (15.0, 30.0)  # 중간 반전 장면이 시작해야 하는 구간(초)
+ROLES = ("hook", "twist", "payoff")
+
+
+def spoken_seconds(scene: dict) -> float:
+    """장면 길이 추정 — 실제 영상은 목소리 길이에 맞춰지므로 대사 글자 수로 계산 (card는 duration)"""
+    if isinstance(scene.get("card"), dict):
+        try:
+            return float(scene.get("duration", 5))
+        except (TypeError, ValueError):
+            return 5.0
+    text = str(scene.get("narration") or scene.get("caption") or "")
+    if not text.strip():
+        try:
+            return float(scene.get("duration", 4))
+        except (TypeError, ValueError):
+            return 4.0
+    return len(re.sub(r"\s", "", text)) / 6.5 + 0.6
+
+
+def retention_issues(spec: dict) -> list[str]:
+    """3초 훅 · 20초 반전 · 기억에 남는 끝 구조 검사. 렌더링 오류가 아니라 '더 붙잡는 영상'을 위한 권고."""
+    scenes = [s for s in (spec or {}).get("scenes") or [] if isinstance(s, dict)]
+    if len(scenes) < 4:
+        return []   # 아주 짧은 시험용 영상은 검사하지 않음
+    issues, starts, t = [], [], 0.0
+    for s in scenes:
+        starts.append(t)
+        t += spoken_seconds(s)
+    for i, s in enumerate(scenes, 1):
+        if s.get("role") is not None and s.get("role") not in ROLES:
+            issues.append(f"장면 {i}: role '{s.get('role')}'는 쓸 수 없음 (hook/twist/payoff 중 하나)")
+    first = scenes[0]
+    if first.get("role") != "hook":
+        issues.append("1번 장면에 role: hook이 없음 — 첫 장면을 3초 훅으로 만들 것")
+    hook_len = spoken_seconds(first)
+    if hook_len > HOOK_MAX_SEC:
+        issues.append(f"훅(1번 장면) 대사가 약 {hook_len:.1f}초 — {HOOK_MAX_SEC:.0f}초 안에 끝나게 20자 안팎으로 줄일 것")
+    lo, hi = TWIST_WINDOW
+    twists = [(i, starts[i - 1]) for i, s in enumerate(scenes, 1) if s.get("role") == "twist"]
+    if not twists:
+        issues.append(f"중간 반전(role: twist)이 없음 — 시작 후 {lo:.0f}~{hi:.0f}초에 예상을 뒤집는 장면을 둘 것")
+    elif not any(lo <= st <= hi for _, st in twists):
+        where = ", ".join(f"{i}번 장면 {st:.0f}초" for i, st in twists)
+        issues.append(f"중간 반전이 {lo:.0f}~{hi:.0f}초 구간에 없음 (지금: {where}) — 앞 장면 대사를 줄이거나 늘려서 맞출 것")
+    tail = scenes[-3:] if isinstance(scenes[-1].get("card"), dict) else scenes[-2:]
+    if not any(s.get("role") == "payoff" for s in tail):
+        issues.append("끝에 role: payoff 장면이 없음 — 마지막 card 바로 앞에 기억에 남는 한 줄(가능하면 첫 장면 콜백)을 둘 것")
+    return issues
+
+
 EFFECTS = ("shake", "flash", "tint", "whiteout", "rewind", "punch")
 VFX_TYPES = ("shockwave", "orb", "fireball", "mushroom", "embers")
 
@@ -713,6 +781,23 @@ def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: 
         ytxt = extract_yaml(text2)
     else:
         raise RuntimeError("장면 파일을 자동으로 고치지 못했어요: " + "; ".join(errs))
+    issues = retention_issues(spec)
+    if issues:
+        log("▶ 시청 유지 구조 다듬는 중 (3초 훅 · 20초 반전 · 끝): " + "; ".join(issues[:2]) + (" …" if len(issues) > 2 else ""))
+        fix = ("아래 YAML의 시청 유지 구조를 고쳐. 문제:\n- " + "\n- ".join(issues) +
+               "\n\n시스템 프롬프트의 '시청 유지 설계' 규칙을 따른다. 확인된 사실·수치·출처는 바꾸지 말고, "
+               "장면 순서·대사 길이·문장·role 표시만 손봐. ```yaml 블록 하나로 출력해.\n\n```yaml\n" + ytxt + "```")
+        try:
+            ytxt2 = extract_yaml(call(fix, False)[0])
+            spec2, errs2 = _validated(ytxt2, cat, length, log)
+            if not errs2 and len(retention_issues(spec2)) < len(issues):
+                ytxt, spec = ytxt2, spec2
+                left = retention_issues(spec)
+                log("  · 구조 개선 완료" + (" (남은 권고: " + "; ".join(left) + ")" if left else ""))
+            else:
+                log("  · 수정안이 더 낫지 않아 원래 대본 유지" + (": " + "; ".join(errs2[:2]) if errs2 else ""))
+        except Exception as e:
+            log(f"  · 구조 다듬기 중 문제가 있어 원래 대본으로 진행: {e}")
     if review_pass:
         log("▶ 감독 검수: 장면 미리보기를 보며 화면과 자막이 맞는지 확인 중 (1~3분)")
         t1 = time.time()

@@ -256,3 +256,67 @@ def test_validate_props_and_labels(cat):
     errs = planner.validate(spec, cat, 60)
     assert any("pizza" in e for e in errs) and any("cone" in e for e in errs) and any("라벨" in e for e in errs)
     assert len(errs) == 3
+
+
+# ------------------------------------------------------------------ 시청 유지 구조 (3초 훅 · 20초 반전 · 끝)
+def _scene(caption, **kw):
+    return {"duration": 5, "caption": caption, "world": {"template": "studio", "seed": 1}, **kw}
+
+
+def _retention_spec(hook="만 10세, 지우개 절도. 판결은…", twist_at=5):
+    body = "가" * 30    # 약 5.2초짜리 대사
+    scenes = [_scene(hook, role="hook")] + [_scene(body) for _ in range(6)]
+    scenes[twist_at - 1]["role"] = "twist"
+    scenes.append(_scene("상대는… 젤리 도둑.", role="payoff"))
+    scenes.append({"duration": 6, "card": {"question": "?", "options": ["1", "2", "3"]}})
+    return {"scenes": scenes}
+
+
+def test_retention_good_structure_passes():
+    assert planner.retention_issues(_retention_spec()) == []
+
+
+def test_retention_example_scene_passes():
+    spec = yaml.safe_load(open(planner.ROOT / "scenes" / "juvenile_law_abolished.yaml", encoding="utf-8"))
+    assert planner.retention_issues(spec) == []
+
+
+def test_retention_flags_long_hook_late_twist_and_missing_payoff():
+    spec = _retention_spec(hook="가" * 40, twist_at=7)
+    spec["scenes"][-2].pop("role")
+    issues = " / ".join(planner.retention_issues(spec))
+    assert "훅" in issues and "15~30초" in issues and "payoff" in issues
+
+
+def test_plan_restructures_for_retention(monkeypatch):
+    """구조 권고가 있으면 한 번 다듬고, 더 나아진 대본을 채택"""
+    flat = "```yaml\n" + yaml.safe_dump({"title": "t", "style": "voxel", "scenes": [
+        {k: v for k, v in s.items() if k != "role"} for s in _retention_spec()["scenes"]]},
+        allow_unicode=True) + "```"
+    good = "```yaml\n" + yaml.safe_dump({"title": "t", "style": "voxel", **_retention_spec()}, allow_unicode=True) + "```"
+    sent = []
+
+    def fake_post(body, key):
+        sent.append(body["messages"][0]["content"])
+        return _resp(flat if len(sent) == 1 else good)
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
+    monkeypatch.setattr(planner, "_post", fake_post)
+    monkeypatch.setattr(planner, "smoke_test", lambda y: [])
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
+    assert len(sent) == 2 and "시청 유지" in sent[1]
+    assert spec["scenes"][0]["role"] == "hook"
+
+
+def test_plan_keeps_original_when_restructure_fails(monkeypatch):
+    flat = "```yaml\n" + yaml.safe_dump({"title": "t", "style": "voxel", "scenes": [
+        {k: v for k, v in s.items() if k != "role"} for s in _retention_spec()["scenes"]]},
+        allow_unicode=True) + "```"
+    seq = [_resp(flat), _resp("```yaml\nscenes: oops\n```")]
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
+    monkeypatch.setattr(planner, "_post", lambda body, key: seq.pop(0))
+    monkeypatch.setattr(planner, "smoke_test", lambda y: [])
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
+    assert "role" not in spec["scenes"][0]
