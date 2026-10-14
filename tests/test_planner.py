@@ -80,7 +80,7 @@ def test_plan_continues_after_pause_turn(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", lambda body, key: seq.pop(0))
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None, punchup=False)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=True, log=lambda *a: None, punchup=False)
     assert spec["title"] == "테스트 주제"
 
 
@@ -138,7 +138,7 @@ def test_claude_code_backend_uses_subscription(tmp_path, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-should-not-leak")
     monkeypatch.delenv("IF60_BACKEND", raising=False)
     monkeypatch.setattr(planner, "_post", lambda *a: (_ for _ in ()).throw(AssertionError("API를 쓰면 안 됨")))
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None, punchup=False)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=True, log=lambda *a: None, punchup=False)
     assert spec["title"] == "테스트 주제"
     call = json.loads(log.read_text().splitlines()[0])
     a = call["args"]
@@ -198,7 +198,7 @@ def test_review_revises_mismatched_scene_with_image(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None, punchup=False)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=True, log=lambda *a: None, punchup=False)
     assert len(sent) == 2
     assert spec["scenes"][0]["shot"] == "aerial"
 
@@ -212,7 +212,7 @@ def test_review_pass_keeps_original(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None, punchup=False)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=True, log=lambda *a: None, punchup=False)
     assert spec["scenes"][0]["shot"] == "forward"
 
 
@@ -233,7 +233,7 @@ def test_review_with_claude_code_reads_image(tmp_path, monkeypatch):
     monkeypatch.setenv("FAKE_LOG", str(log))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("IF60_BACKEND", raising=False)
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None, punchup=False)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=True, log=lambda *a: None, punchup=False)
     calls = [json.loads(l)["args"] for l in log.read_text().splitlines()]
     assert len(calls) == 2
     assert calls[1][calls[1].index("--tools") + 1] == "Read"   # 검수 때는 파일 읽기만 허용

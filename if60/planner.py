@@ -958,7 +958,7 @@ def _validated(ytxt: str, cat: dict, length, log) -> tuple[dict | None, list]:
 
 
 def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: bool = True,
-         review_pass: bool = True, log=print, genre: str | None = None,
+         review_pass: bool = False, log=print, genre: str | None = None,
          angle: str | None = None, punchup: bool = True, tangents: str | None = None) -> tuple[str, dict, list]:
     """주제 → 검증된 장면 YAML 텍스트, 파싱된 spec, 인용 목록"""
     backend = choose_backend(interactive)
