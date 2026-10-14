@@ -263,13 +263,18 @@ def _scene(caption, **kw):
     return {"duration": 5, "caption": caption, "world": {"template": "studio", "seed": 1}, **kw}
 
 
-def _retention_spec(hook="만 10세, 지우개 절도. 판결은…", twist_at=5):
-    body = "가" * 30    # 약 5.2초짜리 대사
-    scenes = [_scene(hook, role="hook")] + [_scene(body) for _ in range(6)]
+def _retention_spec(hook="만 10세, 지우개 절도. 판결은…", twist_at=4):
+    body = "가" * 45    # 약 7.5초짜리 대사 → 전체 약 66초
+    acts = ["도입", "도입", "도입", "도입", "전개", "전개", "반전", "반전"]
+    images = [1, 2, 2, 3, 4, 4, 5, 5]
+    scenes = [_scene(hook, role="hook")] + [_scene(body) for _ in range(7)]
+    for s, act, img in zip(scenes, acts, images):
+        s["act"], s["image"] = act, img
     scenes[twist_at - 1]["role"] = "twist"
-    scenes.append(_scene("상대는… 젤리 도둑.", role="payoff"))
-    scenes.append({"duration": 6, "card": {"question": "?", "options": ["1", "2", "3"]}})
-    return {"scenes": scenes}
+    scenes.append(_scene("상대는… 젤리 도둑.", role="payoff", act="결말", image=6))
+    scenes.append({"duration": 6, "act": "결말", "card": {"question": "?", "options": ["1", "2", "3"]}})
+    keyframes = [{"id": i, "desc": f"그림 {i}", "prompt": f"scene {i}, vertical 9:16, no text"} for i in range(1, 7)]
+    return {"genre": "satire", "keyframes": keyframes, "scenes": scenes}
 
 
 def test_retention_good_structure_passes():
@@ -282,7 +287,7 @@ def test_retention_example_scene_passes():
 
 
 def test_retention_flags_long_hook_late_twist_and_missing_payoff():
-    spec = _retention_spec(hook="가" * 40, twist_at=7)
+    spec = _retention_spec(hook="가" * 40, twist_at=8)
     spec["scenes"][-2].pop("role")
     issues = " / ".join(planner.retention_issues(spec))
     assert "훅" in issues and "15~30초" in issues and "payoff" in issues
@@ -320,3 +325,54 @@ def test_plan_keeps_original_when_restructure_fails(monkeypatch):
     monkeypatch.setattr(planner, "smoke_test", lambda y: [])
     _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
     assert "role" not in spec["scenes"][0]
+
+
+# ------------------------------------------------------------------ 만물제작소 제작 조건 (길이 · 4단 구성 · 이미지 6~10장 · 장르)
+def test_structure_flags_missing_act_genre_and_keyframes():
+    spec = _retention_spec()
+    spec.pop("genre")
+    spec["scenes"][6]["act"] = "도입"          # 반전 구간이 사라지고 순서도 뒤섞임
+    spec["keyframes"] = spec["keyframes"][:4]  # 그림 4장뿐 + 장면이 없는 번호를 가리킴
+    issues = " / ".join(planner.retention_issues(spec))
+    assert "genre" in issues and "순서" in issues and "4장" in issues and "keyframes에 없는 번호" in issues
+
+
+def test_structure_flags_length_out_of_range():
+    spec = _retention_spec()
+    for s in spec["scenes"][1:7]:
+        s["caption"] = "가" * 120             # 너무 긴 대사 → 120초 초과
+    assert any("120초" in i for i in planner.retention_issues(spec))
+
+
+def test_image_prompts_file(tmp_path):
+    out = planner.write_image_prompts(_retention_spec(), tmp_path / "img.txt")
+    txt = out.read_text(encoding="utf-8")
+    assert "AI 이미지 6장" in txt and "[2] 그림 2  (장면 2, 3)" in txt
+
+
+def test_topics_file_is_valid():
+    items = planner.load_topics()
+    assert len(items) >= 12
+    assert all(t["genre"] in planner.GENRES and t.get("angle") for t in items)
+    assert [t["id"] for t in planner.pick_topics("1-3, 12")] == [1, 2, 3, 12]
+    assert planner.pick_topics("달이 사라진다면?") is None
+    with pytest.raises(ValueError):
+        planner.pick_topics("999")
+
+
+def test_plan_sends_genre_and_angle(monkeypatch):
+    good = "```yaml\n" + yaml.safe_dump({"title": "t", "style": "voxel", **_retention_spec()}, allow_unicode=True) + "```"
+    sent = []
+
+    def fake_post(body, key):
+        sent.append(body["messages"][0]["content"])
+        return _resp(good)
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
+    monkeypatch.setattr(planner, "_post", fake_post)
+    monkeypatch.setattr(planner, "smoke_test", lambda y: [])
+    t = planner.pick_topics("4")[0]
+    planner.plan(t["title"], 60, interactive=False, review_pass=False, log=lambda *a: None,
+                 genre=t["genre"], angle=t["angle"])
+    assert len(sent) == 1 and "과학 — 흥미롭게" in sent[0] and "방향 힌트" in sent[0]

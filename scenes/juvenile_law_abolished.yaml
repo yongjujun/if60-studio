@@ -1,5 +1,6 @@
 # 촉법소년 제도가 폐지된 대한민국? (약 95초, 17장면) — 블랙코미디·풍자 예시
 # 구조: 콜드 오픈(지우개 재판) → 되감기 → 사실 설정 → 가상 전개(황당함이 커짐) → 찬성·반대 양쪽 → 실제 상황 → 질문 카드
+# 4단 구성: 도입(1~5) → 전개(6~11) → 반전(12~14) → 결말(15~17), AI 이미지 9장(keyframes)
 # 시청 유지: 1장면 훅(3초 안) → 5장면 중간 반전(약 20초) → 15장면 펀치라인(payoff) → 질문 카드
 # 풍자의 과녁은 '제도와 숫자'. 아이·피해자를 웃음거리로 쓰지 않고, 찬반 어느 편도 들지 않는다.
 #
@@ -14,6 +15,7 @@
 #   - 정부안(2026.7): 강력·중대·반복 범죄에 한해 13세부터 형사처벌 추진, 법 개정 전 (뉴시스)
 #   - 3층 침대·지우개 재판 장면은 상상(가상 상황)이며 실제 정책이 아님
 title: 촉법소년이 사라진 대한민국?
+genre: satire
 style: voxel
 layout:
   title: ["촉법소년이", "사라진다면?"]
@@ -26,10 +28,23 @@ facts_to_check:
   - "소년부 판사 약 25명(전문가 지적) → 1인당 약 843건 (계산)"
   - "정부안: 강력·중대·반복 범죄 13세 하향 추진, 아직 법 개정 전 (2026.7 기준) — 최신 상황 재확인"
 
+keyframes:  # AI 이미지로 만들 때 쓰는 그림 9장 — 장면의 image 번호가 가리킴
+  - {id: 1, desc: "거대한 판사석 앞, 책 더미를 밟고 선 작은 아이 피고인", prompt: "a tiny child defendant standing on a stack of books in front of a towering wooden judge's bench, dramatic low angle, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
+  - {id: 2, desc: "평범한 오후의 광장, 학생 무리가 점점 불어남", prompt: "a wide city plaza on a sunny afternoon filled with crowds of small schoolchildren with backpacks, high angle, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
+  - {id: 3, desc: "단색 무대 위 키가 다른 아이 넷과 파란 서류 상자", prompt: "four children of different heights standing in a row on a plain stage, a blue document box in front of them, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
+  - {id: 4, desc: "법원 성문 앞까지 이어진 책가방 멘 아이들의 긴 줄", prompt: "a very long queue of children with school backpacks leading up to a grand courthouse gate, parents waiting beside them, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
+  - {id: 5, desc: "서류 더미에 파묻혀 가는 판사 한 명", prompt: "a lone judge at a small desk being buried by towering stacks of white paperwork, late at night, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
+  - {id: 6, desc: "아이들로 꽉 찬 방, 3층 침대가 쌓여 올라감", prompt: "a cramped dormitory room overflowing with children, bunk beds stacked three levels high, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
+  - {id: 7, desc: "피해자 쪽 의자와 한쪽으로 기우는 저울", prompt: "an empty chair beside a large balance scale tipping heavily to one side on a dark stage, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
+  - {id: 8, desc: "무대 위 피고인이 된 지우개·젤리·필통", prompt: "a tiny eraser, three gummy candies and a pencil case placed on a courtroom table like defendants, spotlight, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
+  - {id: 9, desc: "국회 모형 앞 '실제 상황' 뉴스 화면", prompt: "a miniature national assembly building under a cloudy sky, news broadcast mood, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
+
 scenes:
   # ── 1막: 콜드 오픈 + 사실 ─────────────────────────────
   # 1. 콜드 오픈 — 거대한 판사석 앞, 책을 쌓고 올라선 작은 피고인
   - duration: 3.5
+    act: 도입
+    image: 1
     role: hook
     visual: 거대한 판사석 앞에 책 더미를 밟고 선 작은 아이, 판사석 위로 빨간 '유죄' 도장이 쾅
     caption: 만 10세, 지우개 절도. 판결은…
@@ -53,6 +68,8 @@ scenes:
 
   # 2. 되감기
   - duration: 3.5
+    act: 도입
+    image: 2
     visual: 되감기 화면과 함께 평범한 오후의 광장, 학생들이 지나다님
     caption: 어쩌다 이렇게 됐을까요? 처음부터 볼게요.
     world: {template: plaza, seed: 12}
@@ -66,6 +83,8 @@ scenes:
 
   # 3. 촉법소년이란
   - duration: 6
+    act: 도입
+    image: 3
     visual: 단색 무대 위 키가 다른 아이 네 명이 나란히, 머리 위에 10·11·12·13세 이름표
     caption: 지금 대한민국에서 만 10살부터 14살 미만은 '촉법소년'이에요.
     narration: 지금 대한민국에서 만 열 살부터 열네 살 미만은 촉법소년이에요.
@@ -84,6 +103,8 @@ scenes:
 
   # 4. 보호처분 — 1953년부터
   - duration: 5.5
+    act: 도입
+    image: 3
     visual: 같은 무대, 아이들 앞에 '보호처분'이라 적힌 파란 서류 상자가 놓이고 대시보드에 1953년
     caption: 죄를 지어도 형사처벌 대신 보호처분. 1953년부터 쭉 그랬죠.
     narration: 죄를 지어도 형사처벌 대신 보호처분. 천구백오십삼 년부터 쭉 그랬죠.
@@ -102,6 +123,8 @@ scenes:
 
   # 5. 늘어나는 숫자
   - duration: 6.5
+    act: 도입
+    image: 2
     role: twist
     visual: 광장에 작은 아이들 무리가 점점 불어나고, 대시보드 숫자가 1만 1천에서 2만 1천으로 올라감
     caption: 그런데 소년부로 간 촉법소년은 4년 새 1만 1천 명에서 2만 1천 명.
@@ -122,6 +145,8 @@ scenes:
   # ── 2막: 가상 전개 ─────────────────────────────────
   # 6. 가상 속보
   - duration: 5
+    act: 전개
+    image: 4
     visual: 뉴스 자막띠 '가상 상황 | 촉법소년 제도 전면 폐지'가 밀려 들어오고 판사봉 대신 거대한 도장
     caption: 그래서 상상해 봤습니다. 이 제도를 아예 없애 버리면?
     world: {template: studio, seed: 16, params: {color: "#141a33"}}
@@ -137,6 +162,8 @@ scenes:
 
   # 7. 폐지 첫날 — 법원 앞 줄
   - duration: 5.5
+    act: 전개
+    image: 4
     visual: 성문 앞까지 이어진 작은 아이들의 긴 줄, 부모들이 옆에 서 있음, 우측 상단 D+1
     caption: 폐지 첫날. 법원 앞에 줄이 섰습니다. 책가방을 멘 채로요.
     hud: "D+1"
@@ -151,6 +178,8 @@ scenes:
 
   # 8. 판사 수
   - duration: 6.5
+    act: 전개
+    image: 5
     visual: 판사 한 명이 앉은 책상 옆으로 흰 서류 더미가 점점 높이 솟아오름, 대시보드에 1인당 843건
     caption: 문제는 판사예요. 소년부 판사는 약 25명. 1명당 843건.
     narration: 문제는 판사예요. 소년부 판사는 약 스물다섯 명. 한 명당 팔백사십삼 건.
@@ -169,6 +198,8 @@ scenes:
 
   # 9. 하루 2.3건 — 담담한 반전
   - duration: 6
+    act: 전개
+    image: 5
     visual: 서류 더미에 파묻힌 판사 클로즈업, '야근' 도장이 쾅, 순간 줌인
     caption: 하루 2.3건씩 1년이면 끝나긴 합니다. 주말을 반납하면요.
     narration: 하루 이 점 삼 건씩, 일 년이면 끝나긴 합니다. 주말을 반납하면요.
@@ -187,6 +218,8 @@ scenes:
 
   # 10. 소년원 112%
   - duration: 5.5
+    act: 전개
+    image: 6
     visual: 방 안에 작은 아이들이 빼곡히 들어찬 모습, 대시보드 막대가 정원선을 넘어 빨갛게
     caption: 갈 곳은요? 소년원은 이미 정원의 112%가 차 있어요.
     narration: 갈 곳은요? 소년원은 이미 정원의 백십이 퍼센트가 차 있어요.
@@ -205,6 +238,8 @@ scenes:
 
   # 11. 3층 침대 — 황당함 최고조
   - duration: 5.5
+    act: 전개
+    image: 6
     visual: 무대 위 침대가 한 층씩 쌓여 올라가 3층 침대가 되고, '검토 중' 도장
     caption: 남은 공간은 위쪽뿐. 3층 침대 시대가 열립니다.
     narration: 남은 공간은 위쪽뿐. 삼 층 침대 시대가 열립니다.
@@ -223,6 +258,8 @@ scenes:
   # ── 3막: 양쪽 + 현실 + 반전 ───────────────────────────
   # 12. 찬성 쪽 기대
   - duration: 6
+    act: 반전
+    image: 7
     visual: 무대 위 피해자 쪽 의자와 저울, 저울이 한쪽으로 기울며 '변명 불가' 글자
     caption: 물론 기대하는 효과도 있어요. "어리니까 괜찮아"는 이제 안 통하죠.
     narration: 물론 기대하는 효과도 있어요. 어리니까 괜찮아는 이제 안 통하죠.
@@ -242,6 +279,8 @@ scenes:
 
   # 13. 피해자 쪽
   - duration: 5.5
+    act: 반전
+    image: 7
     visual: 같은 저울 옆, 빛나는 '처벌 불가' 글자가 깨지듯 사라짐
     caption: 피해자 가족이 "처벌할 수 없다"는 말을 더는 안 들어도 되고요.
     narration: 피해자 가족이 처벌할 수 없다는 말을 더는 안 들어도 되고요.
@@ -263,6 +302,8 @@ scenes:
 
   # 14. 반대 쪽 숫자 — 절반은 절도
   - duration: 6
+    act: 반전
+    image: 8
     visual: 대시보드에 절도 48%, 살인 0건, 무대 위 작은 지우개·젤리·필통
     caption: 그런데 작년 촉법소년 사건의 절반 가까이는 절도. 살인은 0건이었어요.
     narration: 그런데 작년 촉법소년 사건의 절반 가까이는 절도. 살인은 영 건이었어요.
@@ -282,6 +323,8 @@ scenes:
 
   # 15. 반전 펀치라인
   - duration: 6
+    act: 결말
+    image: 8
     role: payoff
     visual: 젤리 세 알에 노란 표적 링, '재판 회부' 도장 + 순간 줌인
     caption: 그러니까 이 거대한 법원과 교도소가 주로 맞서게 될 상대는… 젤리 도둑.
@@ -302,6 +345,8 @@ scenes:
 
   # 16. 실제 상황
   - duration: 7
+    act: 결말
+    image: 9
     visual: 뉴스 자막띠 '실제 상황', 대시보드에 14세 → 13세(강력·중대·반복 범죄), 국회 계류 배지
     caption: 실제 정부안은 폐지가 아니라, 강력·중대 범죄만 13세로 낮추는 것. 아직 법 개정 전이에요.
     narration: 실제 정부안은 폐지가 아니라, 강력하고 중대한 범죄만 열세 살로 낮추는 것. 아직 법 개정 전이에요.
@@ -323,6 +368,8 @@ scenes:
 
   # 17. 질문 카드
   - duration: 7
+    act: 결말
+    image: 9
     visual: 어두운 배경 위 질문과 번호 선택지 3개가 차례로 등장
     caption: 여러분 생각은 어때요? 번호로 남겨 주세요.
     card:

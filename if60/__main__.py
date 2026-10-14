@@ -4,6 +4,8 @@
   python -m if60 render examples/earth_rotation_stop.yaml --style retro_dot --length 30 --preview
   python -m if60 pixelate my_ai_clip.mp4 -o out/clip_dot.mp4 --style retro_dot
   python -m if60 make "파리는 어떻게 그렇게 잘 도망칠까?"     # 주제 → 영상 한 번에
+  python -m if60 topics                       # 저장된 주제 목록 (topics.yaml)
+  python -m if60 make 3                       # 목록 3번 주제로 제작 (1,4 / 1-3 / 전체 도 가능)
   python -m if60 plan "달이 사라진다면?" -o scenes/moon.yaml
   python -m if60 styles
   python -m if60 voice list supertonic        # 목소리 목록 (supertonic | typecast | google)
@@ -41,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     x.add_argument("--preview", action="store_true")
 
     mk = sub.add_parser("make", help="주제만 입력하면 조사 → 대본 → 렌더링까지 한 번에")
-    mk.add_argument("topic", nargs="?", help="주제 (비우면 입력창이 뜸)")
+    mk.add_argument("topic", nargs="?", help="주제 또는 목록 번호(3, 1-3, 1,4, 전체) — 비우면 목록과 입력창이 뜸")
     mk.add_argument("--length", type=int, default=90, help="목표 길이(초), 기본 90")
     mk.add_argument("--preview", action="store_true", help="저화질 미리보기로만 빠르게")
     mk.add_argument("--no-open", action="store_true", help="완성 후 영상을 자동으로 열지 않기")
@@ -64,6 +66,7 @@ def main(argv: list[str] | None = None) -> int:
     pl.add_argument("--length", type=int, default=90)
 
     sub.add_parser("styles", help="스타일 프리셋 목록")
+    sub.add_parser("topics", help="저장된 주제 목록 (topics.yaml) — make 번호로 바로 제작")
 
     a = p.parse_args(argv)
 
@@ -96,6 +99,8 @@ def main(argv: list[str] | None = None) -> int:
         return voice_cmd(a)
     elif a.cmd == "make":
         return make(a)
+    elif a.cmd == "topics":
+        print_topics()
     elif a.cmd == "styles":
         from .render import load_styles
         for k, v in load_styles().items():
@@ -104,22 +109,71 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+GENRE_LABEL = {"satire": "풍자", "science": "과학", "absurd": "가정"}
+
+
+def print_topics() -> None:
+    from .planner import load_topics
+    items = load_topics()
+    if not items:
+        print("topics.yaml에 주제가 없어요.")
+        return
+    print("\n📋 주제 목록 (topics.yaml)")
+    for t in items:
+        print(f"  {str(t.get('id')):>2}. [{GENRE_LABEL.get(t.get('genre'), '?')}] {t['title']}")
+
+
 def make(a) -> int:
-    from .planner import plan, write_scene_file
-    from .render import render
-    topic = (a.topic or "").strip()
-    if not topic:
-        topic = input("\n🎬 영상 주제를 입력하세요: ").strip()
-    if not topic:
+    from .planner import pick_topics
+    raw = (a.topic or "").strip()
+    if not raw:
+        print_topics()
+        raw = input("\n🎬 번호(예: 3, 1-3, 전체) 또는 새 주제를 입력하세요: ").strip()
+    if not raw:
         print("주제가 비어 있어요.")
         return 1
-    print(f"\n주제: {topic}  (목표 약 {a.length}초)\n")
     try:
-        ytxt, spec, cites = plan(topic, a.length, web_search=not a.no_search, review_pass=not a.no_review)
+        picked = pick_topics(raw)
+    except ValueError as e:
+        print(f"✖ {e}")
+        return 1
+    jobs = picked if picked is not None else [{"title": raw}]
+    if len(jobs) > 1:
+        print(f"\n주제 {len(jobs)}개를 차례로 만들어요. 하나에 보통 5~15분 걸려요.")
+    failed = []
+    for n, job in enumerate(jobs, 1):
+        if len(jobs) > 1:
+            print(f"\n━━━━━━━━ {n}/{len(jobs)} ━━━━━━━━")
+        try:
+            rc = make_one(a, job)
+        except Exception as e:
+            print(f"\n✖ {type(e).__name__}: {e}")
+            rc = 1
+            if len(jobs) == 1:
+                raise
+        if rc:
+            failed.append(job["title"])
+    if len(jobs) > 1:
+        print(f"\n완료 {len(jobs) - len(failed)}개 / 실패 {len(failed)}개" + "".join(f"\n  - {f}" for f in failed))
+    return 1 if failed else 0
+
+
+def make_one(a, job: dict) -> int:
+    from .planner import plan, write_image_prompts, write_scene_file
+    from .render import render
+    topic = job["title"]
+    genre = job.get("genre")
+    print(f"\n주제: {topic}  (목표 약 {a.length}초" + (f", {GENRE_LABEL.get(genre, genre)}" if genre else "") + ")\n")
+    try:
+        ytxt, spec, cites = plan(topic, a.length, web_search=not a.no_search, review_pass=not a.no_review,
+                                 genre=genre, angle=job.get("angle"))
     except RuntimeError as e:
         print(f"\n✖ {e}")
         return 1
     scene_path = write_scene_file(topic, ytxt, spec, cites)
+    img_path = write_image_prompts(spec, Path("out") / f"{scene_path.stem}_AI이미지.txt")
+    if img_path:
+        print(f"  · AI 이미지 {len(spec.get('keyframes') or [])}장 프롬프트: {img_path}")
     print(f"  · 장면 파일: {scene_path.relative_to(Path.cwd()) if scene_path.is_relative_to(Path.cwd()) else scene_path}")
     print(f"  · 제목: {spec.get('title', topic)}  ({len(spec['scenes'])}장면)")
     print("\n▶ 2/3 영상 렌더링 중")

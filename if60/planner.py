@@ -123,7 +123,7 @@ def system_prompt(cat: dict) -> str:
     ex2 = ROOT / "scenes" / "nitrogen_snack.yaml"
     example_txt = "\n".join(
         f"### {label}\n```yaml\n{p.read_text(encoding='utf-8')}```" for label, p in
-        (("예시 1 — 블랙코미디·풍자 톤 + 90초 3막 구조 (사회·제도 주제, 찬반 균형)", ex0),
+        (("예시 1 — 사회 풍자(satire) + 4단 구성 + keyframes 9장 (사회·제도 주제, 찬반 균형)", ex0),
          ("예시 2 — 방송형 연출 (콜드 오픈·대시보드·VFX·마무리 카드)", ex1),
          ("예시 3 — 사물을 화면에 직접 만들어 보여주기", ex2)) if p.exists())
     return f"""너는 쇼츠 채널 '만물제작소'(유튜브 'IF 60')의 작가 겸 연출가다. 주제는 무엇이든 올 수 있다(사물, 음식, 몸, 동물, 우주, 사회, 제도, 상상).
@@ -139,7 +139,16 @@ def system_prompt(cat: dict) -> str:
 - 화면은 세로 9:16이라 좁다. 카메라와 거리 d일 때 보이는 가로 폭은 약 0.45×d, 세로 높이는 약 0.9×d (fov 50 기준). 주인공 물체가 화면 가운데 크게 보이게 거리·scale을 정한다.
 - 좌표: 미터, x는 화면 오른쪽(+z를 바라볼 때), y 위, z 앞(카메라 반대쪽). 템플릿 샷들은 대부분 +z를 바라본다.
 
-## 톤: 정색한 블랙코미디 + 살짝 풍자
+## 장르별 톤 — 먼저 주제의 장르를 정해 최상위 genre: 에 적는다
+- genre: satire (사회 풍자) → **통쾌하게.** 시청자가 평소 당하기만 하던 쪽(사기·갑질·허세·특권)이
+  가상 제도 앞에서 꼼짝 못 하게 되는 '사이다' 순간을 전개 구간에 2~3번 만든다. 웃음의 방향은 언제나 위로(힘 있는 쪽, 제도, 위선).
+  단, 통쾌함 다음 반전에서 그 제도의 허점·부작용도 정직하게 보여준다(그래서 결말 질문이 살아난다).
+- genre: science (과학) → **흥미롭게.** 실제 수치로 직접 계산한 의외의 결과(예: 피부로 하는 광합성 = 하루 몇 kcal)를
+  big_text·대시보드로 보여주고, "그래서 실제로는?"을 매 장면 한 단계씩 밝혀 간다. 과장 없이 숫자가 놀라게 한다.
+- genre: absurd (황당한 가정) → **진지하게.** 말도 안 되는 가정을 정부 브리핑·다큐·공식 통계 발표처럼 정색하고 설명한다.
+  실제 연구·통계를 근거로 "만약 그렇다면 이렇게 된다"를 논리적으로 밀고 나가며, 진지할수록 웃기다.
+
+## 공통 톤: 정색한 블랙코미디
 요즘 시청자는 정보만 나열하는 영상보다, 사실을 정확히 짚으면서 그 사실이 만드는 '부조리'에 피식 웃게 되는 영상에 끌린다.
 - 내레이터는 진지한 다큐 톤(정색)을 유지한 채 황당한 결론을 담담하게 말한다. 과장된 리액션·유행어 남발 금지.
 - 웃음 장치 (영상마다 4~6개 섞기):
@@ -157,7 +166,11 @@ def system_prompt(cat: dict) -> str:
 - 범죄·사고를 다룰 때 수법·잔혹한 묘사는 넣지 않는다. 아이·피해자를 웃음거리로 쓰지 않는다.
 
 ## 콘텐츠 공식 (조회수가 검증된 방송형 구조 — 채널 '만물제작소')
-- 기본 길이는 약 90초(14~18장면)다. 3막으로: ①콜드 오픈+설정(사실) ②상상 전개(황당함이 커짐) ③현실 확인+반전+질문.
+- 길이는 60~120초(기본 약 90초, 12~18장면). 장면마다 act: 를 붙여 4단 구성을 완성한다 (순서대로, 넷 다 필수):
+  ①act: 도입 — 3초 훅(콜드 오픈) + 되감기 + 실제 사실·수치로 설정 (전체의 약 25%)
+  ②act: 전개 — 가정이 현실이 되면 벌어지는 일, 단계마다 커지는 황당함·통쾌함 (약 35%)
+  ③act: 반전 — 예상을 뒤집는 사실·부작용·의외의 비교 (약 25%)
+  ④act: 결말 — 현실 확인 + 기억에 남는 한 줄(payoff) + 질문 카드 (약 15%)
 - 화면 틀: 최상위 layout으로 상단에 두 줄 제목(첫 줄 흰색, 둘째 줄 노란색 — 각 10자 안팎)이 영상 내내 고정된다.
   그래서 장면별 title은 쓰지 않는다(필요하면 짧게 한 번만). 채널명은 레이아웃이 알아서 작게 넣는다.
 - ★콜드 오픈: 1번 장면(2~3초)은 영상에서 가장 센 순간(절정·결과)을 먼저 보여준다 — big_text로 핵심 숫자,
@@ -186,6 +199,15 @@ def system_prompt(cat: dict) -> str:
 - 마지막 card의 질문은 hook에서 던진 궁금증과 이어지게 한다.
 - 장면 시작 시각은 앞 장면들의 대사 길이(글자 수 ÷ 6.5 + 0.6초)를 더해 계산한다.
 
+## ★AI 이미지 6~10장으로 시각화 가능하게 (keyframes)
+이 대본은 3D 복셀로도 렌더링되지만, AI 이미지 6~10장만으로도 영상을 만들 수 있어야 한다.
+- 최상위 keyframes: 에 핵심 그림 6~10장을 정의한다. 각 장면은 image: 번호 로 그중 하나를 가리킨다.
+  같은 그림을 이어지는 2~3장면이 함께 쓴다(줌·자막·도장·대시보드만 달라짐). 장면마다 새 그림을 만들지 않는다.
+- 그림 하나 = 한 장소 + 한 주인공 + 한 동작. 글자 없이도 무슨 상황인지 보이게, 세로 9:16 구도.
+- keyframes 형식: {{id: 1, desc: "한국어 한 줄 설명", prompt: "영어 이미지 생성 프롬프트 (장소, 주인공, 동작, 구도, 조명, vertical 9:16, no text)"}}
+  prompt에는 실존 인물·상표·글자를 넣지 않고, 모든 그림이 같은 화풍이 되도록 끝에 같은 화풍 문구를 붙인다.
+- 장면의 visual(복셀 연출)은 그 장면이 가리키는 keyframe 그림과 같은 내용이어야 한다.
+
 ## 렌더러가 지원하는 것 (이 목록 밖의 이름을 쓰면 렌더링이 실패한다)
 템플릿(world.template):
 {chr(10).join(tpl_lines)}
@@ -194,7 +216,7 @@ def system_prompt(cat: dict) -> str:
 {chr(10).join(model_lines)}
 
 장면 필드:
-- duration(초), role(선택: hook|twist|payoff), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
+- duration(초), act(도입|전개|반전|결말, 필수), image(keyframes 번호, 필수), role(선택: hook|twist|payoff), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
 - world: {{template: 이름, seed: 정수, params: {{...}}}}
 - shot: 템플릿 샷 이름, 또는 직접 카메라:
     {{from: [x,y,z], to: [x,y,z], target: [x,y,z], target_to: [x,y,z], fov: 50}}
@@ -243,10 +265,11 @@ def system_prompt(cat: dict) -> str:
 
 ## 출력 형식
 설명 없이 ```yaml 코드블록 하나만 출력한다. 문자열에 콜론(:)이 있으면 큰따옴표로 감싼다. 최상위 키:
-title, style: voxel,
+title, genre: satire|science|absurd, style: voxel,
 layout: {{title: ["첫 줄(흰색)", "둘째 줄(노란색)"], series: "시리즈명 N편"(선택)}},
 look: voxel (기본, 픽셀 복셀) 또는 smooth (매끈한 질감 — 우주·과학 실험처럼 깔끔한 느낌이 어울릴 때),
 facts_to_check: ["사실 한 줄 — 출처 URL", ...],
+keyframes: [{{id, desc, prompt}}, ...] (6~10개),
 scenes: [...]
 배경음악·효과음은 만들지 않는다. 대신 caption을 AI 목소리(TTS)가 그대로 읽는다:
 - caption은 소리 내어 읽었을 때 자연스러운 구어체 한두 문장으로 쓴다.
@@ -521,6 +544,10 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
 HOOK_MAX_SEC = 3.5          # 1번 장면(훅)은 이 안에 끝나야 함
 TWIST_WINDOW = (15.0, 30.0)  # 중간 반전 장면이 시작해야 하는 구간(초)
 ROLES = ("hook", "twist", "payoff")
+ACTS = ("도입", "전개", "반전", "결말")
+LENGTH_RANGE = (60.0, 120.0)   # 영상 전체 길이(초)
+KEYFRAME_RANGE = (6, 10)       # AI 이미지로 만들 때 필요한 그림 수
+GENRES = {"satire": "사회 풍자 — 통쾌하게", "science": "과학 — 흥미롭게", "absurd": "황당한 가정 — 진지하게"}
 
 
 def spoken_seconds(scene: dict) -> float:
@@ -567,6 +594,49 @@ def retention_issues(spec: dict) -> list[str]:
     tail = scenes[-3:] if isinstance(scenes[-1].get("card"), dict) else scenes[-2:]
     if not any(s.get("role") == "payoff" for s in tail):
         issues.append("끝에 role: payoff 장면이 없음 — 마지막 card 바로 앞에 기억에 남는 한 줄(가능하면 첫 장면 콜백)을 둘 것")
+    issues += structure_issues(spec, scenes, t)
+    return issues
+
+
+def structure_issues(spec: dict, scenes: list, total: float) -> list[str]:
+    """만물제작소 제작 조건: 60~120초 · 도입→전개→반전→결말 · AI 이미지 6~10장 · 장르"""
+    issues = []
+    lo, hi = LENGTH_RANGE
+    if not lo <= total <= hi:
+        issues.append(f"대사 기준 전체 길이 약 {total:.0f}초 — {lo:.0f}~{hi:.0f}초 안에 들게 대사를 늘리거나 줄일 것")
+    if spec.get("genre") not in GENRES:
+        issues.append("최상위 genre가 없거나 잘못됨 (satire | science | absurd 중 하나)")
+    acts = [s.get("act") for s in scenes]
+    bad = [i for i, a in enumerate(acts, 1) if a not in ACTS]
+    if bad:
+        issues.append(f"act가 없거나 잘못된 장면: {', '.join(map(str, bad[:6]))} (도입/전개/반전/결말 중 하나)")
+    else:
+        order = [ACTS.index(a) for a in acts]
+        if order != sorted(order):
+            issues.append("act 순서가 뒤섞임 — 도입 → 전개 → 반전 → 결말 순서로")
+        missing = [a for a in ACTS if a not in acts]
+        if missing:
+            issues.append(f"{', '.join(missing)} 구간이 없음 — 도입·전개·반전·결말을 모두 갖출 것")
+    kfs = spec.get("keyframes")
+    ids = set()
+    if not isinstance(kfs, list):
+        issues.append(f"keyframes가 없음 — AI 이미지 {KEYFRAME_RANGE[0]}~{KEYFRAME_RANGE[1]}장 목록을 만들 것")
+    else:
+        for k in kfs:
+            if isinstance(k, dict) and k.get("id") is not None and str(k.get("prompt") or "").strip():
+                ids.add(str(k["id"]))
+        if len(ids) != len(kfs):
+            issues.append("keyframes 항목은 모두 {id, desc, prompt} 형식이고 id가 겹치지 않아야 함")
+        if not KEYFRAME_RANGE[0] <= len(kfs) <= KEYFRAME_RANGE[1]:
+            issues.append(f"keyframes가 {len(kfs)}장 — {KEYFRAME_RANGE[0]}~{KEYFRAME_RANGE[1]}장으로 맞출 것 (이어지는 장면끼리 그림을 공유)")
+        used = {str(s.get("image")) for s in scenes if s.get("image") is not None}
+        nopic = [i for i, s in enumerate(scenes, 1)
+                 if not isinstance(s.get("card"), dict) and str(s.get("image")) not in ids]
+        if nopic:
+            issues.append(f"image가 없거나 keyframes에 없는 번호인 장면: {', '.join(map(str, nopic[:6]))}")
+        unused = sorted(ids - used)
+        if unused:
+            issues.append(f"어느 장면도 쓰지 않는 keyframe: {', '.join(unused)}")
     return issues
 
 
@@ -744,7 +814,8 @@ def _validated(ytxt: str, cat: dict, length, log) -> tuple[dict | None, list]:
 
 
 def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: bool = True,
-         review_pass: bool = True, log=print) -> tuple[str, dict, list]:
+         review_pass: bool = True, log=print, genre: str | None = None,
+         angle: str | None = None) -> tuple[str, dict, list]:
     """주제 → 검증된 장면 YAML 텍스트, 파싱된 spec, 인용 목록"""
     backend = choose_backend(interactive)
     if backend == "api":
@@ -763,8 +834,13 @@ def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: 
         log("  · Claude Code + 내 Claude 구독 사용 (추가 비용 없음, 구독 사용량에서 차감)")
     cat = catalog()
     system = system_prompt(cat)
-    user = (f"주제: {topic}\n목표 길이: 약 {length}초\n"
-            f"먼저 웹 검색으로 핵심 사실과 수치를 확인한 뒤, 지정한 형식의 YAML만 출력해.")
+    user = f"주제: {topic}\n목표 길이: 약 {length}초 (60~120초 안)\n"
+    if genre in GENRES:
+        user += f"장르: {genre} ({GENRES[genre]})\n"
+    if angle:
+        user += f"방향 힌트: {angle}\n"
+    user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · AI 이미지 6~10장(keyframes)으로 시각화 가능.\n"
+             "먼저 웹 검색으로 핵심 사실과 수치를 확인한 뒤, 지정한 형식의 YAML만 출력해.")
     log("▶ 1/3 자료 조사 + 대본·연출 작성 중 (1~5분)")
     t0 = time.time()
     text, cites = call(user, web_search)
@@ -781,23 +857,29 @@ def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: 
         ytxt = extract_yaml(text2)
     else:
         raise RuntimeError("장면 파일을 자동으로 고치지 못했어요: " + "; ".join(errs))
-    issues = retention_issues(spec)
-    if issues:
-        log("▶ 시청 유지 구조 다듬는 중 (3초 훅 · 20초 반전 · 끝): " + "; ".join(issues[:2]) + (" …" if len(issues) > 2 else ""))
-        fix = ("아래 YAML의 시청 유지 구조를 고쳐. 문제:\n- " + "\n- ".join(issues) +
-               "\n\n시스템 프롬프트의 '시청 유지 설계' 규칙을 따른다. 확인된 사실·수치·출처는 바꾸지 말고, "
-               "장면 순서·대사 길이·문장·role 표시만 손봐. ```yaml 블록 하나로 출력해.\n\n```yaml\n" + ytxt + "```")
+    for attempt in range(2):
+        issues = retention_issues(spec)
+        if not issues:
+            break
+        log(f"▶ 제작 조건 맞추는 중 ({attempt + 1}/2 — 3초 훅 · 4단 구성 · 길이 · 이미지 6~10장): "
+            + "; ".join(issues[:2]) + (" …" if len(issues) > 2 else ""))
+        fix = ("아래 YAML이 제작 조건을 어겼어. 문제:\n- " + "\n- ".join(issues) +
+               "\n\n시스템 프롬프트의 '시청 유지 설계'·'4단 구성'·'keyframes' 규칙을 따른다. 확인된 사실·수치·출처는 바꾸지 말고, "
+               "장면 순서·대사 길이·문장·role·act·image·keyframes만 손봐. ```yaml 블록 하나로 출력해.\n\n```yaml\n" + ytxt + "```")
         try:
             ytxt2 = extract_yaml(call(fix, False)[0])
             spec2, errs2 = _validated(ytxt2, cat, length, log)
             if not errs2 and len(retention_issues(spec2)) < len(issues):
                 ytxt, spec = ytxt2, spec2
-                left = retention_issues(spec)
-                log("  · 구조 개선 완료" + (" (남은 권고: " + "; ".join(left) + ")" if left else ""))
+                log("  · 개선됨")
             else:
-                log("  · 수정안이 더 낫지 않아 원래 대본 유지" + (": " + "; ".join(errs2[:2]) if errs2 else ""))
+                log("  · 수정안이 더 낫지 않아 이전 대본 유지" + (": " + "; ".join(errs2[:2]) if errs2 else ""))
         except Exception as e:
-            log(f"  · 구조 다듬기 중 문제가 있어 원래 대본으로 진행: {e}")
+            log(f"  · 다듬기 중 문제가 있어 이전 대본으로 진행: {e}")
+            break
+    left = retention_issues(spec)
+    if left:
+        log("  ⚠ 아직 안 맞는 조건 (장면 파일에서 직접 고칠 수 있어요): " + "; ".join(left))
     if review_pass:
         log("▶ 감독 검수: 장면 미리보기를 보며 화면과 자막이 맞는지 확인 중 (1~3분)")
         t1 = time.time()
@@ -808,6 +890,8 @@ def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: 
             log(f"  · 검수 중 문제가 있어 원래 연출로 진행: {e}")
         if revised:
             spec2, errs2 = _validated(revised, cat, length, log)
+            if not errs2 and len(retention_issues(spec2)) > len(retention_issues(spec)):
+                errs2 = ["감독 수정안이 제작 조건(구성·이미지 목록)을 깨뜨림"]
             if not errs2:
                 ytxt, spec = revised, spec2
                 log(f"  · 화면이 안 맞는 장면을 고쳤어요 ({time.time() - t1:.0f}초)")
@@ -837,3 +921,45 @@ def write_scene_file(topic: str, ytxt: str, spec: dict, cites: list) -> Path:
             head.append(f"# 참고: {c['title']} — {c['url']}")
     path.write_text("\n".join(head) + "\n" + ytxt, encoding="utf-8")
     return path
+
+
+def write_image_prompts(spec: dict, out: Path) -> Path | None:
+    """keyframes를 AI 이미지 생성기(ChatGPT·미드저니 등)에 붙여넣기 좋은 텍스트로 저장"""
+    kfs = [k for k in spec.get("keyframes") or [] if isinstance(k, dict) and k.get("prompt")]
+    if not kfs:
+        return None
+    lines = [f"# {spec.get('title', '')} — AI 이미지 {len(kfs)}장 (세로 9:16)", ""]
+    for k in kfs:
+        scenes = [str(i) for i, s in enumerate(spec.get("scenes") or [], 1)
+                  if isinstance(s, dict) and str(s.get("image")) == str(k.get("id"))]
+        lines += [f"[{k.get('id')}] {k.get('desc', '')}  (장면 {', '.join(scenes) or '-'})", str(k["prompt"]).strip(), ""]
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("\n".join(lines), encoding="utf-8")
+    return out
+
+
+# ------------------------------------------------------------------ 주제 목록 (topics.yaml)
+def load_topics() -> list[dict]:
+    path = ROOT / "topics.yaml"
+    if not path.exists():
+        return []
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return [t for t in data.get("topics") or [] if isinstance(t, dict) and t.get("title")]
+
+
+def pick_topics(text: str) -> list[dict] | None:
+    """'3', '1,4', '1-3', '전체'면 목록에서 고른 주제들, 아니면 None(직접 입력한 주제)"""
+    s = text.strip().replace(" ", "")
+    if s in ("전체", "all"):
+        return load_topics()
+    if not re.fullmatch(r"\d+(-\d+)?(,\d+(-\d+)?)*", s):
+        return None
+    by_id = {int(t["id"]): t for t in load_topics() if str(t.get("id", "")).isdigit()}
+    picked = []
+    for part in s.split(","):
+        a, _, b = part.partition("-")
+        for n in range(int(a), int(b or a) + 1):
+            if n not in by_id:
+                raise ValueError(f"주제 목록에 {n}번이 없어요 (1~{max(by_id) if by_id else 0}번)")
+            picked.append(by_id[n])
+    return picked
