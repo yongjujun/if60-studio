@@ -68,7 +68,7 @@ def test_plan_repairs_invalid_yaml(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
-    ytxt, spec, cites = planner.plan("테스트 주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
+    ytxt, spec, cites = planner.plan("테스트 주제", 60, interactive=False, review_pass=False, log=lambda *a: None, punchup=False)
     assert len(calls) == 2                       # 처음 작성 + 자동 수정 1회
     assert "tools" in calls[0] and "tools" not in calls[1]   # 조사할 때만 웹 검색
     assert spec["scenes"][0]["shot"] == "forward"
@@ -80,7 +80,7 @@ def test_plan_continues_after_pause_turn(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", lambda body, key: seq.pop(0))
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None, punchup=False)
     assert spec["title"] == "테스트 주제"
 
 
@@ -96,7 +96,7 @@ def test_web_search_falls_back_on_400(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
-    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None, punchup=False)
     assert seen[-1] == "null" and len(seen) == 3
 
 
@@ -138,7 +138,7 @@ def test_claude_code_backend_uses_subscription(tmp_path, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-should-not-leak")
     monkeypatch.delenv("IF60_BACKEND", raising=False)
     monkeypatch.setattr(planner, "_post", lambda *a: (_ for _ in ()).throw(AssertionError("API를 쓰면 안 됨")))
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None, punchup=False)
     assert spec["title"] == "테스트 주제"
     call = json.loads(log.read_text().splitlines()[0])
     a = call["args"]
@@ -198,7 +198,7 @@ def test_review_revises_mismatched_scene_with_image(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None, punchup=False)
     assert len(sent) == 2
     assert spec["scenes"][0]["shot"] == "aerial"
 
@@ -212,7 +212,7 @@ def test_review_pass_keeps_original(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None, punchup=False)
     assert spec["scenes"][0]["shot"] == "forward"
 
 
@@ -233,7 +233,7 @@ def test_review_with_claude_code_reads_image(tmp_path, monkeypatch):
     monkeypatch.setenv("FAKE_LOG", str(log))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("IF60_BACKEND", raising=False)
-    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, log=lambda *a: None, punchup=False)
     calls = [json.loads(l)["args"] for l in log.read_text().splitlines()]
     assert len(calls) == 2
     assert calls[1][calls[1].index("--tools") + 1] == "Read"   # 검수 때는 파일 읽기만 허용
@@ -271,7 +271,13 @@ def _retention_spec(hook="만 10세, 지우개 절도. 판결은…", twist_at=4
     for s, act, img in zip(scenes, acts, images):
         s["act"], s["image"] = act, img
     scenes[twist_at - 1]["role"] = "twist"
-    scenes.append(_scene("상대는… 젤리 도둑.", role="payoff", act="결말", image=6))
+    for s, tang in zip(scenes[4:7], (1, 2, 3)):                 # 전개~반전: 1절 → 2절 → 3절(삼천포)
+        s["tangent"] = tang
+    scenes[7]["role"] = "snapback"
+    for s, gag in zip(scenes[:7], ("과잉 진지", "숫자 개그", "", "", "정색 반전", "숫자 개그", "삼천포")):
+        if gag:
+            s["gag"] = gag
+    scenes.append(_scene("상대는… 젤리 도둑.", role="payoff", act="결말", image=6, gag="콜백"))
     scenes.append({"duration": 6, "act": "결말", "card": {"question": "?", "options": ["1", "2", "3"]}})
     keyframes = [{"id": i, "desc": f"그림 {i}", "prompt": f"scene {i}, vertical 9:16, no text"} for i in range(1, 7)]
     return {"genre": "satire", "keyframes": keyframes, "scenes": scenes}
@@ -309,7 +315,7 @@ def test_plan_restructures_for_retention(monkeypatch):
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
     monkeypatch.setattr(planner, "smoke_test", lambda y: [])
-    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None, punchup=False)
     assert len(sent) == 2 and "시청 유지" in sent[1]
     assert spec["scenes"][0]["role"] == "hook"
 
@@ -323,7 +329,7 @@ def test_plan_keeps_original_when_restructure_fails(monkeypatch):
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", lambda body, key: seq.pop(0))
     monkeypatch.setattr(planner, "smoke_test", lambda y: [])
-    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None, punchup=False)
     assert "role" not in spec["scenes"][0]
 
 
@@ -353,7 +359,7 @@ def test_image_prompts_file(tmp_path):
 def test_topics_file_is_valid():
     items = planner.load_topics()
     assert len(items) >= 12
-    assert all(t["genre"] in planner.GENRES and t.get("angle") for t in items)
+    assert all(t["genre"] in planner.GENRES and t.get("angle") and t.get("tangents") for t in items)
     assert [t["id"] for t in planner.pick_topics("1-3, 12")] == [1, 2, 3, 12]
     assert planner.pick_topics("달이 사라진다면?") is None
     with pytest.raises(ValueError):
@@ -374,5 +380,65 @@ def test_plan_sends_genre_and_angle(monkeypatch):
     monkeypatch.setattr(planner, "smoke_test", lambda y: [])
     t = planner.pick_topics("4")[0]
     planner.plan(t["title"], 60, interactive=False, review_pass=False, log=lambda *a: None,
-                 genre=t["genre"], angle=t["angle"])
-    assert len(sent) == 1 and "과학 — 흥미롭게" in sent[0] and "방향 힌트" in sent[0]
+                 genre=t["genre"], angle=t["angle"], punchup=False, tangents=t["tangents"])
+    assert len(sent) == 1 and "과학 — 흥미롭게" in sent[0] and "방향 힌트" in sent[0] and "삼천포 아이디어" in sent[0]
+
+
+# ------------------------------------------------------------------ 웃음 설계 (1절 → 2절 → 3절 삼천포 → 복귀)
+def test_humor_flags_missing_tangent_snapback_and_gags():
+    spec = _retention_spec()
+    for s in spec["scenes"]:
+        s.pop("gag", None)
+        if s.get("tangent") == 3:
+            s.pop("tangent")
+        if s.get("role") == "snapback":
+            s.pop("role")
+    issues = " / ".join(planner.retention_issues(spec))
+    assert "3절" in issues and "snapback" in issues and "웃음 장치" in issues
+
+
+def test_humor_flags_unknown_gag_and_wrong_order():
+    spec = _retention_spec()
+    spec["scenes"][4]["tangent"], spec["scenes"][6]["tangent"] = 3, 1
+    spec["scenes"][0]["gag"] = "슬랩스틱"
+    issues = " / ".join(planner.retention_issues(spec))
+    assert "순서" in issues and "슬랩스틱" in issues
+
+
+def test_punchup_applies_safe_lines_only():
+    spec = _retention_spec()
+    spec["scenes"][1]["caption"] = "판사는 25명이에요."
+    spec["scenes"][1]["narration"] = "판사는 스물다섯 명이에요."
+    reply = json.dumps([
+        {"n": 2, "caption": "판사는 25명. 주말은 0일.", "narration": "판사는 스물다섯 명. 주말은 영 일."},  # 숫자 추가 → 버림
+        {"n": 6, "caption": "회의도 줄고 야근도 줄고 잔소리도 줄었는데, 이혼은 늘었습니다."},                              # 반영
+        {"n": 4, "caption": "가" * 200},                                                              # 너무 김 → 버림
+        {"n": 10, "caption": "카드는 못 바꿈"},                                                       # 카드 → 버림
+        {"n": 5, "caption": "판사 25명"},                                                             # 읽는 법 없음 → 버림
+    ], ensure_ascii=False)
+    new, n = planner.apply_punchup(spec, "다듬었어요:\n" + reply)
+    assert n == 1
+    assert new["scenes"][5]["caption"].endswith("이혼은 늘었습니다.")
+    assert new["scenes"][1]["caption"] == "판사는 25명이에요."
+    assert spec["scenes"][5]["caption"] != new["scenes"][5]["caption"]     # 원본은 그대로
+
+
+def test_plan_runs_punchup_with_light_prompt(monkeypatch):
+    good = "```yaml\n" + yaml.safe_dump({"title": "t", "style": "voxel", **_retention_spec()}, allow_unicode=True) + "```"
+    systems = []
+
+    def fake_post(body, key):
+        systems.append(body["system"])
+        if len(systems) == 1:
+            return _resp(good)
+        return _resp(json.dumps([{"n": 6, "caption": "회의도 줄고 야근도 줄고 잔소리도 줄었는데, 이혼은 늘었습니다."}], ensure_ascii=False))
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
+    monkeypatch.setattr(planner, "_post", fake_post)
+    monkeypatch.setattr(planner, "smoke_test", lambda y: [])
+    ytxt, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
+    assert len(systems) == 2 and systems[1] == planner.PUNCHUP_SYSTEM
+    assert len(systems[1]) < len(systems[0]) / 10            # 개그 다듬기는 짧은 지시문으로
+    assert spec["scenes"][5]["caption"].endswith("이혼은 늘었습니다.")
+    assert yaml.safe_load(ytxt)["scenes"][5]["caption"] == spec["scenes"][5]["caption"]

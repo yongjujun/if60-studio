@@ -199,6 +199,25 @@ def system_prompt(cat: dict) -> str:
 - 마지막 card의 질문은 hook에서 던진 궁금증과 이어지게 한다.
 - 장면 시작 시각은 앞 장면들의 대사 길이(글자 수 ÷ 6.5 + 0.6초)를 더해 계산한다.
 
+## ★웃음 설계: 1절로 끝내지 말고 2절·3절, 삼천포까지 갔다가 돌아온다
+정보를 한 번 말하고 끝내면 재미가 없다. 가정의 결과 → 그 결과의 결과 → 또 그 결과로 꼬리를 물며 점점 엉뚱한 곳까지 간 뒤,
+정색하고 본론으로 돌아와 결론을 낸다. 장면에 tangent: 1|2|3 과 role: snapback 을 붙인다 (전개~반전 구간, 각 절 1~3장면).
+- tangent: 1 — 1절: 누구나 예상하는 직접적인 결과. (예: 머리 위 전과 표시 → 보이스피싱범이 출근길 지하철에서 바로 들통)
+- tangent: 2 — 2절: 그 결과가 낳은 엉뚱한 부작용. 이미 살짝 옆길. (→ 사기꾼들이 모자를 쓰기 시작, 여름에도 털모자 매출 폭증)
+- tangent: 3 — 3절(삼천포): 주제에서 한참 벗어났지만 논리적으로는 이어지는 황당한 결과. 가장 진지하게, 실제 숫자까지 동원해서.
+  (→ 모자 쓴 사람 = 수상한 사람이 되자, 모자 업계가 '투명 모자'를 출시. 실제 국내 모자 시장 규모 ○○억 원이 위기)
+- role: snapback — 정색하고 복귀하는 한 문장. "…아무튼." "모자 얘기는 여기까지 하고요." 바로 뒤에 반전이 온다.
+- 3절의 소재를 결말 payoff에서 콜백으로 다시 꺼내면 최고 (예: 마지막에 투명 모자를 쓴 진짜 범인).
+- 장면마다 gag: 에 그 장면의 웃음 장치를 하나 적는다 (아래 이름 중 하나). 웃음 없는 장면은 gag를 쓰지 않는다.
+  장면의 절반 이상에 gag가 있어야 하고, 종류는 3가지 이상 섞는다:
+  정색 반전 · 공식 발표체 · 숫자 개그 · 과잉 진지 · 삼천포 · 콜백 · 의외의 비교 · 3의 법칙 · 현실 공감 · 한 박자 늦은 펀치
+- 웃긴 대사 쓰는 법:
+  · 펀치라인은 문장 맨 끝 단어에 둔다. ("1년이면 끝나긴 합니다. 주말을 반납하면요.")
+  · 웃음을 설명하지 않는다. "웃기게도", "황당하게도" 같은 말 금지. 감탄사·유행어·물음표 남발 금지.
+  · 추상어보다 구체적인 사물 하나가 웃기다 ("불편"보다 "젤리 세 알", "혼란"보다 "털모자 매출").
+  · 3의 법칙: 평범한 것 둘 + 비튼 것 하나. ("회의 줄고, 야근 줄고, 이혼은 늘었습니다.")
+  · 내레이터는 끝까지 정색. 상황이 황당할수록 목소리는 더 차분하게.
+
 ## ★AI 이미지 6~10장으로 시각화 가능하게 (keyframes)
 이 대본은 3D 복셀로도 렌더링되지만, AI 이미지 6~10장만으로도 영상을 만들 수 있어야 한다.
 - 최상위 keyframes: 에 핵심 그림 6~10장을 정의한다. 각 장면은 image: 번호 로 그중 하나를 가리킨다.
@@ -216,7 +235,8 @@ def system_prompt(cat: dict) -> str:
 {chr(10).join(model_lines)}
 
 장면 필드:
-- duration(초), act(도입|전개|반전|결말, 필수), image(keyframes 번호, 필수), role(선택: hook|twist|payoff), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
+- duration(초), act(도입|전개|반전|결말, 필수), image(keyframes 번호, 필수), role(선택: hook|twist|payoff|snapback),
+  tangent(선택: 1|2|3 — 웃음 설계의 절), gag(선택: 웃음 장치 이름), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
 - world: {{template: 이름, seed: 정수, params: {{...}}}}
 - shot: 템플릿 샷 이름, 또는 직접 카메라:
     {{from: [x,y,z], to: [x,y,z], target: [x,y,z], target_to: [x,y,z], fov: 50}}
@@ -543,7 +563,9 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
 # ------------------------------------------------------------------ 시청 유지 구조
 HOOK_MAX_SEC = 3.5          # 1번 장면(훅)은 이 안에 끝나야 함
 TWIST_WINDOW = (15.0, 30.0)  # 중간 반전 장면이 시작해야 하는 구간(초)
-ROLES = ("hook", "twist", "payoff")
+ROLES = ("hook", "twist", "payoff", "snapback")
+GAGS = ("정색 반전", "공식 발표체", "숫자 개그", "과잉 진지", "삼천포", "콜백", "의외의 비교", "3의 법칙",
+        "현실 공감", "한 박자 늦은 펀치")
 ACTS = ("도입", "전개", "반전", "결말")
 LENGTH_RANGE = (60.0, 120.0)   # 영상 전체 길이(초)
 KEYFRAME_RANGE = (6, 10)       # AI 이미지로 만들 때 필요한 그림 수
@@ -595,7 +617,129 @@ def retention_issues(spec: dict) -> list[str]:
     if not any(s.get("role") == "payoff" for s in tail):
         issues.append("끝에 role: payoff 장면이 없음 — 마지막 card 바로 앞에 기억에 남는 한 줄(가능하면 첫 장면 콜백)을 둘 것")
     issues += structure_issues(spec, scenes, t)
+    issues += humor_issues(scenes)
     return issues
+
+
+def humor_issues(scenes: list) -> list[str]:
+    """웃음 설계 검사: 1절→2절→3절(삼천포)→복귀, 장면 절반 이상에 웃음 장치"""
+    issues = []
+    tang = []
+    for i, s in enumerate(scenes, 1):
+        v = s.get("tangent")
+        if v is None:
+            continue
+        try:
+            tang.append((i, int(v)))
+        except (TypeError, ValueError):
+            issues.append(f"장면 {i}: tangent는 1, 2, 3 중 하나")
+    levels = [v for _, v in tang]
+    missing = [n for n in (1, 2, 3) if n not in levels]
+    if missing:
+        issues.append(f"웃음 설계 {', '.join(f'{n}절' for n in missing)}이 없음 — 결과의 결과로 꼬리를 물어 "
+                      "1절(직접 결과) → 2절(엉뚱한 부작용) → 3절(삼천포)까지 갈 것")
+    elif levels != sorted(levels):
+        issues.append("tangent 순서가 뒤섞임 — 1절 → 2절 → 3절 순서로 점점 멀리")
+    snaps = [i for i, s in enumerate(scenes, 1) if s.get("role") == "snapback"]
+    last3 = max((i for i, v in tang if v == 3), default=None)
+    if not snaps:
+        issues.append("role: snapback이 없음 — 3절(삼천포) 뒤에 정색하고 본론으로 돌아오는 한 문장을 둘 것")
+    elif last3 and not any(i > last3 for i in snaps):
+        issues.append("snapback이 3절보다 앞에 있음 — 삼천포 장면들이 끝난 직후에 둘 것")
+    end = [i for i, s in enumerate(scenes, 1) if s.get("act") == "결말"]
+    if tang and end and max(i for i, _ in tang) >= min(end):
+        issues.append("tangent 장면이 결말 구간에 있음 — 1~3절은 전개·반전 구간 안에서 끝낼 것")
+    talk = [s for s in scenes if not isinstance(s.get("card"), dict)]
+    gags = [s.get("gag") for s in talk if s.get("gag")]
+    bad = sorted({g for g in gags if g not in GAGS})
+    if bad:
+        issues.append(f"gag 이름 '{', '.join(map(str, bad))}'는 목록에 없음 ({' / '.join(GAGS)})")
+    good = [g for g in gags if g in GAGS]
+    need = (len(talk) + 1) // 2
+    if len(good) < need:
+        issues.append(f"웃음 장치(gag)가 있는 장면이 {len(good)}개 — 장면 절반 이상({need}개)에 웃음 장치를 넣을 것")
+    elif len(set(good)) < 3:
+        issues.append("웃음 장치가 한두 종류뿐 — 3가지 이상 섞을 것")
+    return issues
+
+
+# ------------------------------------------------------------------ 개그 작가 다듬기
+PUNCHUP_SYSTEM = """너는 한국 예능·쇼츠 개그 작가다. 정색한 다큐 내레이션으로 사람을 웃기는 쇼츠 대본의 대사만 더 웃기게 다듬는다.
+규칙:
+- 장면의 뜻·사실·순서는 그대로. 아라비아 숫자는 한 글자도 바꾸거나 빼지 않는다. 화면(visual)과 어긋나는 말을 넣지 않는다.
+- 펀치라인은 문장 맨 끝 단어에. 웃음을 설명하지 않는다("웃기게도" 금지). 유행어·감탄사·이모지·과한 물음표 금지.
+- 추상어 대신 구체적인 사물·숫자, 3의 법칙(평범 둘 + 비튼 하나), 한 박자 늦은 펀치, 앞 장면 콜백을 활용한다.
+- 내레이터는 끝까지 정색. 3절(삼천포)일수록 더 진지하게. snapback은 짧고 건조하게 ("…아무튼.").
+- 웃음의 과녁은 제도·위선·힘 있는 쪽·우리 모두의 습관. 실존 인물·상표·특정 집단·피해자·외모를 조롱하지 않는다.
+- 길이: 각 caption 45자 이내, 원래 대사 길이의 ±30% 안. 1번 장면(hook)은 20자 안팎.
+- caption에 숫자·기호·영문이 있으면 읽는 그대로 한글로 쓴 narration도 함께 준다.
+- 이미 충분히 웃기면 그 장면은 빼도 된다.
+출력: 설명 없이 JSON 배열 하나만. [{"n": 장면번호, "caption": "...", "narration": "...(필요할 때)"}]"""
+
+_NEEDS_READING = re.compile(r"[0-9A-Za-z%℃°㎡㎞㎏~·/+×]")
+
+
+def _digits(s: str) -> list[str]:
+    return sorted(re.findall(r"\d+(?:[.,]\d+)*", s or ""))
+
+
+def punchup_prompt(spec: dict) -> str:
+    lines = [f"제목: {spec.get('title', '')}  장르: {GENRES.get(spec.get('genre'), spec.get('genre', ''))}", ""]
+    for i, s in enumerate(spec.get("scenes") or [], 1):
+        if not isinstance(s, dict) or isinstance(s.get("card"), dict):
+            continue
+        tags = [str(s.get(k)) if k != "tangent" else f"{s.get(k)}절" for k in ("act", "role", "tangent", "gag") if s.get(k)]
+        lines.append(f"{i}. [{' · '.join(tags)}] 화면: {s.get('visual', '')}")
+        lines.append(f"   caption: {s.get('caption', '')}")
+        if s.get("narration"):
+            lines.append(f"   narration: {s['narration']}")
+    return "\n".join(lines)
+
+
+def apply_punchup(spec: dict, text: str) -> tuple[dict, int]:
+    """개그 작가의 JSON 답을 안전하게 반영. (새 spec, 바뀐 장면 수)"""
+    m = re.search(r"\[.*\]", text or "", re.S)
+    if not m:
+        return spec, 0
+    try:
+        items = json.loads(m.group(0))
+    except json.JSONDecodeError:
+        return spec, 0
+    import copy
+    new = copy.deepcopy(spec)
+    scenes = new.get("scenes") or []
+    changed = 0
+    for it in items if isinstance(items, list) else []:
+        if not isinstance(it, dict):
+            continue
+        try:
+            n = int(it.get("n"))
+        except (TypeError, ValueError):
+            continue
+        if not 1 <= n <= len(scenes) or not isinstance(scenes[n - 1], dict) or isinstance(scenes[n - 1].get("card"), dict):
+            continue
+        s = scenes[n - 1]
+        old, cap = str(s.get("caption") or ""), str(it.get("caption") or "").strip()
+        nar = str(it.get("narration") or "").strip()
+        if not cap or cap == old:
+            continue
+        if _digits(cap) != _digits(old):                       # 숫자(사실)가 바뀌면 버림
+            continue
+        if len(cap) > max(50, int(len(old) * 1.3)):
+            continue
+        if _NEEDS_READING.search(cap) and not nar:            # 읽는 방식이 필요한데 없으면 버림
+            continue
+        s["caption"] = cap
+        if nar:
+            s["narration"] = nar
+        else:
+            s.pop("narration", None)
+        changed += 1
+    return new, changed
+
+
+def dump_yaml(spec: dict) -> str:
+    return yaml.safe_dump(spec, allow_unicode=True, sort_keys=False, width=1000, default_flow_style=None)
 
 
 def structure_issues(spec: dict, scenes: list, total: float) -> list[str]:
@@ -815,16 +959,18 @@ def _validated(ytxt: str, cat: dict, length, log) -> tuple[dict | None, list]:
 
 def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: bool = True,
          review_pass: bool = True, log=print, genre: str | None = None,
-         angle: str | None = None) -> tuple[str, dict, list]:
+         angle: str | None = None, punchup: bool = True, tangents: str | None = None) -> tuple[str, dict, list]:
     """주제 → 검증된 장면 YAML 텍스트, 파싱된 spec, 인용 목록"""
     backend = choose_backend(interactive)
     if backend == "api":
         key = require_key(interactive)
         call = lambda u, ws: ask(system, u, key, web_search=ws)
+        call_light = lambda sysm, u: ask(sysm, u, key, web_search=False, max_tokens=6000)[0]
         call_image = lambda u, png: ask_with_image(system, u, png, key)
         log("  · Claude API 사용 (사용량만큼 별도 과금)")
     else:
         call = lambda u, ws: ask_cli(system, u, web_search=ws)
+        call_light = lambda sysm, u: ask_cli(sysm, u, web_search=False)[0]
 
         def call_image(u, png):
             with tempfile.TemporaryDirectory() as wd:
@@ -839,7 +985,10 @@ def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: 
         user += f"장르: {genre} ({GENRES[genre]})\n"
     if angle:
         user += f"방향 힌트: {angle}\n"
-    user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · AI 이미지 6~10장(keyframes)으로 시각화 가능.\n"
+    if tangents:
+        user += f"삼천포 아이디어(참고용, 더 웃긴 게 떠오르면 바꿔도 됨): {tangents}\n"
+    user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · 1절→2절→3절(삼천포)→복귀로 웃기기 · "
+             "AI 이미지 6~10장(keyframes)으로 시각화 가능.\n"
              "먼저 웹 검색으로 핵심 사실과 수치를 확인한 뒤, 지정한 형식의 YAML만 출력해.")
     log("▶ 1/3 자료 조사 + 대본·연출 작성 중 (1~5분)")
     t0 = time.time()
@@ -861,11 +1010,11 @@ def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: 
         issues = retention_issues(spec)
         if not issues:
             break
-        log(f"▶ 제작 조건 맞추는 중 ({attempt + 1}/2 — 3초 훅 · 4단 구성 · 길이 · 이미지 6~10장): "
+        log(f"▶ 제작 조건 맞추는 중 ({attempt + 1}/2 — 3초 훅 · 4단 구성 · 삼천포 웃음 · 길이 · 이미지): "
             + "; ".join(issues[:2]) + (" …" if len(issues) > 2 else ""))
         fix = ("아래 YAML이 제작 조건을 어겼어. 문제:\n- " + "\n- ".join(issues) +
-               "\n\n시스템 프롬프트의 '시청 유지 설계'·'4단 구성'·'keyframes' 규칙을 따른다. 확인된 사실·수치·출처는 바꾸지 말고, "
-               "장면 순서·대사 길이·문장·role·act·image·keyframes만 손봐. ```yaml 블록 하나로 출력해.\n\n```yaml\n" + ytxt + "```")
+               "\n\n시스템 프롬프트의 '시청 유지 설계'·'4단 구성'·'웃음 설계'·'keyframes' 규칙을 따른다. 확인된 사실·수치·출처는 바꾸지 말고, "
+               "장면 순서·장면 추가(삼천포 2·3절)·대사·role·act·tangent·gag·image·keyframes만 손봐. ```yaml 블록 하나로 출력해.\n\n```yaml\n" + ytxt + "```")
         try:
             ytxt2 = extract_yaml(call(fix, False)[0])
             spec2, errs2 = _validated(ytxt2, cat, length, log)
@@ -891,7 +1040,7 @@ def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: 
         if revised:
             spec2, errs2 = _validated(revised, cat, length, log)
             if not errs2 and len(retention_issues(spec2)) > len(retention_issues(spec)):
-                errs2 = ["감독 수정안이 제작 조건(구성·이미지 목록)을 깨뜨림"]
+                errs2 = ["감독 수정안이 제작 조건(구성·이미지 목록·웃음 설계)을 깨뜨림"]
             if not errs2:
                 ytxt, spec = revised, spec2
                 log(f"  · 화면이 안 맞는 장면을 고쳤어요 ({time.time() - t1:.0f}초)")
@@ -899,6 +1048,18 @@ def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: 
                 log("  · 수정안에 오류가 있어 원래 연출을 유지: " + "; ".join(errs2[:2]))
         else:
             log(f"  · 통과 ({time.time() - t1:.0f}초)")
+    if punchup:
+        log("▶ 개그 작가 다듬기: 대사의 펀치라인을 더 세게 (짧은 지시문이라 사용량 적음)")
+        try:
+            before = len(retention_issues(spec))
+            spec2, n = apply_punchup(spec, call_light(PUNCHUP_SYSTEM, punchup_prompt(spec)))
+            if n and len(retention_issues(spec2)) <= before:
+                ytxt, spec = dump_yaml(spec2), spec2
+                log(f"  · 대사 {n}개를 다듬었어요")
+            else:
+                log("  · 바꿀 만한 대사가 없어 그대로 둠")
+        except Exception as e:
+            log(f"  · 다듬기 중 문제가 있어 그대로 진행: {e}")
     return ytxt, spec, cites
 
 
