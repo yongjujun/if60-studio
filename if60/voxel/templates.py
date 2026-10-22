@@ -441,10 +441,11 @@ def studio(rng, color: str = "#e9e4da", floor: str | None = None, **_) -> Built:
         "orbit": {"type": "orbit", "center": [0, 0.5, 0], "radius": 3.0, "height": 1.0, "from_deg": 145,
                   "to_deg": 215, "look_height": 0.2, "fov": 48},
         "top": {"type": "topdown", "center": [0, 0, 0], "height": 4.5, "height_to": 3.8},
+        "face": {"from": [0, 0.92, -2.35], "to": [0, 0.9, -2.1], "target": [0, 0.74, 0], "fov": 42},
     }
     areas = {"stage": [-1.5, -1.5, 1.5, 1.5], "back": [-4, 1.5, 4, 5], "air": [-1.5, -1.5, 1.5, 1.5]}
     lighting = {"zenith": list(wall), "horizon": list(wall), "fog_density": 0.0,
-                "amb_sky": [0.62, 0.62, 0.64], "amb_ground": [0.46, 0.45, 0.44], "sun_col": [0.52, 0.5, 0.47]}
+                "amb_sky": [0.72, 0.72, 0.74], "amb_ground": [0.54, 0.53, 0.52], "sun_col": [0.5, 0.48, 0.45]}
     return Built(b, areas, shots, shadow_radius=7, sun_azimuth=-35, lighting=lighting, texel=24.0)
 
 
@@ -478,10 +479,259 @@ def tabletop(rng, wall: str = "#e6dccb", wood: str = "#9a6a40", **_) -> Built:
                 "fog_density": 0.0}
     return Built(b, areas, shots, shadow_radius=3, sun_azimuth=-40, lighting=lighting, texel=32.0)
 
+# ------------------------------------------------------------------ 생활 공간 세트 (결과 사다리용)
+INDOOR = {"sun_col": [0.0, 0.0, 0.0], "amb_sky": [0.9, 0.88, 0.84], "amb_ground": [0.58, 0.56, 0.54], "fog_density": 0.0}
+
+
+def _interior(b: WorldBuilder, W: float, D0: float, D1: float, H: float, wall: str, floor: str, ceil="#ecebe6",
+              floor_mat="stone", tile: float = 0.0):
+    b.box((-W, -0.1, D0), (W, 0.0, D1), floor, floor_mat)
+    if tile:
+        for x in np.arange(-W, W, tile):
+            b.box((x, 0.0, D0), (x + 0.02, 0.004, D1), rgb(floor) * 0.85)
+        for z in np.arange(D0, D1, tile):
+            b.box((-W, 0.0, z), (W, 0.004, z + 0.02), rgb(floor) * 0.85)
+    b.box((-W - 0.1, 0, D0), (-W, H, D1), wall, "stone")
+    b.box((W, 0, D0), (W + 0.1, H, D1), wall, "stone")
+    b.box((-W, 0, D1), (W, H, D1 + 0.1), wall, "stone")
+    b.box((-W, H, D0), (W, H + 0.1, D1), ceil, "flat")
+
+
+def office(rng, wall: str = "#e4e1da", floor: str = "#8f96a0", **_) -> Built:
+    """사무실: 책상 줄, 모니터, 창가, 뒷벽 중앙 간판 자리, 오른쪽 벽에 엘리베이터 문"""
+    b = WorldBuilder()
+    W, H = 6.0, 3.0
+    _interior(b, W, -6, 8, H, wall, floor, tile=0.6)
+    for x in np.arange(-5.4, 5.6, 1.4):                                     # 천장 조명
+        for z in (-2.0, 2.0, 5.5):
+            b.box((x - 0.4, H - 0.05, z - 0.15), (x + 0.4, H, z + 0.15), "#fbfaf2", "glow")
+    for z in np.arange(-5.5, 7.5, 2.2):                                     # 왼쪽 창
+        b.box((-W + 0.02, 1.0, z), (-W + 0.06, 2.6, z + 1.8), "#bcd6ec", "glow")
+    for row, z in enumerate((-1.5, 1.5, 4.5)):                              # 책상 3줄 × 2열
+        for x0 in (-4.6, -1.8, 1.0, 3.8):
+            b.box((x0, 0.72, z - 0.45), (x0 + 1.4, 0.76, z + 0.45), "#e8e4dc", "stone")
+            b.box((x0 + 0.05, 0, z - 0.4), (x0 + 0.1, 0.72, z + 0.4), "#6a6a72")
+            b.box((x0 + 1.3, 0, z - 0.4), (x0 + 1.35, 0.72, z + 0.4), "#6a6a72")
+            b.box((x0 + 0.45, 0.76, z + 0.1), (x0 + 0.95, 1.12, z + 0.14), "#22242c")      # 모니터
+            b.box((x0 + 0.48, 0.79, z + 0.095), (x0 + 0.92, 1.09, z + 0.1), "#7fb4e8", "glow")
+            b.box((x0 + 0.66, 0.76, z + 0.14), (x0 + 0.74, 0.86, z + 0.2), "#22242c")
+    b.box((W - 0.06, 0, 5.0), (W, 2.3, 6.6), "#b8bcc4", "stone")             # 엘리베이터 문
+    b.box((W - 0.07, 0, 5.79), (W - 0.05, 2.3, 5.81), "#6a6e76")
+    b.box((-1.5, 2.0, 7.95), (1.5, 2.7, 8.0), "#3a3a44")                      # 뒷벽 간판 자리
+    shots = {
+        "wide": {"from": [0, 2.3, -5.5], "to": [0, 2.2, -4.5], "target": [0, 1.2, 6.0], "fov": 55},
+        "desk": {"from": [-0.6, 1.45, -0.2], "to": [-0.5, 1.4, 0.1], "target": [-1.1, 1.0, 1.6], "fov": 50},
+        "aisle": {"from": [-0.25, 1.6, -5.0], "to": [-0.25, 1.6, 2.0], "target": [-0.25, 1.3, 9.0], "fov": 55},
+        "face": {"from": [0, 0.92, -2.35], "to": [0, 0.9, -2.1], "target": [0, 0.74, 0], "fov": 42},
+    }
+    areas = {"desks": [-4.6, -1.0, 5.2, 5.0], "aisle": [-0.4, -5.0, 0.4, 7.0], "front": [-2.5, -3.5, 2.5, -2.4]}
+    return Built(b, areas, shots, shadow_radius=12, sun_azimuth=0, lighting=dict(INDOOR), texel=16.0)
+
+
+def elevator(rng, wall: str = "#c9ccd2", **_) -> Built:
+    """엘리베이터: 복도에서 문 열린 칸 안을 들여다봄. 칸 안 x -1~1, z 0.5~2.5. 문 위 층수 표시 자리 (0, 2.55, 0.35)"""
+    b = WorldBuilder()
+    b.box((-5, -0.1, -6), (5, 0.0, 3), "#b9b2a6", "stone")                    # 복도 바닥
+    b.box((-5, 0, 0.3), (-1.1, 3.2, 0.5), "#e6e2da", "stone")                 # 복도 벽 (문 양옆)
+    b.box((1.1, 0, 0.3), (5, 3.2, 0.5), "#e6e2da", "stone")
+    b.box((-1.1, 2.4, 0.3), (1.1, 3.2, 0.5), "#e6e2da", "stone")
+    b.box((-1.25, 0, 0.28), (-1.1, 2.4, 0.5), "#9aa0a8")                      # 문틀
+    b.box((1.1, 0, 0.28), (1.25, 2.4, 0.5), "#9aa0a8")
+    b.box((-1.0, 0.0, 0.5), (1.0, 0.02, 2.6), "#7a7f88", "stone")             # 칸 안
+    b.box((-1.1, 0, 0.5), (-1.0, 2.4, 2.6), wall, "glass")
+    b.box((1.0, 0, 0.5), (1.1, 2.4, 2.6), wall, "glass")
+    b.box((-1.1, 0, 2.6), (1.1, 2.4, 2.7), wall, "stone")
+    b.box((-1.0, 2.38, 0.5), (1.0, 2.42, 2.6), "#fbf6e8", "glow")              # 천장 조명
+    b.box((-0.9, 0.9, 2.55), (0.9, 0.95, 2.6), "#d8dce2")                     # 손잡이
+    b.box((1.3, 1.0, 0.27), (1.45, 1.3, 0.3), "#3a3e46")                      # 호출 버튼
+    b.box((1.34, 1.05, 0.265), (1.41, 1.12, 0.27), "#ffd27a", "glow")
+    shots = {
+        "front": {"from": [0, 1.6, -3.2], "to": [0, 1.6, -2.8], "target": [0, 1.3, 1.6], "fov": 50},
+        "inside": {"from": [0.8, 2.1, 0.7], "to": [0.75, 2.05, 0.8], "target": [-0.4, 1.0, 2.2], "fov": 65},
+        "doors": {"from": [-1.8, 1.5, -2.4], "to": [-1.4, 1.5, -2.2], "target": [0.2, 1.3, 1.2], "fov": 50},
+    }
+    areas = {"cabin": [-0.85, 0.8, 0.85, 2.4], "hall": [-4, -4, 4, -0.5]}
+    return Built(b, areas, shots, shadow_radius=6, sun_azimuth=0, lighting=dict(INDOOR), texel=20.0)
+
+
+SHOP_KINDS = {
+    "snack": {"wall": "#f2e2c4", "counter": "#c8384a", "goods": ["#d8323a", "#f2a13a", "#e8d27a"]},     # 분식집
+    "butcher": {"wall": "#f4f0ea", "counter": "#e8e8ec", "goods": ["#e08a90", "#c86068", "#f2c4c0"]},  # 정육점
+    "store": {"wall": "#eef0f2", "counter": "#3a6ad6", "goods": ["#e0473f", "#2f6fd6", "#f2c94c", "#3aa45a"]},  # 편의점
+    "cafe": {"wall": "#e8dccb", "counter": "#6b4a2e", "goods": ["#f2ead8", "#8a5a3a", "#c9a46a"]},
+}
+
+
+def shop(rng, kind: str = "snack", **_) -> Built:
+    """가게 안 (kind: snack 분식집 | butcher 정육점 | store 편의점 | cafe 카페).
+    계산대 z=1.2, 메뉴판·가격표 자리: 계산대 뒤 벽 (0, 2.0, 3.45), 손님 줄은 area: queue"""
+    k = SHOP_KINDS.get(kind, SHOP_KINDS["snack"])
+    b = WorldBuilder()
+    W, H = 4.0, 3.0
+    _interior(b, W, -5, 3.5, H, k["wall"], "#b8aa94", tile=0.5)
+    b.box((-3.0, 0, 1.0), (3.0, 1.0, 1.5), k["counter"], "stone")              # 계산대
+    b.box((-3.05, 1.0, 0.95), (3.05, 1.06, 1.55), "#efe9dc", "stone")
+    if kind == "butcher":                                                      # 고기 진열장 (유리 + 분홍 덩어리)
+        b.box((-2.8, 1.06, 1.0), (2.8, 1.5, 1.5), "#d8eef4", "glass")
+        for x in np.arange(-2.6, 2.6, 0.5):
+            c = k["goods"][int(rng.integers(len(k["goods"])))]
+            b.box((x, 1.06, 1.1), (x + 0.38, 1.16, 1.38), c, "stone")
+    elif kind == "snack":                                                      # 떡볶이 판·솥
+        b.box((-2.4, 1.06, 1.05), (-0.6, 1.16, 1.45), "#3a3a40")
+        b.box((-2.3, 1.12, 1.1), (-0.7, 1.18, 1.4), "#d8323a", "stone")
+        for x in (0.4, 1.4):
+            b.boxes([(x, 1.06, 1.08)], [(x + 0.7, 1.4, 1.42)], rgb("#9aa0a8"), "stone")
+    for z0, y in ((3.0, 0.4), (3.0, 1.0)):                                    # 뒷벽 선반 + 물건
+        b.box((-3.6, y, z0), (3.6, y + 0.05, 3.5), "#8a6a4a")
+        for x in np.arange(-3.5, 3.5, 0.32):
+            c = k["goods"][int(rng.integers(len(k["goods"])))]
+            hgt = rng.uniform(0.18, 0.4)
+            b.box((x, y + 0.05, z0 + 0.1), (x + 0.24, y + 0.05 + hgt, z0 + 0.35), c, "stone")
+    for x in (-2.0, 0.0, 2.0):
+        b.box((x - 0.5, H - 0.05, -1.0), (x + 0.5, H, -0.6), "#fbf6e8", "glow")
+    b.box((-1.6, 1.7, 3.45), (1.6, 2.6, 3.5), "#2a2a30")                       # 메뉴판 자리
+    shots = {
+        "counter": {"from": [0, 1.95, -2.9], "to": [0, 1.9, -2.5], "target": [0, 1.35, 2.6], "fov": 55},
+        "queue": {"from": [3.4, 1.6, -4.5], "to": [3.2, 1.6, -4.1], "target": [-0.5, 1.0, 0.4], "fov": 55},
+        "close": {"from": [0.4, 1.5, -0.4], "to": [0.3, 1.45, -0.2], "target": [0, 1.15, 1.25], "fov": 50},
+        "face": {"from": [0, 1.25, -1.4], "to": [0, 1.22, -1.2], "target": [0, 1.05, 1.8], "fov": 42},
+    }
+    areas = {"queue": [-0.4, -4.5, 0.4, 0.6], "floor": [-3.5, -4.5, 3.5, 0.6], "staff": [-2.5, 1.7, 2.5, 2.8]}
+    return Built(b, areas, shots, shadow_radius=8, sun_azimuth=0, lighting=dict(INDOOR), texel=20.0)
+
+
+def shopfront(rng, color: str = "#e9e2d4", **_) -> Built:
+    """가게·부동산·병원의 길가 외관: 큰 유리창(창에 매물 카드·전단 붙이기 좋음) + 위쪽 간판 띠 자리.
+    간판 자리 (0, 3.1, -0.06) 폭 5m · 창 앞면 z=-0.03, 창 범위 x -2.6~2.6, y 0.6~2.6"""
+    b = WorldBuilder()
+    b.box((-30, -0.1, -12), (30, 0.0, 30), "#5a5e66", "asphalt")             # 차도
+    b.box((-30, 0.0, -4), (30, 0.15, 0), "#c9c2b6", "stone")                   # 인도
+    for x in np.arange(-30, 30, 1.0):
+        b.box((x, 0.15, -4), (x + 0.02, 0.16, 0), "#a8a094")
+    b.box((-30, 0, 0), (-3.2, 8, 6), color, "facade")                          # 건물 (가게 양옆)
+    b.box((3.2, 0, 0), (30, 8, 6), color, "facade")
+    b.box((-3.2, 3.6, 0), (3.2, 8, 6), color, "stone")
+    b.box((-3.2, 2.75, -0.05), (3.2, 3.55, 0.0), "#2a2a30")                    # 간판 띠
+    b.box((-3.2, 0.15, 0), (-2.8, 3.6, 0.05), "#3a3a42")                       # 창틀
+    b.box((2.8, 0.15, 0), (3.2, 3.6, 0.05), "#3a3a42")
+    b.box((-2.8, 0.15, 0.0), (0.9, 0.6, 0.05), "#3a3a42")
+    b.box((-2.8, 0.6, 0.02), (0.9, 2.65, 0.06), "#9fc4d8", "glass")            # 큰 유리창
+    b.box((0.9, 0.15, 0.0), (2.8, 2.65, 0.08), "#6b4a2e")                     # 문
+    b.box((2.5, 1.1, -0.02), (2.6, 1.5, 0.0), "#d8d8d8")
+    b.box((-2.8, 2.65, 0.0), (2.8, 2.75, 0.05), "#3a3a42")
+    for x in (-10, 8, 16):                                                     # 가로수
+        b.stamp(models.tree(), (x, 0.15, -3.2), rng.uniform(0, 6), c1="#4f8a4a", c2="#6b4a2e", scale=0.7)
+    shots = {
+        "front": {"from": [0, 2.0, -12.5], "to": [0, 2.0, -11.5], "target": [0, 1.9, 0], "fov": 50},
+        "window": {"from": [-1.0, 1.6, -3.0], "to": [-0.9, 1.6, -2.6], "target": [-1.0, 1.6, 0], "fov": 50},
+        "street": {"from": [-9, 2.2, -7], "to": [-8, 2.2, -6.5], "target": [0, 1.8, 0], "fov": 50},
+    }
+    areas = {"sidewalk": [-12, -3.6, 12, -0.4], "__y_sidewalk": 0.15, "road": [-30, -11, 30, -5],
+             "queue": [-0.3, -3.6, 0.3, -0.4], "__y_queue": 0.15}
+    return Built(b, areas, shots, shadow_radius=25, sun_azimuth=-30, texel=12.0)
+
+
+def clinic(rng, wall: str = "#f4f6f8", accent: str = "#4aa0c8", **_) -> Built:
+    """병원·피부과 대기실: 접수대, 대기 의자 줄, 접수대 뒤 벽 간판 자리 (0, 2.0, 3.95)"""
+    b = WorldBuilder()
+    W, H = 5.0, 3.0
+    _interior(b, W, -6, 4, H, wall, "#d8dce0", tile=0.6)
+    b.box((-2.2, 0, 2.2), (2.2, 1.1, 2.8), "#ffffff", "stone")                 # 접수대
+    b.box((-2.2, 0.95, 2.18), (2.2, 1.15, 2.22), accent)
+    b.box((-2.25, 1.1, 2.15), (2.25, 1.16, 2.85), "#e8eef2", "stone")
+    b.box((-0.9, 1.16, 2.5), (-0.4, 1.5, 2.54), "#22242c")
+    b.box((-0.87, 1.19, 2.495), (-0.43, 1.47, 2.5), "#7fb4e8", "glow")
+    b.box((-W, 0, 3.9), (W, 0.12, 4.0), accent)                                # 걸레받이
+    b.box((-1.8, 1.55, 3.9), (1.8, 2.6, 3.95), "#ffffff")                      # 간판 자리
+    for row, z in enumerate((-1.0, -2.6)):                                     # 대기 의자 줄
+        for x in np.arange(-3.6, 3.7, 0.7):
+            b.box((x, 0.42, z), (x + 0.55, 0.48, z + 0.5), accent, "stone")
+            b.box((x, 0.48, z + 0.45), (x + 0.55, 0.95, z + 0.5), accent, "stone")
+            b.box((x + 0.05, 0, z + 0.05), (x + 0.1, 0.42, z + 0.1), "#9aa0a8")
+    b.stamp(models.tree(), (4.3, 0, 3.4), 0.0, c1="#4f8a4a", c2="#d8d0c0", scale=0.28)
+    for x in (-2.5, 0.0, 2.5):
+        b.box((x - 0.6, H - 0.05, -2.0), (x + 0.6, H, -1.6), "#ffffff", "glow")
+        b.box((x - 0.6, H - 0.05, 1.0), (x + 0.6, H, 1.4), "#ffffff", "glow")
+    shots = {
+        "reception": {"from": [0, 2.55, -5.6], "to": [0, 2.45, -5.0], "target": [0, 1.3, 3.5], "fov": 55},
+        "waiting": {"from": [4.2, 1.8, -4.8], "to": [3.9, 1.8, -4.4], "target": [-1.0, 0.7, -1.4], "fov": 55},
+        "face": {"from": [0, 0.92, -2.35], "to": [0, 0.9, -2.1], "target": [0, 0.74, 0], "fov": 42},
+    }
+    areas = {"seats": [-3.6, -2.4, 3.6, -0.6], "__y_seats": 0.45, "floor": [-4, -5, 4, 1.5], "staff": [-2, 2.9, 2, 3.6]}
+    return Built(b, areas, shots, shadow_radius=10, sun_azimuth=0, lighting=dict(INDOOR), texel=16.0)
+
+
+def pool(rng, **_) -> Built:
+    """워터파크·수영장: 물(가운데), 타일 데크, 파라솔, 미끄럼틀, 현수막 자리 (0, 3.2, 14)"""
+    b = WorldBuilder()
+    for mn, mx in (((-20, -0.1, -10), (20, 0.0, 0)), ((-20, -0.1, 12), (20, 0.0, 22)),   # 데크 (물 둘레)
+                   ((-20, -0.1, 0), (-7, 0.0, 12)), ((7, -0.1, 0), (20, 0.0, 12))):
+        b.box(mn, mx, "#e8e2d6", "stone")
+    for x in np.arange(-20, 20, 0.8):
+        b.box((x, 0.0, -10), (x + 0.03, 0.005, 0), "#cfc8ba")
+    b.box((-7, -0.6, 0), (7, -0.05, 12), "#2aa0d8", "water")                   # 물 (데크보다 살짝 낮게)
+    b.box((-7.3, -0.05, -0.3), (7.3, 0.08, 0.0), "#f4f4f4")
+    b.box((-7.3, -0.05, 12), (7.3, 0.08, 12.3), "#f4f4f4")
+    b.box((-7.3, -0.05, 0), (-7.0, 0.08, 12), "#f4f4f4")
+    b.box((7.0, -0.05, 0), (7.3, 0.08, 12), "#f4f4f4")
+    for x, z, c in ((-10, 3, "#e0473f"), (-10, 8, "#f2c94c"), (10, 4, "#2f6fd6"), (10, 9, "#3aa45a")):
+        b.box((x - 0.04, 0, z - 0.04), (x + 0.04, 2.4, z + 0.04), "#e8e8e8")   # 파라솔
+        b.box((x - 1.2, 2.4, z - 1.2), (x + 1.2, 2.6, z + 1.2), c, "stone")
+        b.box((x - 0.4, 0.35, z - 1.6), (x + 0.4, 0.45, z - 0.4), "#f4f4f4")
+    for i in range(14):                                                        # 미끄럼틀 (나선 계단 느낌)
+        a = i / 14 * math.pi * 1.5
+        x, z, y = 13 + math.cos(a) * 2.2, 15 + math.sin(a) * 2.2, 6.0 - i * 0.4
+        b.box((x - 0.6, y, z - 0.6), (x + 0.6, y + 0.3, z + 0.6), "#f2a13a", "stone")
+    b.box((12.6, 0, 14.6), (13.4, 6.2, 15.4), "#e8e8e8")
+    b.box((-6, 2.6, 13.9), (6, 2.65, 14.1), "#d8d8d8")                         # 현수막 줄
+    b.box((-6, 0, 13.95), (-5.9, 2.65, 14.05), "#9aa0a8")
+    b.box((5.9, 0, 13.95), (6, 2.65, 14.05), "#9aa0a8")
+    b.box((-20, 0, 22), (20, 4, 23), "#7fb07a", "grass")
+    shots = {
+        "deck": {"from": [0, 3.0, -8.0], "to": [0, 2.8, -6.5], "target": [0, 1.0, 10.0], "fov": 55},
+        "aerial": {"from": [0, 18, -12], "to": [0, 16, -8], "target": [0, 0, 8], "fov": 55},
+        "poolside": {"from": [-6.5, 1.0, -1.2], "to": [-6.0, 1.0, -0.8], "target": [0, 0.3, 6.0], "fov": 55},
+    }
+    areas = {"water": [-6.5, 0.5, 6.5, 11.5], "__y_water": -0.35, "deck": [-12, -8, 12, -1], "loungers": [-11, 2, 11, 10]}
+    return Built(b, areas, shots, shadow_radius=30, sun_azimuth=40, texel=12.0)
+
+
+def farm(rng, **_) -> Built:
+    """농장: 울타리 친 우리(pen) + 빨간 헛간 + 들판. 헛간 앞 간판 자리 (0, 3.6, 10.9)"""
+    b = WorldBuilder()
+    b.box((-60, -0.1, -20), (60, 0.0, 120), "#6f9a4a", "grass")
+    b.box((-8, 0.0, -2), (8, 0.02, 10), "#8a6a4a", "stone")                   # 우리 바닥(흙)
+    for x in np.arange(-8, 8.01, 1.0):                                         # 울타리
+        for z in (-2.0, 10.0):
+            b.box((x - 0.06, 0, z - 0.06), (x + 0.06, 1.1, z + 0.06), "#c8a070")
+    for z in np.arange(-2, 10.01, 1.0):
+        for x in (-8.0, 8.0):
+            b.box((x - 0.06, 0, z - 0.06), (x + 0.06, 1.1, z + 0.06), "#c8a070")
+    for y in (0.5, 0.95):
+        b.box((-8, y, -2.04), (8, y + 0.08, -1.96), "#c8a070")
+        b.box((-8.04, y, -2), (-7.96, y + 0.08, 10), "#c8a070")
+        b.box((7.96, y, -2), (8.04, y + 0.08, 10), "#c8a070")
+    b.box((-5, 0, 11), (5, 4.5, 18), "#b8322e", "stone")                       # 헛간
+    b.box((-5.3, 4.5, 10.7), (5.3, 5.0, 18.3), "#5a5a60")
+    b.box((-4.6, 5.0, 11.2), (4.6, 6.6, 17.8), "#a82c28", "stone")
+    b.box((-1.4, 0, 10.95), (1.4, 3.0, 11.0), "#f2efe8")
+    b.box((-1.3, 0, 10.9), (1.3, 2.9, 10.95), "#8a2a26")
+    b.box((-1.3, 1.4, 10.88), (1.3, 1.5, 10.9), "#f2efe8")
+    trees_line(b, rng, np.linspace(-50, 50, 14), np.full(14, 60.0), scale=(1.0, 1.4))
+    hills(b, rng, -120, 120, 80, 140, height=40, color="#5a7a46")
+    shots = {
+        "pen": {"from": [0, 3.2, -9], "to": [0, 3.0, -8], "target": [0, 0.6, 4.5], "fov": 55},
+        "wide": {"from": [-14, 9, -16], "to": [-12, 8.5, -14], "target": [0, 1.0, 6], "fov": 55},
+        "low": {"from": [-2.5, 0.5, -3.2], "to": [-2.0, 0.5, -2.9], "target": [1.0, 0.4, 4.0], "fov": 55},
+    }
+    areas = {"pen": [-7.2, -1.2, 7.2, 9.2], "yard": [-20, -15, 20, -4]}
+    return Built(b, areas, shots, shadow_radius=40, sun_azimuth=35, texel=10.0)
+
 
 TEMPLATES = {"plaza": plaza, "boulevard": boulevard, "crossroad": crossroad, "river_bridge": river_bridge,
              "apartments": apartments, "room": room, "field": field, "planet": planet,
-             "studio": studio, "tabletop": tabletop}
+             "studio": studio, "tabletop": tabletop, "office": office, "elevator": elevator, "shop": shop,
+             "shopfront": shopfront, "clinic": clinic, "pool": pool, "farm": farm}
 
 
 def build_template(world: dict, rng) -> Built:

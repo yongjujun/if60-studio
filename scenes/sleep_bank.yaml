@@ -1,0 +1,433 @@
+# 만약에 잠을 저축할 수 있다면? (약 1분 50초) — 결과 사다리(format: ladder) 예시
+# 상상 하나를 생활 영역 곳곳에 차례로 터뜨린다: 침실 → 출근길 → 회사 → 은행 → 병원 → 부동산 → 카페 → 편의점 → 놀이시설
+#   → (3절 삼천포) 상속·세무서·농장 → 복귀 → 반전 → 콜백 → 질문 카드
+# 웃음의 절반은 3D 속 글자(sign): 은행 간판, 매물 카드, 시술 안내, 가격표, 현수막. 얼굴 클로즈업은 bust(표정).
+#
+# facts_to_check
+#   - 성인(18~60세) 권장 수면 하루 7시간 이상 — CDC https://www.cdc.gov/sleep/about/index.html
+#   - 8시간 × 연 3.5% = 16.8분 (계산, 상상 속 '수면 적금')
+#   - 나머지는 전부 상상(가상 상황)
+title: 만약에 잠을 저축할 수 있다면?
+format: ladder
+genre: absurd
+style: voxel
+layout:
+  style: simple
+  title: 만약에 잠을 통장처럼 저축할 수 있다면?
+facts_to_check:
+  - "성인 권장 수면 하루 7시간 이상 — https://www.cdc.gov/sleep/about/index.html"
+  - "8시간 × 3.5% ≈ 17분 (계산)"
+keyframes:
+  - {id: 1, desc: "주말 침대에 이불을 뒤집어쓴 직장인, 벽 화면에 수면 잔고", prompt: "cozy bedroom at night, office worker buried under blanket on a bed, wall screen glowing, voxel art, vertical 9:16, no text"}
+  - {id: 2, desc: "정색한 직장인 얼굴 클로즈업", prompt: "close-up of a blocky voxel office worker face with a deadpan expression, plain warm background, vertical 9:16, no text"}
+  - {id: 3, desc: "출근길 엘리베이터 속 조용한 사람들", prompt: "open elevator full of calm office workers seen from the hallway, voxel art, vertical 9:16, no text"}
+  - {id: 4, desc: "넓은 사무실, 아무도 졸지 않음", prompt: "open-plan office with rows of desks and glowing monitors, alert workers, voxel art, vertical 9:16, no text"}
+  - {id: 5, desc: "길가 은행 외관과 창에 붙은 적금 안내", prompt: "small street-side bank storefront with posters in the window, sunny day, voxel art, vertical 9:16, no text"}
+  - {id: 6, desc: "피부과 접수대와 대기 의자", prompt: "bright clinic reception desk with waiting chairs, voxel art, vertical 9:16, no text"}
+  - {id: 7, desc: "부동산 창문의 매물 카드들", prompt: "real estate office window covered with listing cards, voxel art, vertical 9:16, no text"}
+  - {id: 8, desc: "텅 빈 카페 계산대", prompt: "empty cafe counter with a menu board, no customers, voxel art, vertical 9:16, no text"}
+  - {id: 9, desc: "편의점 계산대 가격표", prompt: "convenience store counter with colorful shelves, voxel art, vertical 9:16, no text"}
+  - {id: 10, desc: "워터파크 선베드에서 단체로 자는 사람들", prompt: "water park deck with many people sleeping on loungers, banner in background, voxel art, vertical 9:16, no text"}
+  - {id: 11, desc: "할머니와 손주, 탁자 위 유언장", prompt: "grandmother and grandchild in a cozy room with a will document on a stand, voxel art, vertical 9:16, no text"}
+  - {id: 12, desc: "세무서 앞 길게 늘어선 줄", prompt: "long queue of people on a sidewalk in front of a government office, voxel art, vertical 9:16, no text"}
+  - {id: 13, desc: "농장 우리에서 자는 돼지들", prompt: "farm pen with pigs sleeping in front of a red barn, voxel art, vertical 9:16, no text"}
+
+scenes:
+  # ── 도입 ─────────────────────────────
+  - duration: 3
+    act: 도입
+    role: hook
+    image: 1
+    domain: 침실
+    visual: 이불을 뒤집어쓴 직장인이 누운 침대, 벽 화면에 '수면 잔고 +30시간'이 빛남
+    caption: 잠을 통장처럼 모을 수 있다면?
+    world: {template: room, seed: 1}
+    time: "23:00"
+    shot: {from: [0.2, 1.9, -1.4], to: [0.4, 1.8, -1.0], target: [1.6, 0.8, 1.6], fov: 52}
+    props:
+      - {shape: box, size: [1.0, 0.28, 1.4], at: [1.7, 0.45, 1.25], color: "#4a78c8"}
+      - {shape: sphere, r: 0.15, at: [1.7, 0.78, 0.55], color: "#f0c8a0"}
+    big_text: [{text: "Zzz", from: 0.4, pos: [0.62, 0.48], size: 0.7, color: "#9fd8ff"}]
+
+  - duration: 3.5
+    act: 도입
+    image: 1
+    domain: 침실
+    gag: 과잉 진지
+    visual: 같은 침대, 우측 상단 시계가 토요일 밤에서 일요일 새벽으로 휙휙 넘어감
+    caption: 토요일 밤, 김 대리는 30시간을 잡니다.
+    narration: 토요일 밤, 김 대리는 서른 시간을 잡니다.
+    hud: {from: "23:00", to: "05:00", step: 30, format: "토→일 {}"}
+    world: {template: room, seed: 1}
+    shot: inside
+    props:
+      - {shape: box, size: [1.0, 0.28, 1.4], at: [1.7, 0.45, 1.25], color: "#4a78c8"}
+      - {shape: sphere, r: 0.15, at: [1.7, 0.78, 0.55], color: "#f0c8a0"}
+      - {shape: sign, style: screen, text: "수면 잔고\n**+30시간**", size: [0.9, 0.5], at: [0.95, 1.6, 2.55]}
+
+  - duration: 3
+    act: 도입
+    image: 2
+    domain: 침실
+    gag: 정색 반전
+    visual: 정색한 김 대리 얼굴 클로즈업, 가슴 앞에 '평일 수면 0시간' 종이
+    caption: 그리고 평일엔 한숨도 안 잡니다.
+    world: {template: studio, seed: 2, params: {color: "#cfe0ee"}}
+    shot: face
+    props:
+      - {model: bust, at: [0, 0, 0], yaw: 180, color: "#f4f4f4", color2: "#1c1a22"}
+      - {shape: sign, style: paper, text: "평일 수면\n**0시간**", size: [0.62, 0.3], at: [0, 1.2, -0.26]}
+
+  # ── 전개: 1절 (개인·출근길·회사) ─────────────────────
+  - duration: 3.5
+    act: 전개
+    tangent: 1
+    image: 3
+    domain: 출근길
+    gag: 숫자 개그
+    visual: 출근길 엘리베이터 안, 꼿꼿이 선 사람들, 문 위 화면 '오늘 하품 0회'
+    caption: 출근길 엘리베이터, 하품 소리 0회.
+    narration: 출근길 엘리베이터, 하품 소리 영 회.
+    world: {template: elevator, seed: 4}
+    shot: front
+    crowds:
+      - {agent: person, count: 6, area: cabin, layout: grid, facing: 180}
+    props:
+      - {shape: sign, style: screen, text: "오늘 하품 **0회**", size: [0.9, 0.24], at: [0, 2.46, 0.27]}
+
+  - duration: 3.5
+    act: 전개
+    tangent: 1
+    image: 4
+    domain: 회사
+    gag: 공식 발표체
+    visual: 넓은 사무실, 뒷벽 현수막 '회의 중 졸음 0건 달성'
+    caption: 회의 중 조는 사람도 0명입니다.
+    narration: 회의 중 조는 사람도 영 명입니다.
+    world: {template: office, seed: 5}
+    shot: wide
+    crowds:
+      - {agent: person, count: 16, area: desks, facing: 0}
+    props:
+      - {shape: sign, style: banner, text: "회의 중 졸음 0건 달성!", size: [2.8, 0.6], at: [0, 2.05, 7.9], color: "#2f6fd6"}
+
+  - duration: 3
+    act: 전개
+    tangent: 1
+    image: 2
+    domain: 회사
+    gag: 한 박자 늦은 펀치
+    visual: 눈을 부릅뜬 정색 얼굴 클로즈업 (밤새 안 잔 얼굴)
+    caption: 다들 눈이 조금 무섭긴 합니다.
+    beat: 0.6
+    world: {template: office, seed: 5}
+    shot: face
+    props:
+      - {model: bust_surprised, at: [0, 0, 0], yaw: 180, color: "#2f6fd6", color2: "#3a2a20"}
+
+  - duration: 3.2
+    act: 전개
+    tangent: 1
+    image: 13
+    domain: 아파트
+    gag: 3의 법칙
+    visual: 밤의 아파트 단지 항공샷, 불 꺼진 창이 대부분
+    caption: 주말엔 단지 전체가 조용하고, 평일엔 불이 안 꺼집니다.
+    world: {template: apartments, seed: 6}
+    time: "02:00"
+    shot: aerial
+
+  # ── 반전 신호: 잠이 돈이 된다 / 2절 (돈·가게·업계) ─────────────
+  - duration: 3.5
+    act: 전개
+    role: twist
+    tangent: 2
+    image: 5
+    domain: 은행
+    gag: 정색 반전
+    visual: 길가 은행 외관, 위쪽 간판 '수면은행', 사람들이 줄 섬
+    caption: 그런데 문제는, 잠이 돈이 된다는 거죠.
+    world: {template: shopfront, seed: 7, params: {color: "#e2e6ec"}}
+    shot: front
+    props:
+      - {shape: sign, style: shop, text: "수면은행", size: [5.6, 0.7], at: [0, 2.8, -0.07], color: "#ffffff"}
+    crowds:
+      - {agent: person, count: 8, area: queue, layout: queue, gap: 0.7, facing: 0}
+    effects:
+      - punch: {at: 2.2, length: 1.4, zoom: 1.2, center: [0.5, 0.42]}
+
+  - duration: 3.8
+    act: 전개
+    tangent: 2
+    image: 5
+    domain: 은행
+    gag: 숫자 개그
+    visual: 은행 창에 붙은 적금 안내 카드 '수면 적금 연 3.5% / 8시간 넣으면 이자 17분' 클로즈업
+    caption: 수면 적금 연 3.5%. 8시간 넣으면 이자는 17분.
+    narration: 수면 적금 연 삼 점 오 퍼센트. 여덟 시간 넣으면 이자는 십칠 분.
+    world: {template: shopfront, seed: 7, params: {color: "#e2e6ec"}}
+    shot: window
+    props:
+      - {shape: sign, style: card, title: "수면 적금", text: "연 3.5%\n**8시간 → 이자 17분**", size: [0.9, 1.0], at: [-1.0, 1.15, -0.01], color: "#2f6fd6"}
+      - {shape: sign, style: card, title: "수면 대출", text: "당일 8시간\n신용 무관", size: [0.7, 0.8], at: [-2.0, 1.25, -0.01]}
+
+  - duration: 3.6
+    act: 전개
+    tangent: 2
+    image: 4
+    domain: 회사
+    gag: 공식 발표체
+    visual: 책상 모니터에 '김 대리 수면 잔고 -42시간' 빨간 글씨
+    caption: 연봉 협상도 이제 수면 잔고로 합니다.
+    world: {template: office, seed: 5}
+    shot: desk
+    props:
+      - {shape: sign, style: screen, text: "김 대리 수면 잔고\n**-42시간**", size: [0.46, 0.3], at: [-1.1, 0.8, 1.585]}
+
+  - duration: 3.4
+    act: 전개
+    tangent: 2
+    image: 2
+    domain: 회사
+    gag: 숫자 개그
+    visual: 울상인 김 대리 얼굴 클로즈업, 앞에 '승진 보류' 빨간 도장
+    caption: 잔고 마이너스 42시간. 승진 보류.
+    narration: 잔고 마이너스 사십이 시간. 승진 보류.
+    world: {template: studio, seed: 2, params: {color: "#cfe0ee"}}
+    shot: face
+    props:
+      - {model: bust_sad, at: [0, 0, 0], yaw: 180, color: "#f4f4f4", color2: "#1c1a22"}
+    big_text: [{text: "보류", style: stamp, from: 1.6, pos: [0.5, 0.36]}]
+
+  - duration: 3.6
+    act: 전개
+    tangent: 2
+    image: 6
+    domain: 병원
+    gag: 간판 개그
+    visual: 피부과 접수대 뒤 안내판 '수면 대출 한도 조회 / 당일 8시간 입금', 대기 의자에 사람들
+    caption: 피부과에는 수면 대출 창구가 생겼고,
+    world: {template: clinic, seed: 8}
+    shot: {from: [0, 2.0, -1.2], to: [0, 1.95, -0.8], target: [0, 1.8, 3.9], fov: 52}
+    props:
+      - {shape: sign, style: board, title: "상담 안내", text: "수면 대출 한도 조회\n**당일 8시간 입금**", size: [3.4, 0.95], at: [0, 1.6, 3.88]}
+    crowds:
+      - {agent: person, count: 8, area: [-3.4, -2.4, 3.4, -2.2], facing: 0}
+
+  - duration: 3.6
+    act: 전개
+    tangent: 2
+    image: 7
+    domain: 부동산
+    gag: 말장난
+    visual: 부동산 창에 매물 카드 '숙면권 ★★★ 층간소음 0' 과 '역세권 급매'
+    caption: 집값 기준도 바뀝니다. 역세권 말고 숙면권.
+    world: {template: shopfront, seed: 9, params: {color: "#efe6d6"}}
+    shot: window
+    props:
+      - {shape: sign, style: shop, text: "행복 부동산", size: [5.6, 0.7], at: [0, 2.8, -0.07]}
+      - {shape: sign, style: card, title: "숙면권", text: "층간소음 0\n**★★★**", size: [0.75, 0.95], at: [-1.0, 1.2, -0.01]}
+      - {shape: sign, style: card, title: "역세권", text: "지하철 소음\n**급매**", size: [0.65, 0.85], at: [-1.95, 1.25, -0.01], color: "#7a7a84"}
+
+  - duration: 3.8
+    act: 전개
+    tangent: 2
+    image: 8
+    domain: 카페
+    gag: 가치 뒤집기
+    visual: 텅 빈 카페 계산대, 메뉴판 '폐업 정리 아메리카노 1+1'
+    caption: 카페는 문을 닫습니다. 아메리카노 1+1도 안 팔려요.
+    narration: 카페는 문을 닫습니다. 아메리카노 원 플러스 원도 안 팔려요.
+    world: {template: shop, seed: 10, params: {kind: cafe}}
+    shot: counter
+    props:
+      - {shape: sign, style: price, text: "폐업 정리\n**아메리카노 1+1**", size: [3.0, 0.85], at: [0, 1.72, 3.4]}
+
+  - duration: 3.4
+    act: 전개
+    tangent: 2
+    image: 9
+    domain: 편의점
+    gag: 의외의 비교
+    visual: 편의점 계산대 위 가격표 '판매 1위 귀마개 / 2위 안대'
+    caption: 대신 편의점 판매 1위는 귀마개.
+    narration: 대신 편의점 판매 일 위는 귀마개.
+    world: {template: shop, seed: 11, params: {kind: store}}
+    shot: counter
+    props:
+      - {shape: sign, style: price, text: "오늘의 판매 순위\n**1위 귀마개**  2위 안대", size: [3.0, 0.85], at: [0, 1.72, 3.4]}
+
+  - duration: 3.6
+    act: 전개
+    tangent: 2
+    image: 10
+    domain: 놀이시설
+    gag: 간판 개그
+    visual: 워터파크 선베드마다 자는 사람들, 뒤 현수막 '단체 낮잠장 성수기 할증 30%'
+    caption: 워터파크는 단체 낮잠장이 됐습니다.
+    world: {template: pool, seed: 12}
+    shot: deck
+    crowds:
+      - {agent: person, count: 16, area: loungers}
+    props:
+      - {shape: sign, style: banner, text: "단체 낮잠장 · 성수기 할증 30%", size: [11.6, 1.2], at: [0, 1.4, 13.9], color: "#2f6fd6"}
+
+  # ── 전개: 3절 (삼천포 — 상속·세무서·농장) ─────────────────
+  - duration: 3.6
+    act: 전개
+    tangent: 3
+    image: 11
+    domain: 가족
+    gag: 과잉 진지
+    visual: 방 안 할머니(긴 머리 회색)와 손주, 세움 판 '유언장 수면 3,000시간 → 손주에게'
+    caption: 잠 부자 할머니는 손주에게 잠을 물려줍니다.
+    world: {template: room, seed: 13, params: {window_sky: "#a9cbe8"}}
+    time: "14:00"
+    shot: inside
+    props:
+      - {model: bust_long_happy, at: [-0.6, 0.1, 0.8], yaw: 200, color: "#8a5a8a", color2: "#d8d8d8"}
+      - {model: person, at: [0.5, 0, 0.6], yaw: 200, scale: 0.6, color: "#f2c94c"}
+      - {shape: sign, style: paper, title: "유언장", text: "수면 3,000시간\n**→ 손주에게**", size: [0.6, 0.7], at: [0.0, 0.6, -0.1], mount: stand}
+
+  - duration: 3.6
+    act: 전개
+    tangent: 3
+    image: 12
+    domain: 세무서
+    gag: 공식 발표체
+    visual: 세무서 외관 간판 '국세청 수면세과', 창에 '수면 상속세 신고 마감 D-1' 카드
+    caption: 그러자 국세청은 잠에도 상속세를 매겼고,
+    world: {template: shopfront, seed: 14, params: {color: "#d8dce4"}}
+    shot: front
+    props:
+      - {shape: sign, style: shop, text: "국세청 수면세과", size: [5.6, 0.7], at: [0, 2.8, -0.07], color: "#ffffff"}
+      - {shape: sign, style: card, title: "신고 마감", text: "수면 상속세\n**D-1**", size: [0.8, 0.95], at: [-1.6, 1.2, -0.01]}
+
+  - duration: 3.6
+    act: 전개
+    tangent: 3
+    image: 12
+    domain: 세무서
+    gag: 숫자 개그
+    visual: 인도를 따라 끝없이 늘어선 줄, 우측 상단 '대기 300m'
+    caption: 마감 날 세무서 앞 줄은 300m.
+    narration: 마감 날 세무서 앞 줄은 삼백 미터.
+    hud: "대기 300m"
+    world: {template: shopfront, seed: 14, params: {color: "#d8dce4"}}
+    shot: street
+    props:
+      - {shape: sign, style: shop, text: "국세청 수면세과", size: [5.6, 0.7], at: [0, 2.8, -0.07], color: "#ffffff"}
+    crowds:
+      - {agent: person, count: 40, area: [-30, -2.4, 0, -1.6], layout: queue, axis: x, gap: 0.75, facing: 90}
+
+  - duration: 3.4
+    act: 전개
+    tangent: 3
+    image: 2
+    domain: 세무서
+    gag: 한 박자 늦은 펀치
+    visual: 줄 선 채 반쯤 감긴 눈의 으쓱한 얼굴 클로즈업, '잔고 -2시간' 종이
+    caption: 다들 줄 서서 졸았고, 잔고가 줄었습니다.
+    beat: 0.7
+    world: {template: studio, seed: 2, params: {color: "#d8dce4"}}
+    shot: face
+    props:
+      - {model: bust_long_smug, at: [0, 0, 0], yaw: 180, color: "#c8384a", color2: "#3a2a20"}
+      - {shape: sign, style: paper, text: "수면 잔고\n**-2시간**", size: [0.62, 0.3], at: [0, 1.2, -0.26]}
+
+  - duration: 3.8
+    act: 전개
+    tangent: 3
+    image: 13
+    domain: 농장
+    gag: 삼천포
+    visual: 농장 우리에서 자는 돼지들, 헛간 간판 '수면 재벌 농장 견학 1인 5만 원'
+    caption: 이 나라 최고 부자는 하루 종일 자는 돼지들입니다.
+    world: {template: farm, seed: 15}
+    shot: pen
+    crowds:
+      - {agent: pig, count: 14, area: pen, scale: [0.9, 1.2]}
+    props:
+      - {shape: sign, style: board, title: "수면 재벌 농장", text: "견학 1인 5만 원", size: [3.0, 1.0], at: [0, 3.0, 10.85]}
+
+  - duration: 2.6
+    act: 반전
+    role: snapback
+    image: 2
+    domain: 침실
+    visual: 정색한 얼굴 클로즈업, 아무 말 없이 카메라를 봄
+    caption: …돼지 얘기는 여기까지 하고요.
+    world: {template: studio, seed: 2, params: {color: "#cfe0ee"}}
+    shot: face
+    props:
+      - {model: bust, at: [0, 0, 0], yaw: 180, color: "#f4f4f4", color2: "#1c1a22"}
+
+  # ── 반전 ─────────────────────────────
+  - duration: 3.2
+    act: 반전
+    image: 1
+    domain: 침실
+    visual: 다시 김 대리의 침대, 벽 화면 '출금 방법 — 누워서 자기'
+    caption: 문제는, 모아 둔 잠을 꺼내 쓰려면…
+    world: {template: room, seed: 1}
+    time: "23:00"
+    shot: inside
+    props:
+      - {shape: box, size: [1.0, 0.28, 1.4], at: [1.7, 0.45, 1.25], color: "#4a78c8"}
+      - {shape: sign, style: screen, text: "출금 방법\n**누워서 자기**", size: [0.9, 0.5], at: [0.95, 1.6, 2.55]}
+
+  - duration: 3
+    act: 반전
+    image: 2
+    domain: 침실
+    gag: 정색 반전
+    visual: 울상 얼굴 클로즈업 + '결국 자야 함' 도장
+    caption: 결국 누워서 자야 한다는 겁니다.
+    beat: 0.8
+    world: {template: studio, seed: 2, params: {color: "#cfe0ee"}}
+    shot: face
+    props:
+      - {model: bust_sad, at: [0, 0, 0], yaw: 180, color: "#f4f4f4", color2: "#1c1a22"}
+    big_text: [{text: "결국 잠", style: stamp, from: 1.4, pos: [0.5, 0.36]}]
+
+  - duration: 3.8
+    act: 반전
+    image: 6
+    domain: 현실
+    gag: 현실 공감
+    visual: 병원 안내판 '성인 권장 수면 하루 7시간 이상 (CDC)'
+    caption: 참고로 성인 권장 수면은 하루 7시간 이상입니다.
+    narration: 참고로 성인 권장 수면은 하루 일곱 시간 이상입니다.
+    world: {template: clinic, seed: 8}
+    shot: {from: [0, 2.0, -1.2], to: [0, 1.95, -0.8], target: [0, 1.8, 3.9], fov: 52}
+    props:
+      - {shape: sign, style: board, title: "실제 정보", text: "성인 권장 수면\n**하루 7시간 이상** (CDC)", size: [3.4, 0.95], at: [0, 1.6, 3.88], color: "#3aa45a"}
+
+  # ── 결말 ─────────────────────────────
+  - duration: 3.8
+    act: 결말
+    role: payoff
+    image: 1
+    domain: 침실
+    gag: 콜백
+    visual: 토요일 밤 침대로 돌아온 김 대리, 벽 화면 '빚 상환 중 -42시간'
+    caption: 그래서 김 대리는 오늘도 30시간을 잡니다. 빚 갚느라.
+    narration: 그래서 김 대리는 오늘도 서른 시간을 잡니다. 빚 갚느라.
+    beat: 0.8
+    world: {template: room, seed: 1}
+    time: "23:00"
+    shot: inside
+    props:
+      - {shape: box, size: [1.0, 0.28, 1.4], at: [1.7, 0.45, 1.25], color: "#4a78c8"}
+      - {shape: sphere, r: 0.15, at: [1.7, 0.78, 0.55], color: "#f0c8a0"}
+      - {shape: sign, style: screen, text: "빚 상환 중\n**-42시간**", size: [0.9, 0.5], at: [0.95, 1.6, 2.55]}
+
+  - duration: 6
+    act: 결말
+    visual: 어두운 배경 위 질문과 선택지 두 개
+    caption: 여러분이라면 몰아서 자겠어요, 매일 7시간 자겠어요?
+    narration: 여러분이라면 몰아서 자겠어요, 매일 일곱 시간 자겠어요?
+    card:
+      question: 잠을 저축할 수 있다면?
+      options: ["주말에 몰아 자고 평일엔 달린다", "그래도 매일 7시간"]
+      cta: 댓글로 남겨주세요 · 답은 다음 영상에서

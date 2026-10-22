@@ -367,6 +367,106 @@ def table() -> Model:
     return m
 
 
+def pig() -> Model:
+    """돼지 (몸길이 1.1m)"""
+    m = Model("pig", ["#f2a8b0", "#e8949e", "#f6c2c6"], ["#d47a86"])
+    m.part((-0.3, 0.25, -0.5), (0.3, 0.75, 0.45), 1)                 # 몸통
+    m.part((-0.22, 0.32, 0.45), (0.22, 0.7, 0.72), 1)                # 머리
+    m.part((-0.12, 0.38, 0.72), (0.12, 0.54, 0.8), 2)                # 코
+    m.part((-0.07, 0.44, 0.8), (-0.03, 0.49, 0.805), "#6a3040")
+    m.part((0.03, 0.44, 0.8), (0.07, 0.49, 0.805), "#6a3040")
+    m.part((-0.14, 0.58, 0.72), (-0.08, 0.63, 0.725), DARK)          # 눈
+    m.part((0.08, 0.58, 0.72), (0.14, 0.63, 0.725), DARK)
+    m.part((-0.22, 0.7, 0.55), (-0.1, 0.8, 0.65), 2)                 # 귀
+    m.part((0.1, 0.7, 0.55), (0.22, 0.8, 0.65), 2)
+    for x in (-0.22, 0.12):
+        for z in (-0.4, 0.28):
+            m.part((x, 0.0, z), (x + 0.1, 0.25, z + 0.1), 2)
+    m.part((-0.03, 0.6, -0.56), (0.03, 0.66, -0.5), 2)               # 꼬리
+    return m
+
+
+def chicken() -> Model:
+    """닭 (0.45m)"""
+    m = Model("chicken", ["#f4f1ea", "#c8763a", "#2a2a2a"], ["#d8323a"])
+    m.part((-0.12, 0.14, -0.16), (0.12, 0.34, 0.12), 1)
+    m.part((-0.07, 0.3, 0.06), (0.07, 0.45, 0.18), 1)
+    m.part((-0.025, 0.36, 0.18), (0.025, 0.4, 0.24), "#f2b632")      # 부리
+    m.part((-0.02, 0.45, 0.08), (0.02, 0.5, 0.16), 2)                # 볏
+    m.part((-0.07, 0.4, 0.15), (-0.05, 0.42, 0.181), DARK)
+    m.part((0.05, 0.4, 0.15), (0.07, 0.42, 0.181), DARK)
+    for x in (-0.06, 0.04):
+        m.part((x, 0.0, -0.02), (x + 0.02, 0.14, 0.0), "#f2b632")
+    return m
+
+
+EXPRESSIONS = ("neutral", "surprised", "happy", "sad", "smug")
+
+
+def bust(expression: str = "neutral", hair: str = "short") -> Model:
+    """얼굴 클로즈업용 상반신 (머리가 큰 캐릭터, 높이 약 1.2m). 앞(+z)을 보므로 카메라를 보게 하려면 yaw: 180.
+    색: color = 옷, color2 = 머리카락. 표정: neutral 무표정 · surprised 놀람 · happy 웃음 · sad 울상 · smug 으쓱"""
+    m = Model(f"bust_{expression}", ["#f2f2f2", "#2f6fd6", "#c8384a", "#4fa05a", "#f2c94c", "#3b3a8c", "#e8913a"],
+              ["#1c1a22", "#3a2a20", "#6b4a2e", "#c9a46a", "#8a8a92"])
+    m.part((-0.42, 0.0, -0.2), (0.42, 0.42, 0.2), 1)                  # 어깨·몸통 (옷)
+    m.part((-0.3, 0.42, -0.17), (0.3, 0.5, 0.17), 1)
+    m.part((-0.09, 0.5, -0.08), (0.09, 0.58, 0.08), SKIN)             # 목
+    m.part((-0.26, 0.58, -0.24), (0.26, 1.08, 0.24), SKIN)            # 큰 머리
+    m.part((-0.27, 0.98, -0.25), (0.27, 1.14, 0.25), 2)               # 머리카락 윗부분
+    m.part((-0.27, 0.62, -0.25), (0.27, 1.0, -0.17), 2)               # 뒤통수
+    if hair == "long":
+        m.part((-0.29, 0.5, -0.25), (-0.22, 1.0, 0.16), 2)            # 옆머리 길게
+        m.part((0.22, 0.5, -0.25), (0.29, 1.0, 0.16), 2)
+        m.part((-0.27, 0.42, -0.27), (0.27, 0.66, -0.17), 2)
+    else:
+        m.part((-0.27, 0.86, -0.25), (-0.23, 1.0, 0.1), 2)
+        m.part((0.23, 0.86, -0.25), (0.27, 1.0, 0.1), 2)
+    m.part((-0.27, 0.74, -0.03), (-0.25, 0.84, 0.05), SKIN)           # 귀
+    m.part((0.25, 0.74, -0.03), (0.27, 0.84, 0.05), SKIN)
+    m.part((-0.03, 0.74, 0.24), (0.03, 0.8, 0.27), "#e2b088")          # 코
+    f, z0, z1 = DARK, 0.24, 0.255
+    W = "#ffffff"
+    if expression == "surprised":
+        for x in (-0.14, 0.06):
+            m.part((x, 0.8, z0), (x + 0.08, 0.9, z1), W)              # 커진 눈
+            m.part((x + 0.025, 0.82, z1), (x + 0.055, 0.87, z1 + 0.005), f)
+            m.part((x - 0.01, 0.95, z0), (x + 0.09, 0.97, z1), f)      # 치켜 올라간 눈썹
+        m.part((-0.04, 0.62, z0), (0.04, 0.71, z1), "#5a1a22")         # 'O' 입
+    elif expression == "happy":
+        for x in (-0.13, 0.06):
+            m.part((x, 0.84, z0), (x + 0.07, 0.86, z1), f)             # 웃는 눈 (가는 선)
+            m.part((x, 0.86, z0), (x + 0.015, 0.875, z1), f)
+            m.part((x + 0.055, 0.86, z0), (x + 0.07, 0.875, z1), f)
+            m.part((x, 0.92, z0), (x + 0.07, 0.94, z1), f)
+        m.part((-0.08, 0.66, z0), (0.08, 0.69, z1), "#a8323c")         # 활짝 웃는 입
+        m.part((-0.1, 0.69, z0), (-0.07, 0.71, z1), "#a8323c")
+        m.part((0.07, 0.69, z0), (0.1, 0.71, z1), "#a8323c")
+        m.part((-0.06, 0.645, z0), (0.06, 0.66, z1), "#ffffff")
+    elif expression == "sad":
+        for x, d in ((-0.13, 1), (0.06, -1)):
+            m.part((x + 0.015, 0.81, z0), (x + 0.055, 0.86, z1), f)
+            m.part((x, 0.92 + 0.02 * (d > 0), z0), (x + 0.035, 0.94 + 0.02 * (d > 0), z1), f)   # 八자 눈썹
+            m.part((x + 0.035, 0.92 + 0.02 * (d < 0), z0), (x + 0.07, 0.94 + 0.02 * (d < 0), z1), f)
+        m.part((-0.06, 0.68, z0), (0.06, 0.7, z1), "#7a2a30")          # 처진 입
+        m.part((-0.08, 0.66, z0), (-0.05, 0.68, z1), "#7a2a30")
+        m.part((0.05, 0.66, z0), (0.08, 0.68, z1), "#7a2a30")
+        m.part((0.09, 0.74, z0), (0.11, 0.8, z1), "#7fc8ff")           # 눈물 한 방울
+    elif expression == "smug":
+        for x in (-0.13, 0.06):
+            m.part((x, 0.82, z0), (x + 0.07, 0.85, z1), f)             # 반쯤 감은 눈
+            m.part((x - 0.005, 0.85, z0), (x + 0.075, 0.865, z1), SKIN)
+        m.part((-0.14, 0.93, z0), (-0.06, 0.95, z1), f)
+        m.part((0.06, 0.96, z0), (0.14, 0.98, z1), f)                  # 한쪽 눈썹만 올림
+        m.part((-0.06, 0.68, z0), (0.05, 0.7, z1), "#a8323c")          # 비뚤어진 웃음
+        m.part((0.05, 0.7, z0), (0.09, 0.72, z1), "#a8323c")
+    else:  # neutral — 정색 (무표정이 가장 웃길 때가 많다)
+        for x in (-0.13, 0.07):
+            m.part((x, 0.81, z0), (x + 0.06, 0.87, z1), f)
+            m.part((x - 0.01, 0.92, z0), (x + 0.07, 0.94, z1), f)
+        m.part((-0.06, 0.67, z0), (0.06, 0.69, z1), "#b0505a")
+    return m
+
+
 MODELS = {"person": person, "cat": cat, "dog": dog, "car": car, "train": train_car,
           "tree": tree, "astronaut": astronaut, "bed": bed,
           "fly": fly, "swatter": swatter,
@@ -374,7 +474,9 @@ MODELS = {"person": person, "cat": cat, "dog": dog, "car": car, "train": train_c
           "molecule_n2": molecule_n2, "molecule_o2": molecule_o2, "molecule_co2": molecule_co2,
           "molecule_h2o": molecule_h2o, "bottle": bottle, "cup": cup, "phone": phone, "book": book,
           "parcel": parcel, "rocket": rocket, "coin": coin, "lightbulb": lightbulb, "flame": flame,
-          "cloud": cloud, "ball": ball, "germ": germ, "table": table, "spark": spark, "bolt": bolt}
+          "cloud": cloud, "ball": ball, "germ": germ, "table": table, "spark": spark, "bolt": bolt, "pig": pig, "chicken": chicken,
+          **{f"bust{'' if e == 'neutral' else '_' + e}": (lambda e=e: bust(e)) for e in EXPRESSIONS},
+          **{f"bust_long{'' if e == 'neutral' else '_' + e}": (lambda e=e: bust(e, "long")) for e in EXPRESSIONS}}
 
 # 대본 작성 AI에게 보여줄 설명 (모델 이름 → 무엇인지, 기본 크기)
 DESCRIPTIONS = {
@@ -389,6 +491,13 @@ DESCRIPTIONS = {
     "lightbulb": "전구 (빛남)", "flame": "불꽃 (빛남)", "cloud": "구름 (1.5m)", "ball": "공 (0.22m)",
     "germ": "세균·바이러스 확대 모형 (0.3m)", "table": "식탁 (윗면 높이 0.9m)",
     "spark": "불티·빛 입자 (8cm, 빛남 — 보통 vfx embers로 씀)", "bolt": "번개 줄기 (10m, 빛남)",
+    "pig": "돼지 (몸길이 1.1m)", "chicken": "닭 (0.45m)",
+    "bust": "얼굴 클로즈업용 상반신 (큰 머리, 높이 1.2m, 정색 무표정) — yaw: 180이면 카메라를 봄. color=옷, color2=머리",
+    "bust_surprised": "상반신 — 놀란 얼굴", "bust_happy": "상반신 — 활짝 웃는 얼굴", "bust_sad": "상반신 — 울상(눈물)",
+    "bust_smug": "상반신 — 으쓱·뿌듯한 얼굴",
+    "bust_long": "긴 머리 상반신 (무표정) — _surprised/_happy/_sad/_smug 표정도 있음",
+    "bust_long_surprised": "긴 머리 — 놀람", "bust_long_happy": "긴 머리 — 웃음", "bust_long_sad": "긴 머리 — 울상",
+    "bust_long_smug": "긴 머리 — 으쓱",
 }
 
 

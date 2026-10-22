@@ -106,6 +106,15 @@ TEMPLATE_NOTES = {
     "room": "방 안(침대·책상·창문). 일상·작은 생물. params: window_sky(창밖 색, 낮 '#a9cbe8' 밤 '#22305e')",
     "field": "넓은 잔디 공원 + 먼 스카이라인. 야외·사람들·하늘",
     "planet": "화성/달 표면 + 착륙선. params: surface: mars|moon. 우주",
+    "office": "사무실: 책상 3줄·모니터·창가. 뒷벽 간판 자리 at [0, 2.0, 7.9] (폭 3m). face 샷은 (0,0,0)에 bust를 두고",
+    "elevator": "복도에서 문 열린 엘리베이터 칸을 들여다봄. 칸 안 area: cabin (사람 facing: 180). 문 위 층수 화면 at [0, 2.48, 0.28]",
+    "shop": "가게 안 — params: kind: snack(분식집)|butcher(정육점)|store(편의점)|cafe. 계산대 z=1.2, "
+            "메뉴판·가격표 자리 at [0, 1.72, 3.4] (폭 3m), 손님 줄 area: queue (layout: queue, facing: 0), 직원 area: staff",
+    "shopfront": "길가 가게 외관(부동산·피부과·식당 앞): 큰 유리창에 매물 카드·전단 붙이기 — 창 앞면 z=-0.01, 창 x -2.6~0.8, y 0.6~2.6. "
+                 "위쪽 간판 띠 at [0, 2.8, -0.07] (폭 5.6m). 인도 area: sidewalk / queue",
+    "clinic": "병원·피부과 대기실: 접수대 + 대기 의자 줄(area: seats, 앉은 높이 자동). 접수대 뒤 벽 간판 at [0, 1.6, 3.88] (폭 3.4m)",
+    "pool": "워터파크·수영장: 물 area: water(사람이 물에 잠김), 데크 area: deck, 선베드 area: loungers. 현수막 at [0, 1.4, 13.9] (폭 11m)",
+    "farm": "농장: 울타리 우리 area: pen (pig·chicken), 마당 area: yard, 빨간 헛간. 헛간 간판 at [0, 3.2, 10.85] (폭 3m)",
 }
 
 
@@ -118,12 +127,14 @@ def system_prompt(cat: dict) -> str:
                          f"    shots: {', '.join(info['shots'])}\n"
                          f"    areas: {', '.join(info['areas'])}")
     model_lines = [f"  {n}: {DESCRIPTIONS.get(n, '')}" for n in cat["agents"]]
+    exL = ROOT / "scenes" / "sleep_bank.yaml"
     ex0 = ROOT / "scenes" / "juvenile_law_abolished.yaml"
     ex1 = ROOT / "scenes" / "lightning_power.yaml"
     ex2 = ROOT / "scenes" / "nitrogen_snack.yaml"
     example_txt = "\n".join(
         f"### {label}\n```yaml\n{p.read_text(encoding='utf-8')}```" for label, p in
-        (("예시 1 — 사회 풍자(satire) + 4단 구성 + keyframes 9장 (사회·제도 주제, 찬반 균형)", ex0),
+        (("예시 0 — 결과 사다리(format: ladder) — 상상 하나를 생활 곳곳에, 간판 개그·얼굴 클로즈업·심플 틀", exL),
+         ("예시 1 — 사회 풍자(satire) + 4단 구성 + keyframes 9장 (사회·제도 주제, 찬반 균형)", ex0),
          ("예시 2 — 방송형 연출 (콜드 오픈·대시보드·VFX·마무리 카드)", ex1),
          ("예시 3 — 사물을 화면에 직접 만들어 보여주기", ex2)) if p.exists())
     return f"""너는 쇼츠 채널 '만물제작소'(유튜브 'IF 60')의 작가 겸 연출가다. 주제는 무엇이든 올 수 있다(사물, 음식, 몸, 동물, 우주, 사회, 제도, 상상).
@@ -138,6 +149,32 @@ def system_prompt(cat: dict) -> str:
 - labels로 핵심 대상에 이름표를 붙인다 (예: "질소 N2", "산소 → 기름과 반응"). 숫자는 hud로 보여준다.
 - 화면은 세로 9:16이라 좁다. 카메라와 거리 d일 때 보이는 가로 폭은 약 0.45×d, 세로 높이는 약 0.9×d (fov 50 기준). 주인공 물체가 화면 가운데 크게 보이게 거리·scale을 정한다.
 - 좌표: 미터, x는 화면 오른쪽(+z를 바라볼 때), y 위, z 앞(카메라 반대쪽). 템플릿 샷들은 대부분 +z를 바라본다.
+
+## 대본 형식 — 먼저 최상위 format: 을 정한다 (사용자가 지정하면 그대로)
+- format: broadcast (방송형) — 설명·계산·풍자형. 상단 두 줄 제목 틀 + 대시보드 + 콜드 오픈/되감기. 60~120초, 장면 4~6초. (아래 '콘텐츠 공식')
+- format: ladder (결과 사다리) — "만약에 ~라면?" 상상 하나를 생활 곳곳에 차례로 터뜨린다. 90~135초, 장면 2.5~4초. (아래 '결과 사다리')
+  일상과 맞닿은 황당한 가정(모기·잠·날씨·몸·돈·동물…)이면 ladder, 숫자 계산·제도 해설이 중심이면 broadcast.
+
+## ★결과 사다리 (format: ladder) — 상상 하나, 생활 영역 10곳 이상
+"모기가 피 대신 지방을 빨아 간다면?"처럼 규칙 하나만 바꾸고, 그 결과가 생활의 각 영역에서 어떻게 터지는지 짧은 컷으로 이어 붙인다.
+각 컷이 독립된 작은 개그라 어디서부터 봐도 웃기고, 다음 컷이 궁금해 끝까지 본다.
+- 화면 틀: 최상위 layout: {{style: simple, title: "만약에 모기가 피 대신 지방을 빨아 간다면 어떻게 될까요?"}}
+  → 화면 전체가 3D, 첫 4초만 가운데에 큰 질문(마지막 줄 노란색). 상단 제목 띠·대시보드는 쓰지 않는다(필요한 숫자는 sign이나 big_text로).
+- 장면 = 컷 하나 = 2.5~4초 = caption 12~22자. 20~34장면. 장면마다 domain: (생활 영역 이름)을 적는다.
+- 도입(act 도입): ①질문 제목 + 가장 일상적인 첫 장면(열대야 침실, 출근길…) ②"첫 번째 결과"를 바로 보여주는 컷.
+- 전개(사다리를 오른다): 개인 → 가족 → 동네·가게 → 회사 → 병원·시술 → 부동산·돈 → 산업(농장·공장) → 사회 전체 순으로
+  영역을 옮기며 한 단계씩 커진다. 서로 다른 domain 8곳 이상. tangent 1(개인·가족) → 2(가게·회사·돈) → 3(삼천포: 농장·축산·전혀 엉뚱한 업계).
+- 반전: 정말 좋기만 할까? — 뜻밖의 부작용 한두 컷, 그리고 snapback("…아무튼.")으로 본론 복귀.
+- 결말: 질문으로 끝낸다. "여러분이라면 ○○ 그대로인데 ○○ 하시겠어요?" 같은 양자택일 + card(선택지 2~3개,
+  cta: "댓글로 남겨주세요 · 답은 다음 영상에서")로 팔로우를 부른다.
+- 웃음의 절반은 **3D 속 글자(sign)**: 간판·현수막·가격표·매물 카드·병원 시술 안내·뉴스 화면에 상황을 비튼 문구를 적는다.
+  예: 부동산 매물 카드 {{title: "1층", text: "개울 앞\n**모기 많음**\n★★★"}}, 피부과 안내 "모기 20만 마리 코스\n누워만 계세요",
+  워터파크 현수막 "모기 보장! 없으면 환불", 정육점 가격표 "삼겹살 **품절**\n이겹살 8,600원"(말장난). sign 장면 4개 이상.
+- 가치 뒤집기: 원래 귀찮던 것이 귀해지고 귀하던 것이 골칫거리가 되는 순간을 끝까지 민다(모기 많은 집이 비싸짐).
+- 얼굴 클로즈업 컷: bust 모델(표정 5종)로 반응을 보여준다. 정색(bust) 얼굴이 가장 웃길 때가 많다.
+  예: 정색한 얼굴 + 손에 든 계기판 sign "오늘 37방 / 목표 200,000".
+- 생활 세트를 적극적으로: office · elevator · shop(kind) · shopfront · clinic · pool · farm · room · tabletop · apartments.
+- 사실: 기본 수치(예: 하루 필요 열량, 지방 1kg 열량)는 검색으로 확인해 숫자 개그에 쓰고, 상상 부분은 상상임이 분명하게.
 
 ## 장르별 톤 — 먼저 주제의 장르를 정해 최상위 genre: 에 적는다
 - genre: satire (사회 풍자) → **통쾌하게.** 시청자가 평소 당하기만 하던 쪽(사기·갑질·허세·특권)이
@@ -165,7 +202,7 @@ def system_prompt(cat: dict) -> str:
 - "~라면?" 상상 장면은 상상임이 분명하게 표현한다(자막띠 tag: "가상 상황" 등). 실제 사실과 상상을 섞어 오해하게 만들지 않는다.
 - 범죄·사고를 다룰 때 수법·잔혹한 묘사는 넣지 않는다. 아이·피해자를 웃음거리로 쓰지 않는다.
 
-## 콘텐츠 공식 (조회수가 검증된 방송형 구조 — 채널 '만물제작소')
+## 콘텐츠 공식 — format: broadcast (조회수가 검증된 방송형 구조 — 채널 '만물제작소'. ladder는 위 '결과 사다리'가 우선)
 - 길이는 60~120초(기본 약 90초, 12~18장면). 장면마다 act: 를 붙여 4단 구성을 완성한다 (순서대로, 넷 다 필수):
   ①act: 도입 — 3초 훅(콜드 오픈) + 되감기 + 실제 사실·수치로 설정 (전체의 약 25%)
   ②act: 전개 — 가정이 현실이 되면 벌어지는 일, 단계마다 커지는 황당함·통쾌함 (약 35%)
@@ -210,7 +247,8 @@ def system_prompt(cat: dict) -> str:
 - 3절의 소재를 결말 payoff에서 콜백으로 다시 꺼내면 최고 (예: 마지막에 투명 모자를 쓴 진짜 범인).
 - 장면마다 gag: 에 그 장면의 웃음 장치를 하나 적는다 (아래 이름 중 하나). 웃음 없는 장면은 gag를 쓰지 않는다.
   장면의 절반 이상에 gag가 있어야 하고, 종류는 3가지 이상 섞는다:
-  정색 반전 · 공식 발표체 · 숫자 개그 · 과잉 진지 · 삼천포 · 콜백 · 의외의 비교 · 3의 법칙 · 현실 공감 · 한 박자 늦은 펀치
+  정색 반전 · 공식 발표체 · 숫자 개그 · 과잉 진지 · 삼천포 · 콜백 · 의외의 비교 · 3의 법칙 · 현실 공감 · 한 박자 늦은 펀치 ·
+  간판 개그(3D 속 글자로 웃김) · 말장난(삼겹살→이겹살) · 가치 뒤집기(귀찮던 게 귀해짐)
 - 웃긴 대사 쓰는 법:
   · 펀치라인은 문장 맨 끝 단어에 둔다. ("1년이면 끝나긴 합니다. 주말을 반납하면요.")
   · 웃음을 설명하지 않는다. "웃기게도", "황당하게도" 같은 말 금지. 감탄사·유행어·물음표 남발 금지.
@@ -218,7 +256,7 @@ def system_prompt(cat: dict) -> str:
   · 3의 법칙: 평범한 것 둘 + 비튼 것 하나. ("회의 줄고, 야근 줄고, 이혼은 늘었습니다.")
   · 내레이터는 끝까지 정색. 상황이 황당할수록 목소리는 더 차분하게.
 
-## ★AI 이미지 6~10장으로 시각화 가능하게 (keyframes)
+## ★AI 이미지 6~10장으로 시각화 가능하게 (keyframes — ladder는 8~16장)
 이 대본은 3D 복셀로도 렌더링되지만, AI 이미지 6~10장만으로도 영상을 만들 수 있어야 한다.
 - 최상위 keyframes: 에 핵심 그림 6~10장을 정의한다. 각 장면은 image: 번호 로 그중 하나를 가리킨다.
   같은 그림을 이어지는 2~3장면이 함께 쓴다(줌·자막·도장·대시보드만 달라짐). 장면마다 새 그림을 만들지 않는다.
@@ -235,7 +273,7 @@ def system_prompt(cat: dict) -> str:
 {chr(10).join(model_lines)}
 
 장면 필드:
-- duration(초), act(도입|전개|반전|결말, 필수), image(keyframes 번호, 필수), role(선택: hook|twist|payoff|snapback),
+- duration(초), act(도입|전개|반전|결말, 필수), image(keyframes 번호, 필수), domain(ladder 필수: 생활 영역 이름), role(선택: hook|twist|payoff|snapback),
   tangent(선택: 1|2|3 — 웃음 설계의 절), gag(선택: 웃음 장치 이름), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
 - world: {{template: 이름, seed: 정수, params: {{...}}}}
 - shot: 템플릿 샷 이름, 또는 직접 카메라:
@@ -247,6 +285,14 @@ def system_prompt(cat: dict) -> str:
     {{shape: box, size: [가로,높이,깊이], at: [x,y,z](밑면 중심), color: "#hex", mat: flat|stone|glass|glow}}
     {{shape: sphere, r: 반지름, at: [x,y,z](중심), color, mat}}     {{shape: cylinder, r, h, at: [x,y,z](밑면 중심), color, mat, axis: y|x|z}}
     mat: glow는 스스로 빛남(불빛·화면), stone은 거친 질감
+    ★글자 소품(간판·현수막·가격표·매물 카드·모니터 화면·공지): 3D 공간 속 물건에 글자가 적혀 원근이 생긴다.
+    {{shape: sign, style: board|card|banner|shop|price|screen|neon|paper, title: "제목 띠(선택)", text: "줄1\n**강조 줄**\n줄3",
+      size: [가로, 세로](미터), at: [x,y,z](판 아랫변 가운데), yaw: 0(앞면이 카메라 쪽 -z), mount: none|pole|stand, color: "#강조색"}}
+    style: board 흰 안내판 · card 매물 카드/전단(빨간 제목 띠) · banner 현수막(color가 바탕) · shop 가게 간판 · price 가격표 칠판 ·
+    screen TV·모니터(빛남) · neon 네온(빛남) · paper 종이 공지. 글자는 판을 꽉 채우게 자동 크기 — 한 줄 12자 이내, 3줄 이내.
+    카메라 거리 d에서 읽히려면 판 세로가 d×0.12 이상. 템플릿마다 간판 자리 좌표가 위에 있다. grow로 '쾅' 나타나게 할 수 있다.
+    ★얼굴 클로즈업: {{model: bust|bust_surprised|bust_happy|bust_sad|bust_smug (긴 머리는 bust_long…), at: [0,0,0], yaw: 180, color: 옷, color2: 머리}}
+    + shot: face (studio·office·clinic) — 화면을 얼굴이 채운다
 - crowds (여러 개 / 움직이는 것):
     {{agent, count, area(구역 이름 또는 [x0,z0,x1,z1]), y 또는 y_range: [최저,최고], scale,
       layout: random|grid|queue, facing: random|각도|[x,z]|velocity,
@@ -285,8 +331,8 @@ def system_prompt(cat: dict) -> str:
 
 ## 출력 형식
 설명 없이 ```yaml 코드블록 하나만 출력한다. 문자열에 콜론(:)이 있으면 큰따옴표로 감싼다. 최상위 키:
-title, genre: satire|science|absurd, style: voxel,
-layout: {{title: ["첫 줄(흰색)", "둘째 줄(노란색)"], series: "시리즈명 N편"(선택)}},
+title, format: broadcast|ladder, genre: satire|science|absurd, style: voxel,
+layout: broadcast면 {{title: ["첫 줄(흰색)", "둘째 줄(노란색)"], series: "시리즈명 N편"(선택)}}, ladder면 {{style: simple, title: "만약에 …?"}},
 look: voxel (기본, 픽셀 복셀) 또는 smooth (매끈한 질감 — 우주·과학 실험처럼 깔끔한 느낌이 어울릴 때),
 facts_to_check: ["사실 한 줄 — 출처 URL", ...],
 keyframes: [{{id, desc, prompt}}, ...] (6~10개),
@@ -523,8 +569,17 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
             if "model" in pr:
                 if pr["model"] not in cat["agents"]:
                     errs.append(f"장면 {i} 소품 {j}: model '{pr['model']}' 없음 — 목록에 없으면 shape(box/sphere/cylinder)로 직접 만들 것")
-            elif pr.get("shape", "box") not in ("box", "sphere", "cylinder"):
-                errs.append(f"장면 {i} 소품 {j}: shape '{pr.get('shape')}' 지원 안 함 (box/sphere/cylinder 중 하나)")
+            elif pr.get("shape", "box") not in ("box", "sphere", "cylinder", "sign"):
+                errs.append(f"장면 {i} 소품 {j}: shape '{pr.get('shape')}' 지원 안 함 (box/sphere/cylinder/sign 중 하나)")
+            elif pr.get("shape") == "sign":
+                from .voxel.signs import STYLES
+                if not (pr.get("text") or pr.get("title")):
+                    errs.append(f"장면 {i} 소품 {j}: sign에는 text(또는 title)가 필요")
+                if pr.get("style", "board") not in STYLES:
+                    errs.append(f"장면 {i} 소품 {j}: sign style '{pr.get('style')}' 없음 (가능: {', '.join(STYLES)})")
+                sz = pr.get("size", [1, 0.6])
+                if not (isinstance(sz, list) and len(sz) == 2):
+                    errs.append(f"장면 {i} 소품 {j}: sign size는 [가로, 세로] (미터)")
             at = pr.get("at", [0, 0, 0])
             if not (isinstance(at, list) and len(at) == 3):
                 errs.append(f"장면 {i} 소품 {j}: at은 [x, y, z]")
@@ -551,8 +606,10 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
             except (TypeError, ValueError):
                 errs.append(f"장면 {i} 군중 {j}: count가 숫자가 아님")
     lay = spec.get("layout")
-    if lay is not None and not isinstance(lay, (dict, bool)):
-        errs.append("layout은 {title: [첫 줄, 둘째 줄], series: 시리즈명} 형식")
+    if lay is not None and not isinstance(lay, (dict, bool)) and lay != "simple":
+        errs.append("layout은 {title: [첫 줄, 둘째 줄], series: 시리즈명} 또는 {style: simple, title: 질문} 형식")
+    if spec.get("format", "broadcast") not in FORMATS:
+        errs.append(f"format '{spec.get('format')}' 없음 (broadcast | ladder)")
     if spec.get("look", "voxel") not in ("voxel", "smooth"):
         errs.append(f"look '{spec.get('look')}' 지원 안 함 (voxel 또는 smooth)")
     if target_len and not (target_len * 0.75 <= total <= target_len * 1.3):
@@ -565,11 +622,20 @@ HOOK_MAX_SEC = 3.5          # 1번 장면(훅)은 이 안에 끝나야 함
 TWIST_WINDOW = (15.0, 30.0)  # 중간 반전 장면이 시작해야 하는 구간(초)
 ROLES = ("hook", "twist", "payoff", "snapback")
 GAGS = ("정색 반전", "공식 발표체", "숫자 개그", "과잉 진지", "삼천포", "콜백", "의외의 비교", "3의 법칙",
-        "현실 공감", "한 박자 늦은 펀치")
+        "현실 공감", "한 박자 늦은 펀치", "간판 개그", "말장난", "가치 뒤집기")
 ACTS = ("도입", "전개", "반전", "결말")
 LENGTH_RANGE = (60.0, 120.0)   # 영상 전체 길이(초)
 KEYFRAME_RANGE = (6, 10)       # AI 이미지로 만들 때 필요한 그림 수
 GENRES = {"satire": "사회 풍자 — 통쾌하게", "science": "과학 — 흥미롭게", "absurd": "황당한 가정 — 진지하게"}
+# 대본 형식: broadcast(방송형 — 설명·계산·풍자) | ladder(결과 사다리 — 상상 하나를 생활 곳곳에 터뜨리기)
+FORMATS = {
+    "broadcast": {"label": "방송형", "length": (60.0, 120.0), "keyframes": (6, 10), "target": 90},
+    "ladder": {"label": "결과 사다리", "length": (90.0, 135.0), "keyframes": (8, 16), "target": 110},
+}
+LADDER_MIN_SCENES = 20       # 3초 안팎 컷이 이어져야 사다리 리듬이 나온다
+LADDER_MIN_DOMAINS = 8       # 서로 다른 생활 영역(집·회사·병원·가게·부동산…) 수
+LADDER_MIN_SIGNS = 4         # 간판·가격표·현수막 등 3D 속 글자가 나오는 장면 수
+LADDER_MAX_AVG_SEC = 4.3     # 장면 평균 길이 상한
 
 
 def spoken_seconds(scene: dict) -> float:
@@ -745,7 +811,9 @@ def dump_yaml(spec: dict) -> str:
 def structure_issues(spec: dict, scenes: list, total: float) -> list[str]:
     """만물제작소 제작 조건: 60~120초 · 도입→전개→반전→결말 · AI 이미지 6~10장 · 장르"""
     issues = []
-    lo, hi = LENGTH_RANGE
+    fmt = FORMATS.get(spec.get("format", "broadcast"), FORMATS["broadcast"])
+    lo, hi = fmt["length"]
+    kf_lo, kf_hi = fmt["keyframes"]
     if not lo <= total <= hi:
         issues.append(f"대사 기준 전체 길이 약 {total:.0f}초 — {lo:.0f}~{hi:.0f}초 안에 들게 대사를 늘리거나 줄일 것")
     if spec.get("genre") not in GENRES:
@@ -764,15 +832,15 @@ def structure_issues(spec: dict, scenes: list, total: float) -> list[str]:
     kfs = spec.get("keyframes")
     ids = set()
     if not isinstance(kfs, list):
-        issues.append(f"keyframes가 없음 — AI 이미지 {KEYFRAME_RANGE[0]}~{KEYFRAME_RANGE[1]}장 목록을 만들 것")
+        issues.append(f"keyframes가 없음 — AI 이미지 {kf_lo}~{kf_hi}장 목록을 만들 것")
     else:
         for k in kfs:
             if isinstance(k, dict) and k.get("id") is not None and str(k.get("prompt") or "").strip():
                 ids.add(str(k["id"]))
         if len(ids) != len(kfs):
             issues.append("keyframes 항목은 모두 {id, desc, prompt} 형식이고 id가 겹치지 않아야 함")
-        if not KEYFRAME_RANGE[0] <= len(kfs) <= KEYFRAME_RANGE[1]:
-            issues.append(f"keyframes가 {len(kfs)}장 — {KEYFRAME_RANGE[0]}~{KEYFRAME_RANGE[1]}장으로 맞출 것 (이어지는 장면끼리 그림을 공유)")
+        if not kf_lo <= len(kfs) <= kf_hi:
+            issues.append(f"keyframes가 {len(kfs)}장 — {kf_lo}~{kf_hi}장으로 맞출 것 (이어지는 장면끼리 그림을 공유)")
         used = {str(s.get("image")) for s in scenes if s.get("image") is not None}
         nopic = [i for i, s in enumerate(scenes, 1)
                  if not isinstance(s.get("card"), dict) and str(s.get("image")) not in ids]
@@ -781,6 +849,29 @@ def structure_issues(spec: dict, scenes: list, total: float) -> list[str]:
         unused = sorted(ids - used)
         if unused:
             issues.append(f"어느 장면도 쓰지 않는 keyframe: {', '.join(unused)}")
+    if spec.get("format") == "ladder":
+        issues += ladder_issues(spec, scenes, total)
+    return issues
+
+
+def ladder_issues(spec: dict, scenes: list, total: float) -> list[str]:
+    """결과 사다리 형식 검사: 짧은 컷 여러 개 · 생활 영역 8곳 이상 · 3D 속 글자 개그 · 심플 틀"""
+    issues = []
+    talk = [s for s in scenes if not isinstance(s.get("card"), dict)]
+    if len(scenes) < LADDER_MIN_SCENES:
+        issues.append(f"장면이 {len(scenes)}개 — 결과 사다리는 3초 안팎 컷 {LADDER_MIN_SCENES}개 이상 (한 장면 = 한 생활 컷)")
+    if talk and total / max(1, len(scenes)) > LADDER_MAX_AVG_SEC:
+        issues.append(f"장면 평균 약 {total / len(scenes):.1f}초 — 대사를 짧게 끊어 평균 {LADDER_MAX_AVG_SEC:.0f}초 이하로")
+    domains = {str(s.get("domain")).strip() for s in talk if s.get("domain")}
+    if len(domains) < LADDER_MIN_DOMAINS:
+        issues.append(f"생활 영역(domain)이 {len(domains)}곳 — 집·회사·병원·가게·부동산·학교·놀이공원… "
+                      f"서로 다른 곳 {LADDER_MIN_DOMAINS}곳 이상으로 퍼뜨릴 것 (장면마다 domain: 적기)")
+    signs = sum(1 for s in talk if any(isinstance(p, dict) and p.get("shape") == "sign" for p in s.get("props") or []))
+    if signs < LADDER_MIN_SIGNS:
+        issues.append(f"3D 속 글자(sign) 장면이 {signs}개 — 간판·가격표·매물 카드·현수막 개그를 {LADDER_MIN_SIGNS}장면 이상")
+    lay = spec.get("layout")
+    if not (lay == "simple" or (isinstance(lay, dict) and lay.get("style") == "simple")):
+        issues.append("결과 사다리는 layout: {style: simple, title: \"만약에 …?\"} (화면 전체 3D + 첫 4초 큰 질문)")
     return issues
 
 
@@ -957,9 +1048,10 @@ def _validated(ytxt: str, cat: dict, length, log) -> tuple[dict | None, list]:
     return spec, errs
 
 
-def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: bool = True,
+def plan(topic: str, length: int | None = None, *, interactive: bool = True, web_search: bool = True,
          review_pass: bool = True, log=print, genre: str | None = None,
-         angle: str | None = None, punchup: bool = True, tangents: str | None = None) -> tuple[str, dict, list]:
+         angle: str | None = None, punchup: bool = True, tangents: str | None = None,
+         fmt: str = "auto") -> tuple[str, dict, list]:
     """주제 → 검증된 장면 YAML 텍스트, 파싱된 spec, 인용 목록"""
     backend = choose_backend(interactive)
     if backend == "api":
@@ -980,7 +1072,13 @@ def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: 
         log("  · Claude Code + 내 Claude 구독 사용 (추가 비용 없음, 구독 사용량에서 차감)")
     cat = catalog()
     system = system_prompt(cat)
-    user = f"주제: {topic}\n목표 길이: 약 {length}초 (60~120초 안)\n"
+    if fmt in FORMATS:
+        lo, hi = FORMATS[fmt]["length"]
+        user = (f"주제: {topic}\n대본 형식: format: {fmt} ({FORMATS[fmt]['label']})\n"
+                f"목표 길이: 약 {length or FORMATS[fmt]['target']}초 ({lo:.0f}~{hi:.0f}초 안)\n")
+    else:
+        user = (f"주제: {topic}\n대본 형식: 주제에 맞게 broadcast(방송형) 또는 ladder(결과 사다리) 중 골라 format: 에 적을 것\n"
+                f"목표 길이: broadcast면 약 {length or 90}초, ladder면 약 {length or 110}초\n")
     if genre in GENRES:
         user += f"장르: {genre} ({GENRES[genre]})\n"
     if angle:
@@ -988,7 +1086,7 @@ def plan(topic: str, length: int = 90, *, interactive: bool = True, web_search: 
     if tangents:
         user += f"삼천포 아이디어(참고용, 더 웃긴 게 떠오르면 바꿔도 됨): {tangents}\n"
     user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · 1절→2절→3절(삼천포)→복귀로 웃기기 · "
-             "AI 이미지 6~10장(keyframes)으로 시각화 가능.\n"
+             "keyframes(방송형 6~10장, 사다리 8~16장)로 시각화 가능.\n"
              "먼저 웹 검색으로 핵심 사실과 수치를 확인한 뒤, 지정한 형식의 YAML만 출력해.")
     log("▶ 1/3 자료 조사 + 대본·연출 작성 중 (1~5분)")
     t0 = time.time()

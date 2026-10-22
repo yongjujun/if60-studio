@@ -395,7 +395,9 @@ class Composer:
         self.u = self.w / 1080
         self.vr = vr
         lay = spec.get("layout")
-        self.layout = overlay.Layout(lay, spec.get("title", ""), font, size) if lay else None
+        self.layout = overlay.make_layout(lay, spec.get("title", ""), font, size)
+        self.broadcast = isinstance(self.layout, overlay.Layout)
+        self._first = None
         self.prev: np.ndarray | None = None
         self._card_bg: dict = {}
 
@@ -443,7 +445,7 @@ class Composer:
             if prep is not None:
                 big = overlay.darken(big, 0.45)
             overlay.draw_card(big, sc.card, t, sc.duration, self.font, self.u, (top, bottom))
-        tl = _text_layer(sc, t, self.style, self.font, layout=self.layout is not None)
+        tl = _text_layer(sc, t, self.style, self.font, layout=self.broadcast)
         if tl is not None:
             th, tw = tl.shape[:2]
             if W % tw == 0 and H % th == 0:
@@ -458,8 +460,12 @@ class Composer:
                 big = overlay.whiteout(big, overlay.whiteout_level(prm, t))
             elif name == "rewind":
                 big = overlay.rewind(big, t, prm, self.font, self.u, top)
-        if self.layout is not None:
+        if self._first is None:
+            self._first = id(sc)
+        if self.broadcast:
             big = self.layout.apply(big, t)
+        elif self.layout is not None:
+            big = self.layout.apply(big, t, first=id(sc) == self._first)
         self.prev = big
         return big
 

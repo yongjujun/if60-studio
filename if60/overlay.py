@@ -244,6 +244,89 @@ class Layout:
         return img
 
 
+class SimpleLayout:
+    """심플 틀: 화면 전체가 3D. 첫 장면 처음 몇 초만 가운데에 큰 질문 제목(마지막 줄 노란색)이 뜨고 사라진다.
+    채널명은 왼쪽 위에 아주 작게. (결과 사다리 형식의 기본 틀)"""
+
+    def __init__(self, cfg: dict | str, title: str, font_path: str, size: tuple[int, int]):
+        cfg = cfg if isinstance(cfg, dict) else {}
+        self.w, self.h = size
+        self.u = self.w / 1080
+        self.font_path = font_path
+        self.title = str(cfg.get("title") or title or "")
+        if isinstance(cfg.get("title"), list):
+            self.title = "\n".join(map(str, cfg["title"]))
+        self.seconds = float(cfg.get("title_seconds", 4.0))
+        self.channel = str(cfg.get("channel", CHANNEL))
+        self.accent = hexrgb(cfg.get("accent", "#ffd23f"))
+        self._title_img = self._make_title()
+        self._mark = self._make_mark()
+
+    @property
+    def viewport(self) -> tuple[int, int]:
+        return 0, self.h
+
+    def _lines(self) -> list[str]:
+        t = safe_text(self.title).strip()
+        if "\n" in t:
+            return [l.strip() for l in t.split("\n") if l.strip()]
+        out, cur = [], ""
+        for word in t.split():
+            trial = f"{cur} {word}".strip()
+            if cur and len(trial) > 9:
+                out.append(cur)
+                cur = word
+            else:
+                cur = trial
+        if cur:
+            out.append(cur)
+        return out
+
+    def _make_title(self) -> np.ndarray | None:
+        lines = self._lines()
+        if not lines:
+            return None
+        u = self.u
+        f = fit(self.font_path, max(lines, key=len), 92 * u, self.w * 0.86)
+        lh = int(f.size * 1.28)
+        im = Image.new("RGBA", (self.w, lh * len(lines) + int(40 * u)), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        for i, line in enumerate(lines):
+            col = self.accent if (i == len(lines) - 1 and len(lines) > 1) else WHITE
+            tw = f.getlength(line)
+            d.text(((self.w - tw) / 2, i * lh + 10 * u), line, font=f, fill=(*col, 255),
+                   stroke_width=max(2, int(f.size / 9)), stroke_fill=(16, 14, 20, 255))
+        return np.asarray(im)
+
+    def _make_mark(self) -> np.ndarray:
+        u = self.u
+        f = font(self.font_path, int(24 * u))
+        im = Image.new("RGBA", (int(f.getlength(self.channel) + 60 * u), int(40 * u)), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        s = int(26 * u)
+        d.rounded_rectangle([0, int(6 * u), s, int(6 * u) + s], radius=int(6 * u), fill=(*self.accent, 255))
+        d.text((s + 8 * u, int(4 * u)), self.channel, font=f, fill=(255, 255, 255, 255),
+               stroke_width=max(1, int(2 * u)), stroke_fill=(16, 14, 20, 255))
+        return np.asarray(im)
+
+    def apply(self, img: np.ndarray, t: float, first: bool = False) -> np.ndarray:
+        paste_rgba(img, self._mark, int(28 * self.u), int(28 * self.u), opacity=0.75)
+        if first and self._title_img is not None and t < self.seconds:
+            k = min(1.0, t / 0.25) * min(1.0, (self.seconds - t) / 0.35)
+            y = int(self.h * 0.3 - self._title_img.shape[0] / 2)
+            paste_rgba(img, self._title_img, 0, y, opacity=k)
+        return img
+
+
+def make_layout(cfg, title: str, font_path: str, size: tuple[int, int]):
+    """layout 설정 → 방송형(Layout) 또는 심플(SimpleLayout). layout: simple / {style: simple}"""
+    if not cfg:
+        return None
+    if cfg == "simple" or (isinstance(cfg, dict) and cfg.get("style") == "simple"):
+        return SimpleLayout(cfg, title, font_path, size)
+    return Layout(cfg, title, font_path, size)
+
+
 # ------------------------------------------------------------------ 숫자 카운터
 def kr_number(v: float) -> str:
     """150000000 → '1억 5,000만' (한국식 큰 수)"""

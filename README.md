@@ -36,7 +36,8 @@ AI 영상 생성 크레딧 없이 컴퓨터에서 직접 렌더링하므로 편�
 ```bash
 python -m if60 make "파리는 어떻게 그렇게 잘 도망칠까?"            # 1080×1920 완성본
 python -m if60 make "파리는 어떻게 그렇게 잘 도망칠까?" --preview  # 빠른 저화질 확인
-python -m if60 make "주제" --length 60                               # 길이 지정 (기본 90초)
+python -m if60 make "주제" --length 60                               # 길이 지정 (기본: 방송형 90초 · 결과 사다리 110초)
+python -m if60 make "만약에 비가 탄산수로 내린다면?" --format ladder  # 대본 형식 지정 (auto | broadcast | ladder)
 ```
 
 ### 🎙 내레이션 목소리
@@ -225,6 +226,27 @@ python -m if60 make 1-3      # 1~3번을 차례로 (1,5,9 / 전체 도 가능)
 
 대본이 나오면 자동으로 이 구조를 검사하고, 어긋나면 한 번 다듬습니다(사실·수치는 그대로). 다듬은 안이 더 나쁘면 원래 대본을 씁니다.
 
+### 결과 사다리 형식 (`--format ladder`) — 상상 하나를 생활 곳곳에
+"만약에 ~라면?" 규칙 하나만 바꾸고, 그 결과가 **침실 → 출근길 → 회사 → 은행 → 병원 → 부동산 → 가게 → … → 삼천포(농장·세무서)** 순으로
+생활 영역 곳곳에서 터지는 걸 **2.5~4초 컷 20~34개(약 2분)**로 이어 붙이는 형식입니다. 각 컷이 독립된 작은 개그라 끝까지 보게 돼요.
+예시: `scenes/sleep_bank.yaml` ("만약에 잠을 저축할 수 있다면?")
+
+![결과 사다리 예시](docs/ladder.png)
+
+- **화면 틀:** `layout: {style: simple, title: "만약에 …?"}` — 화면 전체가 3D, 첫 4초만 가운데에 큰 질문(마지막 줄 노란색), 채널명은 왼쪽 위에 작게
+- **간판 개그(3D 속 글자):** 웃음의 절반이 간판·현수막·가격표·매물 카드에서 나옵니다. 카메라가 움직여도 원근이 생겨요.
+  ```yaml
+  props:
+    - {shape: sign, style: card, title: "숙면권", text: "층간소음 0\n**★★★**", size: [0.75, 0.95], at: [-1.0, 1.2, -0.01]}
+    - {shape: sign, style: banner, text: "단체 낮잠장 · 성수기 할증 30%", size: [11.6, 1.2], at: [0, 1.4, 13.9], color: "#2f6fd6"}
+  ```
+  style: `board`(안내판) `card`(매물 카드·전단) `banner`(현수막) `shop`(가게 간판) `price`(가격표 칠판) `screen`(TV·모니터, 빛남) `neon`(빛남) `paper`(종이)
+  · `**글자**`는 강조색 줄 · `mount: pole|stand`(기둥·다리) · `grow`로 '쾅' 등장
+- **얼굴 클로즈업:** `{model: bust, yaw: 180}` + `shot: face` — 표정 `bust`(정색) `bust_surprised` `bust_happy` `bust_sad` `bust_smug`, 긴 머리는 `bust_long…`
+- **생활 세트 7종:** `office` `elevator` `shop`(kind: snack 분식집 · butcher 정육점 · store 편의점 · cafe) `shopfront`(가게·부동산 외관) `clinic`(병원 대기실) `pool`(워터파크) `farm`(농장, `pig`·`chicken`)
+- **대본 규칙:** 장면마다 `domain:`(생활 영역) — 서로 다른 곳 8곳 이상 · 간판 장면 4개 이상 · 1절(개인) → 2절(가게·회사·돈) → 3절(삼천포) → "…아무튼." 복귀 → 반전 → 첫 장면 콜백 → 양자택일 질문 + "답은 다음 영상에서"
+- `topics.yaml`의 4·5·7·12~15번은 `format: ladder`로 지정돼 있어요. 형식을 안 정하면(`auto`) 작가가 주제를 보고 고릅니다.
+
 ### 블랙코미디·풍자 톤 (기본)
 대본은 **정색한 다큐 톤으로 사실을 짚고, 그 사실이 만드는 부조리에 피식 웃게** 쓰도록 되어 있습니다. 기본 길이는 **약 90초, 3막**
 (①콜드 오픈+사실 ②상상 전개 — 황당함이 점점 커짐 ③찬반 양쪽+현실 확인+질문 카드). 예시: `scenes/juvenile_law_abolished.yaml`
@@ -273,6 +295,13 @@ beat: 0.8                                                            # 대사 �
 | `room` | 방 안 (침대·책상·창문) | `inside` `close` | `floor` `bed` |
 | `field` | 넓은 잔디밭 + 먼 스카이라인 | `forward` `low` `aerial` | `field` `near` `path` |
 | `planet` | 화성/달 표면 + 착륙선 (`params: {surface: moon}`) | `forward` `aerial` `lander` | `surface` `near_lander` `front_of_lander` |
+| `office` | 사무실 (책상·모니터, 뒷벽 간판 자리) | `wide` `desk` `aisle` `face` | `desks` `aisle` `front` |
+| `elevator` | 복도에서 본 엘리베이터 칸 (문 위 층수 화면) | `front` `inside` `doors` | `cabin` `hall` |
+| `shop` | 가게 안 (`params: {kind: snack/butcher/store/cafe}`) | `counter` `queue` `close` `face` | `queue` `floor` `staff` |
+| `shopfront` | 길가 가게·부동산 외관 (유리창 + 간판 띠) | `front` `window` `street` | `sidewalk` `queue` `road` |
+| `clinic` | 병원·피부과 대기실 | `reception` `waiting` `face` | `seats`(앉은 높이) `floor` `staff` |
+| `pool` | 워터파크 (물·데크·선베드·미끄럼틀) | `deck` `aerial` `poolside` | `water`(물에 잠김) `deck` `loungers` |
+| `farm` | 농장 (울타리 우리·헛간) | `pen` `wide` `low` | `pen` `yard` |
 
 `area`에는 구역 이름 대신 `[x0, z0, x1, z1]` 좌표를 줄 수도 있습니다.
 
@@ -332,8 +361,9 @@ export OPENAI_API_KEY=...         # AI 이미지 레이어 (2D 스타일)
 if60/
   voxel/
     renderer.py   3D 렌더러 (그림자, MSAA, 하늘, 군중 인스턴싱, VFX 돔·불덩이·버섯구름, 자라나는 소품)
-    templates.py  장소 템플릿 8종 + 샷 + 군중 구역
-    models.py     블록 모델 (사람, 고양이, 강아지, 자동차, 지하철, 우주비행사, 나무, 침대)
+    templates.py  장소 템플릿 17종 (생활 세트 포함) + 샷 + 군중 구역
+    models.py     블록 모델 (사람, 동물, 사물, 얼굴 클로즈업 bust 표정 5종 …)
+    signs.py      3D 속 글자 소품 (간판·현수막·가격표·매물 카드·화면)
     shaders.py    픽셀 질감 재질, 밤에 켜지는 창문, 물결, 픽셀 해·별
     sky.py        시간대별 하늘·조명
     camera.py     카메라 경로 (이동, 궤도, 부감)
@@ -359,6 +389,7 @@ examples/            예제 장면
 - [x] 한국어 TTS 내레이션 + 목소리 길이에 맞춘 장면·자막·연출 자동 싱크
 - [ ] 걷기 애니메이션(다리 움직임), 군중 모이기·흩어지기 동작
 - [x] 주제 입력 → 웹 조사 → 대본·장면 자동 생성 → 렌더링 (`make`, 더블클릭 실행)
+- [x] 결과 사다리 형식: 3D 속 글자 소품, 생활 세트 7종, 얼굴 클로즈업 표정, 심플 틀
 - [ ] 커버(썸네일) 템플릿 자동 생성
 
 ## 라이선스

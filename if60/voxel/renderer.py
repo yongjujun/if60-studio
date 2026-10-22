@@ -203,9 +203,21 @@ def add_props(builder, props: list, rng) -> list:
     import math as _m
     from .geometry import rgb as _rgb
     dynamic = []
+    signs = []
     for pr in props or []:
         at = np.asarray(pr.get("at", [0, 0, 0]), np.float32)
         yaw = _m.radians(float(pr.get("yaw", 0)))
+        if pr.get("shape") == "sign":                       # 글자 소품: 받침은 복셀, 글자 면은 따로 그림
+            from .signs import sign_backing
+            signs.append(pr)
+            mdl = sign_backing(pr)
+            if pr.get("grow"):
+                inst = np.zeros((1, 15), np.float32)
+                inst[0, 0:3], inst[0, 3], inst[0, 14] = at, yaw, 1.0
+                dynamic.append(Crowd("sign", inst, grow=pr["grow"], mdl=mdl))
+            else:
+                builder.stamp(mdl, at, yaw)
+            continue
         mdl, c1, c2 = prop_model(pr, rng)
         scale = float(pr.get("scale", 1.0)) if "model" in pr else 1.0
         if pr.get("grow"):
@@ -217,7 +229,7 @@ def add_props(builder, props: list, rng) -> list:
             dynamic.append(Crowd(mdl.name, inst, grow=pr["grow"], mdl=mdl))
         else:
             builder.stamp(mdl, at, yaw, c1=c1, c2=c2, scale=scale)
-    return dynamic
+    return dynamic, signs
 
 
 # ------------------------------------------------------------------ VFX
@@ -320,6 +332,7 @@ class Prepared:
     texel: float = 8.0
     vfx: list = field(default_factory=list)
     smooth: bool = False
+    signs: list = field(default_factory=list)   # (vao, vbo, texture, origin, normal, grow, glow)
 
 
 class VoxelRenderer:
@@ -333,6 +346,8 @@ class VoxelRenderer:
         self.inst_depth = ctx.program(vertex_shader=INSTANCE_VS, fragment_shader=DEPTH_FS)
         self.sky_prog = ctx.program(vertex_shader=SKY_VS, fragment_shader=SKY_FS)
         self.vfx_prog = ctx.program(vertex_shader=VFX_VS, fragment_shader=VFX_FS)
+        from .signs import SIGN_FS, SIGN_VS
+        self.sign_prog = ctx.program(vertex_shader=SIGN_VS, fragment_shader=SIGN_FS)
         self.vfx_vbo = ctx.buffer(_sphere_mesh().tobytes())
         self.vfx_vao = ctx.vertex_array(self.vfx_prog, [(self.vfx_vbo, "3f", "in_pos")])
         tri = np.array([-1, -1, 3, -1, -1, 3], np.float32)
@@ -366,7 +381,7 @@ class VoxelRenderer:
         from .templates import build_template
         rng = np.random.default_rng(seed)
         built = build_template(world, rng)
-        dynamic = add_props(built.builder, list(built.props) + list(props or []), rng)
+        dynamic, sign_specs = add_props(built.builder, list(built.props) + list(props or []), rng)
         ctx = self.ctx
         data = built.builder.build()
         vbo = ctx.buffer(data.tobytes())
@@ -400,6 +415,21 @@ class VoxelRenderer:
                 (mvbo, "3f 12x 12x 4x 4x", "in_pos"),
                 (ivbo, "3f 1f 12x 12x 1f 3f 1f/i", "i_off", "i_yaw", "i_phase", "i_vel", "i_scale")])
             prep.crowds.append((cr, vao, dvao, mvbo, ivbo))
+        if sign_specs:
+            from .signs import _style, sign_quad, sign_texture
+            from ..text import find_font
+            font = find_font()
+            for pr in sign_specs:
+                quad, n = sign_quad(pr)
+                img = sign_texture(pr, font)
+                tex = ctx.texture((img.shape[1], img.shape[0]), 4, np.ascontiguousarray(img).tobytes())
+                tex.build_mipmaps()
+                tex.filter = (ctx.LINEAR_MIPMAP_LINEAR, ctx.NEAREST)
+                tex.repeat_x = tex.repeat_y = False
+                vbo = ctx.buffer(quad.tobytes())
+                vao = ctx.vertex_array(self.sign_prog, [(vbo, "3f 2f", "in_pos", "in_uv")])
+                prep.signs.append((vao, vbo, tex, np.asarray(pr.get("at", [0, 0, 0]), np.float32), n,
+                                   pr.get("grow"), 1.0 if _style(pr)["glow"] else 0.0))
         return prep
 
     def release(self, prep: Prepared) -> None:
@@ -409,6 +439,10 @@ class VoxelRenderer:
             for obj in (vao, dvao, mvbo, ivbo):
                 obj.release()
         prep.crowds.clear()
+        for vao, vbo, tex, *_ in prep.signs:
+            for obj in (vao, vbo, tex):
+                obj.release()
+        prep.signs.clear()
 
     # -------------------------------------------------------------- frame
     def lighting(self, prep: Prepared, hours: float) -> Lighting:
@@ -483,6 +517,8 @@ class VoxelRenderer:
         for cr, vao, _, _, _ in prep.crowds:
             if self._crowd_uniforms(self.inst_prog, cr, t):
                 vao.render(instances=len(cr.instances))
+        if prep.signs:
+            self._draw_signs(prep, vp, eye, light, sun, t)
         if prep.vfx:
             self._draw_vfx(prep, vp, eye, t)
 
@@ -508,6 +544,21 @@ class VoxelRenderer:
         self._set(prog, u_time=t, u_bob=cr.bob, u_bob_freq=cr.bob_freq, u_spin=cr.spin, u_gscale=g,
                   u_wrap_min=np.asarray(cr.wrap_min, np.float32), u_wrap_size=np.asarray(cr.wrap_size, np.float32))
         return g > 1e-4
+
+    def _draw_signs(self, prep: Prepared, vp, eye, light, sun, t: float) -> None:
+        prog = self.sign_prog
+        prog["u_vp"].write(gl_bytes(vp))
+        self._set(prog, u_cam=eye, u_sun_dir=sun, u_sun_col=light.sun_col, u_amb_sky=light.amb_sky,
+                  u_amb_ground=light.amb_ground, u_fog_col=light.horizon, u_fog_density=light.fog_density)
+        if prog.get("u_tex", None) is not None:
+            prog["u_tex"].value = 1
+        for vao, vbo, tex, origin, n, grow, glow in prep.signs:
+            g = grow_factor(grow, t)
+            if g <= 1e-4:
+                continue
+            tex.use(location=1)
+            self._set(prog, u_origin=origin, u_g=g, u_n=n, u_glow=glow)
+            vao.render()
 
     def _draw_vfx(self, prep: Prepared, vp, eye, t: float) -> None:
         """불덩이(불투명)를 먼저, 충격파·구(반투명 가산)를 나중에 그린다."""
