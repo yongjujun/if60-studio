@@ -233,7 +233,7 @@ def add_props(builder, props: list, rng) -> list:
 
 
 # ------------------------------------------------------------------ VFX
-VFX_TYPES = ("shockwave", "orb", "fireball", "mushroom", "embers")
+VFX_TYPES = ("shockwave", "orb", "fireball", "mushroom", "embers", "geyser")
 
 
 def _sphere_mesh(lat: int = 24, lon: int = 48) -> np.ndarray:
@@ -250,6 +250,19 @@ def vfx_crowds(vfx: list) -> list[dict]:
     """embers(불티) 같은 입자 VFX → 군중 설정으로 바꿔 인스턴싱으로 그린다."""
     out = []
     for v in vfx or []:
+        if v.get("type") == "geyser":                      # 거품 기둥: 땅에서 솟구치는 거품 덩어리 기둥
+            x, y, z = v.get("at", [0, 0, 0])
+            r = float(v.get("radius", 0.4))
+            hgt = float(v.get("height", 4.0))
+            col = v.get("color", ["#f4efe6", "#e6dccb", "#8a5a3a"])
+            spec = {"agent": "foam", "count": int(v.get("count", 320)), "area": [x - r, z - r, x + r, z + r],
+                    "y_range": [y, y + hgt], "velocity": [0, float(v.get("speed", hgt * 0.9)), 0],
+                    "speed_jitter": 0.5, "spin": 3.0, "colors": [col] if isinstance(col, str) else list(col),
+                    "scale": [0.5 * float(v.get("size", 1.0)) * max(1.0, r * 1.5), 1.3 * float(v.get("size", 1.0)) * max(1.0, r * 1.5)]}
+            a = float(v.get("from", 0.0))
+            spec["grow"] = {"from": a, "to": a + 0.5, **({"until": float(v["to"])} if "to" in v else {})}
+            out.append(spec)
+            continue
         if v.get("type") != "embers":
             continue
         x, y, z = v.get("at", [0, 0, 0])
@@ -267,12 +280,68 @@ def vfx_crowds(vfx: list) -> list[dict]:
     return out
 
 
+WEATHER_TYPES = ("rain", "snow")
+
+
+def _cam_region(cam: dict | None) -> tuple[float, float, float, float]:
+    """카메라가 보는 곳 주변 (중심 x, z, 반경, 위쪽 높이) — 날씨 입자를 화면 안에만 뿌린다"""
+    if not cam:
+        return 0.0, 10.0, 15.0, 20.0
+    kind = cam.get("type", "dolly")
+    if kind == "dolly":
+        eye = np.asarray(cam.get("to", cam["from"]), np.float32) * 0.5 + np.asarray(cam["from"], np.float32) * 0.5
+        tgt = np.asarray(cam.get("target", eye + [0, 0, 10]), np.float32)
+    else:
+        tgt = np.asarray(cam.get("center", [0, 0, 0]), np.float32)
+        eye = tgt + np.array([0, float(cam.get("height", cam.get("radius", 5))), -float(cam.get("radius", 5))], np.float32)
+    d = tgt - eye
+    dist = float(np.linalg.norm(d[[0, 2]])) or 5.0
+    fwd = d / (np.linalg.norm(d) + 1e-6)
+    reach = min(dist, 30.0)
+    c = eye + fwd * reach * 0.55
+    half = float(np.clip(reach * 0.65, 4.0, 22.0))
+    top = float(max(eye[1], tgt[1]) + half * 0.9 + 3.0)
+    return float(c[0]), float(c[2]), half, top
+
+
+def weather_specs(w, cam: dict | None, rng) -> tuple[list[dict], list[tuple]]:
+    """weather: rain | snow | {type, color, density, wind: [vx, vz], puddles, puddle_color}
+    → (빗줄기·눈송이 군중 설정, 바닥 웅덩이 상자 목록)"""
+    if not w:
+        return [], []
+    w = {"type": w} if isinstance(w, str) else dict(w)
+    kind = w.get("type", "rain")
+    cx, cz, half, top = _cam_region(cam)
+    dens = float(w.get("density", 1.0))
+    wx, wz = (list(w.get("wind", [0.0, 0.0])) + [0, 0])[:2]
+    col = w.get("color", "#b8d4ec" if kind == "rain" else "#ffffff")
+    cols = [col] if isinstance(col, str) else list(col)
+    area = [cx - half, cz - half, cx + half, cz + half]
+    if kind == "snow":
+        spec = {"agent": "snowflake", "count": int(2400 * dens), "area": area, "y_range": [0.0, top],
+                "velocity": [float(wx), -1.1, float(wz)], "speed_jitter": 0.35, "spin": 1.5, "colors": cols,
+                "scale": [0.7, 1.6]}
+    else:
+        spec = {"agent": "raindrop", "count": int(4200 * dens), "area": area, "y_range": [0.0, top],
+                "velocity": [float(wx), -9.0, float(wz)], "speed_jitter": 0.15, "colors": cols,
+                "scale": [0.8, 1.3], "facing": 0}
+    puddles = []
+    if w.get("puddles", kind == "rain"):
+        pc = w.get("puddle_color", "#5a6a7a" if isinstance(col, str) and col == "#b8d4ec" else cols[0])
+        gy = float(w.get("ground", 0.0))
+        for _ in range(int(16 * dens)):
+            px, pz = rng.uniform(area[0], area[2]), rng.uniform(area[1], area[3])
+            sx, sz = rng.uniform(0.5, 2.2), rng.uniform(0.4, 1.6)
+            puddles.append(((px - sx / 2, gy, pz - sz / 2), (px + sx / 2, gy + 0.012, pz + sz / 2), pc))
+    return [spec], puddles
+
+
 def vfx_draws(v: dict, t: float) -> list[dict]:
     """VFX 한 개 → 이번 프레임에 그릴 구(들)의 위치·크기·색"""
     from .geometry import rgb as _rgb
     kind = v.get("type")
     a, b = float(v.get("from", 0.0)), float(v.get("to", float(v.get("from", 0.0)) + 2.0))
-    if t < a or kind == "embers":
+    if t < a or kind in ("embers", "geyser"):
         return []
     p = min(1.0, (t - a) / max(b - a, 1e-6))
     hold = v.get("hold", True)
@@ -333,6 +402,7 @@ class Prepared:
     vfx: list = field(default_factory=list)
     smooth: bool = False
     signs: list = field(default_factory=list)   # (vao, vbo, texture, origin, normal, grow, glow)
+    overcast: float = 0.0                        # 비·눈 오는 날 하늘·햇빛을 흐리게 (0~1)
 
 
 class VoxelRenderer:
@@ -368,20 +438,24 @@ class VoxelRenderer:
 
     # -------------------------------------------------------------- scene setup
     def prepare(self, world: dict, crowds: list[dict], seed: int = 0, shot=None, props=None,
-                vfx=None, look: str | None = None) -> Prepared:
+                vfx=None, look: str | None = None, weather=None) -> Prepared:
         from . import geometry
         old_detail = geometry.DETAIL
         geometry.DETAIL = 2.5 if look == "smooth" else 1.0
         try:
-            return self._prepare(world, crowds, seed, shot, props, vfx, look)
+            return self._prepare(world, crowds, seed, shot, props, vfx, look, weather)
         finally:
             geometry.DETAIL = old_detail
 
-    def _prepare(self, world, crowds, seed, shot, props, vfx, look) -> Prepared:
+    def _prepare(self, world, crowds, seed, shot, props, vfx, look, weather=None) -> Prepared:
         from .templates import build_template
         rng = np.random.default_rng(seed)
         built = build_template(world, rng)
         dynamic, sign_specs = add_props(built.builder, list(built.props) + list(props or []), rng)
+        cam0 = shot if isinstance(shot, dict) else built.shots.get(shot or next(iter(built.shots)))
+        w_specs, puddles = weather_specs(weather, cam0, rng)
+        for mn, mx, pc in puddles:                       # 바닥 웅덩이 (물결 재질)
+            built.builder.box(mn, mx, pc, "water")
         ctx = self.ctx
         data = built.builder.build()
         vbo = ctx.buffer(data.tobytes())
@@ -392,7 +466,8 @@ class VoxelRenderer:
             world_vbo=vbo, shots=built.shots, shadow_radius=built.shadow_radius,
             sky=world.get("sky", built.sky), sun_azimuth=built.sun_azimuth,
             lighting_override=built.lighting, texel=built.texel,
-            vfx=[v for v in (vfx or []) if v.get("type") != "embers"], smooth=look == "smooth")
+            vfx=[v for v in (vfx or []) if v.get("type") not in ("embers", "geyser")], smooth=look == "smooth",
+            overcast=float((weather or {}).get("overcast", 1.0)) if isinstance(weather, dict) else (1.0 if weather else 0.0))
         cam = shot if isinstance(shot, dict) else built.shots.get(shot or next(iter(built.shots)))
         avoid = None
         if cam is not None and cam.get("type", "dolly") == "dolly":
@@ -401,7 +476,7 @@ class VoxelRenderer:
             if eye[:, 1].min() < 6:          # 땅 가까이 있는 카메라만
                 avoid = eye[:, [0, 2]]
         made = [make_crowd(spec, built.areas, rng, avoid) for spec in
-                list(built.crowds) + list(crowds or []) + vfx_crowds(vfx)]
+                list(built.crowds) + list(crowds or []) + vfx_crowds(vfx) + w_specs]
         for cr in made + dynamic:
             if len(cr.instances) == 0:
                 continue
@@ -450,6 +525,14 @@ class VoxelRenderer:
         light = preset(prep.sky, hours) if prep.sky in ("space", "mars") else time_of_day(hours, prep.sun_azimuth)
         for k, v in prep.lighting_override.items():
             setattr(light, k, np.asarray(v, np.float32) if isinstance(v, (list, tuple)) else v)
+        if prep.overcast > 0 and not prep.lighting_override:      # 실내 세트는 그대로
+            k = float(prep.overcast)
+            gray = np.array([0.62, 0.64, 0.68], np.float32)
+            light.sun_col = light.sun_col * (1 - 0.6 * k)
+            light.zenith = light.zenith * (1 - 0.7 * k) + gray * 0.8 * (0.7 * k)
+            light.horizon = light.horizon * (1 - 0.6 * k) + gray * (0.6 * k)
+            light.sun_size = light.sun_size * (1 - k)
+            light.fog_density = light.fog_density + 0.004 * k
         return light
 
     def render(self, prep: Prepared, cam: dict, t: float, duration: float, hours: float,

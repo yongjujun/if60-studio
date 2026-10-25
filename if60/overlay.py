@@ -583,6 +583,93 @@ def punch_zoom(img: np.ndarray, prm: dict, t: float) -> np.ndarray:
     return np.asarray(crop.resize((W, H), Image.Resampling.BILINEAR)).copy()
 
 
+# ------------------------------------------------------------------ 재난문자 팝업
+def draw_alert(img: np.ndarray, item: dict, t: float, duration: float, font_path: str, u: float, top: int) -> None:
+    """휴대폰 알림 팝업: [⚠ 긴급재난문자] 머리말 + 본문 — 위에서 쓱 내려온다. '공식 대응 패러디'의 기본 장치"""
+    a, b = window(item, duration)
+    if not (a <= t <= b) or not item.get("text"):
+        return
+    H, W = img.shape[:2]
+    title = safe_text(str(item.get("title", "긴급재난문자")))
+    sender = safe_text(str(item.get("sender", "행정안전부")))
+    body = safe_text(str(item["text"]))
+    pw = int(W - 70 * u)
+    fb = font(font_path, int(30 * u))
+    lines = _wrap(body, fb, pw - 56 * u)[:4]
+    ph = int(96 * u + len(lines) * 42 * u)
+    im = Image.new("RGBA", (pw, ph), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle([0, 0, pw - 1, ph - 1], radius=int(26 * u), fill=(246, 246, 248, 245))
+    acc = hexrgb(item.get("color", "#e0303a"))
+    r = 20 * u
+    d.polygon([(30 * u, 50 * u), (30 * u + r, 50 * u - r * 1.7), (30 * u + 2 * r, 50 * u)], fill=(*acc, 255))
+    d.text((30 * u + r * 0.78, 50 * u - r * 1.15), "!", font=font(font_path, int(22 * u)), fill=(255, 255, 255, 255))
+    ft = font(font_path, int(30 * u))
+    bold(d, (82 * u, 24 * u), title, ft, (*acc, 255))
+    fs = font(font_path, int(22 * u))
+    d.text((pw - fs.getlength(sender + " · 지금") - 28 * u, 30 * u), sender + " · 지금", font=fs, fill=(120, 120, 130, 255))
+    y = 76 * u
+    for line in lines:
+        d.text((28 * u, y), line, font=fb, fill=(28, 28, 34, 255))
+        y += 42 * u
+    k = ease_out((t - a) / 0.3)
+    out = min(1.0, (b - t) / 0.25) if b < duration - 0.05 else 1.0
+    yy = int(top + 40 * u - (1 - k) * (ph + 60 * u))
+    paste_rgba(img, np.asarray(im), int(35 * u), yy, opacity=min(k, out))
+
+
+# ------------------------------------------------------------------ 엔딩 크레딧 (카메오 출연)
+def _sprite(d: ImageDraw.ImageDraw, x: float, y: float, s: float, shirt, pants, hair, phase: float) -> None:
+    """도트 사람 한 명 (발밑 x,y 기준, 키 s). phase로 다리를 번갈아 걷게"""
+    skin = (240, 200, 160)
+    leg = s * 0.36
+    step = s * 0.05 * (1 if phase % 1 < 0.5 else -1)
+    d.rectangle([x - s * 0.1 + step, y - leg, x - s * 0.01 + step, y], fill=pants)
+    d.rectangle([x + s * 0.01 - step, y - leg, x + s * 0.1 - step, y], fill=pants)
+    d.rectangle([x - s * 0.13, y - leg - s * 0.34, x + s * 0.13, y - leg], fill=shirt)
+    d.rectangle([x - s * 0.1, y - s * 0.95, x + s * 0.1, y - leg - s * 0.34], fill=skin)
+    d.rectangle([x - s * 0.11, y - s * 1.0, x + s * 0.11, y - s * 0.86], fill=hair)
+    d.rectangle([x - s * 0.05, y - s * 0.84, x - s * 0.02, y - s * 0.8], fill=(20, 18, 24))
+    d.rectangle([x + s * 0.02, y - s * 0.84, x + s * 0.05, y - s * 0.8], fill=(20, 18, 24))
+
+
+def draw_credits(img: np.ndarray, cr: dict, t: float, duration: float, font_path: str, u: float) -> None:
+    """검은 화면 + '카메오 출연' + 제목 + 걸어 다니는 도트 캐릭터와 이름. 출연진이 많으면 천천히 위로 흐른다."""
+    H, W = img.shape[:2]
+    img[:] = (6, 6, 8)
+    im = Image.fromarray(img)
+    d = ImageDraw.Draw(im)
+    head = safe_text(str(cr.get("heading", "카메오 출연")))
+    title = safe_text(str(cr.get("title", "")))
+    cast = [c if isinstance(c, dict) else {"name": str(c)} for c in (cr.get("cast") or [])][:24]
+    fh = font(font_path, int(40 * u))
+    ft = font(font_path, int(38 * u))
+    fn = font(font_path, int(32 * u))
+    cols = 3
+    rows = (len(cast) + cols - 1) // cols
+    cell_h = 340 * u
+    content = 330 * u + rows * cell_h
+    scroll = max(0.0, content - H * 0.9) * min(1.0, t / max(duration, 1e-6))
+    y0 = H * 0.2 - scroll
+    bold(d, ((W - fh.getlength(head)) / 2, y0), head, fh, YELLOW)
+    yy = y0 + 70 * u
+    for line in _wrap(title, ft, W - 160 * u)[:2]:
+        bold(d, ((W - ft.getlength(line)) / 2, yy), line, ft, WHITE)
+        yy += 52 * u
+    palette = [(200, 56, 74), (47, 111, 214), (79, 160, 90), (242, 201, 76), (232, 145, 58), (122, 36, 72)]
+    for i, c in enumerate(cast):
+        r, col = divmod(i, cols)
+        cx = W * (col + 0.5) / cols
+        cy = y0 + 330 * u + r * cell_h + 240 * u
+        shirt = hexrgb(c.get("color"), palette[i % len(palette)])
+        pants = hexrgb(c.get("color2"), (34, 34, 58))
+        hair = hexrgb(c.get("hair"), (28, 26, 34))
+        _sprite(d, cx + math.sin(t * 1.3 + i) * 14 * u, cy, 230 * u, shirt, pants, hair, t * 2.2 + i * 0.37)
+        name = safe_text(str(c.get("name", "")))
+        d.text((cx - fn.getlength(name) / 2, cy + 18 * u), name, font=fn, fill=(230, 230, 236))
+    img[:] = np.asarray(im)
+
+
 # ------------------------------------------------------------------ 표적 링
 def draw_marker(img: np.ndarray, item: dict, t: float, duration: float, point, font_path: str, u: float) -> None:
     a, b = window(item, duration)

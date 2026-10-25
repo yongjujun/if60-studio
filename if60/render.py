@@ -157,6 +157,9 @@ class Scene:
     card: dict | None = None                     # 마무리 카드 {question, options, cta}
     chyron: list = field(default_factory=list)   # 뉴스 자막띠 {tag: 속보, text, from, to}
     beat: float = 0.0                            # 대사 뒤 '정적'(초) — 펀치라인 뒤 웃음 틈
+    weather: object = None                       # rain | snow | {type, color, density, wind, puddles}
+    alert: dict | None = None                    # 휴대폰 재난문자 팝업 {title, text, from, to}
+    credits: dict | None = None                  # 엔딩 크레딧 {title, heading: 카메오 출연, cast: [{name, color, color2}]}
     look: str = "voxel"                          # voxel | smooth
     # --- 내레이션 (TTS)
     narration: str | None = None                 # 읽을 문장 (없으면 caption). 숫자·기호를 읽는 그대로 쓸 때
@@ -343,6 +346,7 @@ def load_project(path: str, style_override: str | None = None,
             vfx=s.get("vfx", []) or [], panel=s.get("panel"), big_text=_as_list(s.get("big_text")),
             markers=_as_list(s.get("markers")), card=s.get("card"), narration=s.get("narration"),
             chyron=_as_list(s.get("chyron")), beat=float(s.get("beat", 0) or 0),
+            weather=s.get("weather"), alert=s.get("alert"), credits=s.get("credits"),
             look=str(s.get("look", spec.get("look", "voxel"))),
             bloom=float(s.get("bloom", spec.get("bloom", 0.7 if spec.get("look") == "smooth" else 0.45)))))
     return spec, style, scenes
@@ -369,7 +373,7 @@ def _text_layer(scene: Scene, t: float, style: Style, font: str, layout: bool = 
             m = layer[..., 3] == 255
             out[m] = layer[m]
 
-    cap_text = caption_at(scene, t) if (scene.caption or scene.captions) and not scene.card else ""
+    cap_text = caption_at(scene, t) if (scene.caption or scene.captions) and not scene.card and not scene.credits else ""
     if cap_text:
         vis = None
         if scene.typewriter or scene.caption_mode == "typewriter":
@@ -408,6 +412,9 @@ class Composer:
         W, H = self.w, self.h
         if prep is not None:
             big = render_3d_frame(self.vr, prep, cam, sc, t, self.font)
+        elif sc.credits is not None and not sc.layers:
+            big = np.zeros((H, W, 3), np.uint8)
+            overlay.draw_credits(big, sc.credits, t, sc.duration, self.font, self.u)
         elif sc.card is not None and not sc.layers:
             key = id(sc)
             if key not in self._card_bg:
@@ -441,6 +448,9 @@ class Composer:
                                 y_frac=(bottom - int(64 * self.u) - int(14 * self.u)) / self.h)
         if sc.panel:
             overlay.draw_panel(big, sc.panel, t, sc.duration, self.font, top + int(28 * self.u), self.u)
+        if sc.alert:
+            overlay.draw_alert(big, sc.alert, t, sc.duration, self.font, self.u,
+                               top if self.broadcast else int(self.h * 0.06))
         if sc.card is not None:
             if prep is not None:
                 big = overlay.darken(big, 0.45)
@@ -488,7 +498,7 @@ def scale_times(sc: Scene, k: float) -> None:
         mul(prm)
     for v in sc.vfx:
         mul(v, ("from", "to"))
-    for item in sc.big_text + sc.markers + sc.labels + sc.chyron:
+    for item in sc.big_text + sc.markers + sc.labels + sc.chyron + ([sc.alert] if isinstance(sc.alert, dict) else []):
         mul(item, ("from", "to"))
     for g in [p.get("grow") for p in sc.props] + [c.get("grow") for c in sc.crowds]:
         if isinstance(g, dict):
@@ -622,7 +632,8 @@ def prepare_scene(vr, sc: Scene, si: int = 0):
     """3D 장면 준비 → (prep, 카메라). 3D가 아니면 (None, None)"""
     if not sc.world or vr is None:
         return None, None
-    prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot, props=sc.props, vfx=sc.vfx, look=sc.look)
+    prep = vr.prepare(sc.world, sc.crowds, seed=sc.seed, shot=sc.shot, props=sc.props, vfx=sc.vfx, look=sc.look,
+                      weather=sc.weather)
     cam = sc.shot if isinstance(sc.shot, dict) else prep.shots.get(sc.shot or next(iter(prep.shots)))
     if cam is None:
         vr.release(prep)

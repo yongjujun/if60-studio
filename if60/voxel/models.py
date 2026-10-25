@@ -400,6 +400,56 @@ def chicken() -> Model:
     return m
 
 
+def raindrop() -> Model:
+    """빗줄기 한 가닥 (길이 0.45m, 얇음) — 날씨 효과용. color로 비 색을 바꾼다 (콜라·주스 비 등)"""
+    m = Model("raindrop", ["#b8d4ec"], ["#ffffff"])
+    m.part((-0.016, 0.0, -0.016), (0.016, 0.6, 0.016), 1, "glow")
+    return m
+
+
+def snowflake() -> Model:
+    m = Model("snowflake", ["#ffffff"], ["#ffffff"])
+    m.part((-0.05, -0.05, -0.05), (0.05, 0.05, 0.05), 1, "glow")
+    return m
+
+
+def foam() -> Model:
+    """거품·튀는 액체 덩어리 (0.12m) — 거품 기둥(geyser)·분수용"""
+    m = Model("foam", ["#f4efe6", "#e6dccb", "#c8a070"], ["#ffffff"])
+    m.part((-0.06, -0.06, -0.06), (0.06, 0.06, 0.06), 1)
+    m.part((-0.04, 0.04, -0.04), (0.04, 0.09, 0.04), 2)
+    return m
+
+
+def umbrella() -> Model:
+    """펼친 우산 (지름 1m, 손잡이 바닥 기준 높이 1.9m에 우산 면)"""
+    m = Model("umbrella", ["#22242c", "#2f6fd6", "#c8384a", "#f2c94c", "#ffffff"], ["#6b6b72"])
+    m.part((-0.015, 1.0, -0.015), (0.015, 1.95, 0.015), 2)
+    for r, y in ((0.5, 1.88), (0.36, 1.95), (0.2, 2.0)):
+        m.part((-r, y, -r), (r, y + 0.07, r), 1)
+    return m
+
+
+def person_umbrella() -> Model:
+    """우산 쓴 사람 (군중용) — color = 우산 색, color2 = 옷 색"""
+    m = Model("person_umbrella", ["#22242c", "#2f6fd6", "#c8384a", "#f2c94c", "#e8e8e8", "#7a2448"],
+              ["#c8384a", "#2f6fd6", "#4fa05a", "#e8e4d8", "#3b3a8c", "#2a2a2a", "#9aa4b2"])
+    m.part((-0.18, 0.0, -0.10), (-0.02, 0.80, 0.10), "#22223a")      # 다리
+    m.part((0.02, 0.0, -0.10), (0.18, 0.80, 0.10), "#22223a")
+    m.part((-0.22, 0.80, -0.13), (0.22, 1.36, 0.13), 2)              # 몸통 (옷)
+    m.part((-0.32, 0.86, -0.08), (-0.22, 1.33, 0.08), 2)
+    m.part((0.22, 1.1, -0.02), (0.32, 1.5, 0.1), 2)                  # 우산 든 팔
+    m.part((-0.15, 1.37, -0.15), (0.15, 1.70, 0.15), SKIN)
+    m.part((-0.16, 1.62, -0.16), (0.16, 1.76, 0.16), DARK)
+    m.part((-0.16, 1.40, -0.16), (0.16, 1.70, -0.08), DARK)
+    m.part((-0.09, 1.50, 0.15), (-0.04, 1.55, 0.16), DARK)
+    m.part((0.04, 1.50, 0.15), (0.09, 1.55, 0.16), DARK)
+    m.part((0.255, 1.45, 0.025), (0.285, 2.05, 0.055), "#6b6b72")     # 우산대
+    for r, y in ((0.55, 1.98), (0.4, 2.05), (0.22, 2.11)):
+        m.part((0.27 - r, y, 0.04 - r), (0.27 + r, y + 0.07, 0.04 + r), 1)
+    return m
+
+
 EXPRESSIONS = ("neutral", "surprised", "happy", "sad", "smug")
 
 
@@ -475,6 +525,8 @@ MODELS = {"person": person, "cat": cat, "dog": dog, "car": car, "train": train_c
           "molecule_h2o": molecule_h2o, "bottle": bottle, "cup": cup, "phone": phone, "book": book,
           "parcel": parcel, "rocket": rocket, "coin": coin, "lightbulb": lightbulb, "flame": flame,
           "cloud": cloud, "ball": ball, "germ": germ, "table": table, "spark": spark, "bolt": bolt, "pig": pig, "chicken": chicken,
+          "raindrop": raindrop, "snowflake": snowflake, "foam": foam, "umbrella": umbrella,
+          "person_umbrella": person_umbrella,
           **{f"bust{'' if e == 'neutral' else '_' + e}": (lambda e=e: bust(e)) for e in EXPRESSIONS},
           **{f"bust_long{'' if e == 'neutral' else '_' + e}": (lambda e=e: bust(e, "long")) for e in EXPRESSIONS}}
 
@@ -492,6 +544,8 @@ DESCRIPTIONS = {
     "germ": "세균·바이러스 확대 모형 (0.3m)", "table": "식탁 (윗면 높이 0.9m)",
     "spark": "불티·빛 입자 (8cm, 빛남 — 보통 vfx embers로 씀)", "bolt": "번개 줄기 (10m, 빛남)",
     "pig": "돼지 (몸길이 1.1m)", "chicken": "닭 (0.45m)",
+    "person_umbrella": "우산 쓴 사람 (군중용, color = 우산 색, color2 = 옷 색)", "umbrella": "펼친 우산 소품 (높이 2m)",
+    "foam": "거품·튀는 액체 덩어리 (보통 vfx geyser로 씀)", "raindrop": "빗줄기 (보통 weather로 씀)", "snowflake": "눈송이 (보통 weather로 씀)",
     "bust": "얼굴 클로즈업용 상반신 (큰 머리, 높이 1.2m, 정색 무표정) — yaw: 180이면 카메라를 봄. color=옷, color2=머리",
     "bust_surprised": "상반신 — 놀란 얼굴", "bust_happy": "상반신 — 활짝 웃는 얼굴", "bust_sad": "상반신 — 울상(눈물)",
     "bust_smug": "상반신 — 으쓱·뿌듯한 얼굴",

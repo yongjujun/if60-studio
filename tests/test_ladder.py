@@ -133,3 +133,58 @@ def test_plan_passes_format_to_writer(monkeypatch):
     assert "format: ladder" in seen[0] and "결과 사다리" in seen[0]
     assert spec["format"] == "ladder"
     assert "결과 사다리" in planner.system_prompt(planner.catalog())
+
+
+# ------------------------------------------------------------------ 오바 스토리텔링 + 날씨·크레딧
+def test_story_checks():
+    spec = _spec()
+    assert len(spec["cast"]) >= 2 and any(c.get("foreshadow") for c in spec["cast"])
+    s2 = copy.deepcopy(spec)
+    s2.pop("cast")
+    for sc in s2["scenes"]:
+        sc.pop("when", None)
+        if sc.get("role") == "cliffhanger":
+            sc["role"] = "payoff"
+    s2["scenes"] = s2["scenes"][:-1]                      # 크레딧 제거
+    issues = " ".join(planner.retention_issues(s2))
+    assert "cast" in issues and "when" in issues and "cliffhanger" in issues and "credits" in issues
+    s3 = copy.deepcopy(spec)
+    for sc in s3["scenes"]:                                 # 복선 인물이 결말에 안 나오면
+        if "하준 씨" in (sc.get("who") or []) and sc.get("act") == "결말":
+            sc["who"] = ["김 대리"]
+    assert any("복선" in i for i in planner.retention_issues(s3))
+
+
+def test_weather_geyser_alert_credits_render():
+    from if60.voxel.renderer import VoxelRenderer, weather_specs
+    rng = np.random.default_rng(0)
+    specs, puddles = weather_specs({"type": "rain", "color": "#6b3a1e"}, {"from": [0, 2, -10], "target": [0, 1, 20]}, rng)
+    assert specs[0]["agent"] == "raindrop" and specs[0]["velocity"][1] < -5 and puddles
+    snow, none = weather_specs("snow", None, rng)
+    assert snow[0]["agent"] == "snowflake" and not none
+    vr = VoxelRenderer(90, 160, samples=0, shadow_size=256)
+    world = {"template": "field", "seed": 1}
+    clear = vr.prepare(world, [], shot="low")
+    cam = clear.shots["low"]
+    a = vr.render(clear, cam, 0.5, 2, 12).astype(int)
+    vr.release(clear)
+    wet = vr.prepare(world, [], shot="low", weather="rain",
+                     vfx=[{"type": "geyser", "at": [0, 0, 8], "height": 3, "from": 0}])
+    assert wet.overcast == 1.0 and any(cr.model == "foam" for cr, *_ in wet.crowds)
+    b = vr.render(wet, cam, 0.5, 2, 12).astype(int)
+    vr.release(wet)
+    vr.close()
+    assert b[:40].mean() < a[:40].mean()                    # 흐린 하늘
+    font = R.text.find_font()
+    img = np.full((640, 360, 3), 90, np.uint8)
+    overlay.draw_alert(img, {"text": "오늘 15시부터 식혜 비가 내립니다."}, 1.0, 4, font, 1 / 3, 40)
+    assert (img[40:110] > 230).mean() > 0.3                 # 흰 알림 상자
+    cr = np.zeros((640, 360, 3), np.uint8)
+    overlay.draw_credits(cr, {"title": "제목", "cast": [{"name": "하준 씨"}, {"name": "보리"}]}, 1.0, 5, font, 1 / 3)
+    assert (cr[..., 0] > 200).sum() > 200 and (cr.max(-1) < 12).mean() > 0.8   # 검은 바탕 + 글자·캐릭터
+
+
+def test_cameos_feed_into_prompt(tmp_path, monkeypatch):
+    (tmp_path / "cameos.yaml").write_text("names: [보리맘, 망원동 민지]\n", encoding="utf-8")
+    monkeypatch.setattr(planner, "ROOT", tmp_path)
+    assert planner.load_cameos() == ["보리맘", "망원동 민지"]

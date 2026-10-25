@@ -118,7 +118,7 @@ TEMPLATE_NOTES = {
 }
 
 
-def system_prompt(cat: dict) -> str:
+def system_prompt(cat: dict, fmt: str = "auto") -> str:
     from .voxel.models import DESCRIPTIONS
     tpl_lines = []
     for name in ["studio", "tabletop"] + [n for n in cat["templates"] if n not in ("studio", "tabletop")]:
@@ -131,12 +131,13 @@ def system_prompt(cat: dict) -> str:
     ex0 = ROOT / "scenes" / "juvenile_law_abolished.yaml"
     ex1 = ROOT / "scenes" / "lightning_power.yaml"
     ex2 = ROOT / "scenes" / "nitrogen_snack.yaml"
-    example_txt = "\n".join(
-        f"### {label}\n```yaml\n{p.read_text(encoding='utf-8')}```" for label, p in
-        (("예시 0 — 결과 사다리(format: ladder) — 상상 하나를 생활 곳곳에, 간판 개그·얼굴 클로즈업·심플 틀", exL),
+    examples = (("예시 0 — 결과 사다리(format: ladder) + 오바 스토리텔링 — 등장인물·시간 점프·공식 대응·클리프행어·크레딧", exL),
          ("예시 1 — 사회 풍자(satire) + 4단 구성 + keyframes 9장 (사회·제도 주제, 찬반 균형)", ex0),
          ("예시 2 — 방송형 연출 (콜드 오픈·대시보드·VFX·마무리 카드)", ex1),
-         ("예시 3 — 사물을 화면에 직접 만들어 보여주기", ex2)) if p.exists())
+         ("예시 3 — 사물을 화면에 직접 만들어 보여주기", ex2))
+    pick = {"ladder": (0,), "broadcast": (1, 2, 3), "auto": (0, 1)}.get(fmt, (0, 1))   # 프롬프트 길이(사용량) 절약
+    example_txt = "\n".join(f"### {label}\n```yaml\n{p.read_text(encoding='utf-8')}```"
+                             for k, (label, p) in enumerate(examples) if k in pick and p.exists())
     return f"""너는 쇼츠 채널 '만물제작소'(유튜브 'IF 60')의 작가 겸 연출가다. 주제는 무엇이든 올 수 있다(사물, 음식, 몸, 동물, 우주, 사회, 제도, 상상).
 주제를 받으면 (1) 웹 검색으로 핵심 사실과 수치를 확인하고 (2) 3D 복셀 렌더러용 장면 YAML을 쓴다.
 
@@ -175,6 +176,28 @@ def system_prompt(cat: dict) -> str:
   예: 정색한 얼굴 + 손에 든 계기판 sign "오늘 37방 / 목표 200,000".
 - 생활 세트를 적극적으로: office · elevator · shop(kind) · shopfront · clinic · pool · farm · room · tabletop · apartments.
 - 사실: 기본 수치(예: 하루 필요 열량, 지방 1kg 열량)는 검색으로 확인해 숫자 개그에 쓰고, 상상 부분은 상상임이 분명하게.
+
+## ★오바 스토리텔링 — 과장인데 웃긴 '가짜 다큐' (format: ladder는 필수, broadcast도 권장)
+목표: 시청자가 "아 말도 안 돼ㅋㅋ" 하면서도 "근데 진짜 그럴 것 같은데?" 하게 만든다. 과장은 크게, 말투는 담담하게, 근거는 진짜로.
+1. 이름 붙은 등장인물(cast) 2~4명 — 평범한 한국 이름 + 직업 + 실제 동네: "망원시장 순자 사장님", "강남 치과 원장님", "직장인 하준 씨".
+   최상위 cast: [{{name, role, color}}]. 장면마다 who: [이름]. 익명의 '사람들'보다 이름 한 명이 훨씬 웃기다.
+   · 한 명은 복선 인물(foreshadow: true): 앞부분에 사소하게 이상한 행동으로 스쳐 지나가고(예: 혼자 멘토스를 사 모음),
+     결말에서 그 인물이 다음 사건의 주인공이 된다(클리프행어).
+2. 시간 점프 사다리(when) — "그 시각" → "저녁엔" → "다음 날" → "몇 주 뒤" → "3년 뒤". 4단계 이상, 점점 멀리.
+   caption 첫머리에 그대로 쓴다 ("몇 주 뒤, 첫눈이 오던 날…").
+3. 규모 점프 사다리 — 웅덩이 하나 → 가게 → 동네 시장 → 한강 → 서해·전국 → 남극·지구. 결과가 한 단계씩 커진다.
+4. 공식 대응 패러디 3번 이상 — 재난문자(alert), 뉴스 자막띠(chyron), "상인회 일동" 현수막, 일기예보 화면(sign screen:
+   "내일 서울 · 탄산 강함"), 공항 검색대 반입 금지 표지, 번호표 "대기 300번". 황당한 상황에 사회가 진지하게 대응할수록 웃기다.
+5. 정밀한 숫자로 오바 — "하루 내린 양이 2,600캔꼴", "뒤집은 우산 한 시간 = 캔 16개". 계산 근거가 있는 숫자를 끝자리까지.
+6. 몸 개그 화면(과장 물리) — 물리적 결과를 화면에 크게: 거품 기둥(vfx geyser), 색이 변한 강아지(colors), 녹슨 자전거,
+   이상한 색의 첫눈을 숟가락으로 퍼 먹는 사람(weather snow + color). 말로 설명하지 말고 보여준다.
+7. 진짜 과학 한 스푼 — 오바 사이사이에 검색으로 확인한 실제 사실 1~2개 (예: "pH 5.5 아래면 치아가 녹기 시작").
+   진짜가 섞이면 가짜가 그럴듯해진다. facts_to_check에 출처.
+8. 오바하되 정색 — 내레이터는 끝까지 차분한 다큐 톤. 대신 등장인물 리액션은 크게(입을 벌리고 하늘을 봄, 만세, bust_surprised).
+9. 결말 = 클리프행어(role: cliffhanger) — 복선 인물이 벌인 다음 사건을 던지고 끝낸다:
+   "남극으로 떠난 하준 씨가 뿌린 멘토스 한 줌에, 서울은 어떻게 됐을까요?" → "다음 영상으로 만들어져요. 팔로우하고 기다려 주세요."
+   (질문 card는 선택) 마지막 장면은 credits: 검은 화면 "카메오 출연" + 제목 + 출연진 이름(cast + 카메오 목록).
+- 날씨가 주제면 weather: 로 실제로 비·눈을 내리게 하고, 사람들은 person_umbrella 로 우산을 씌운다.
 
 ## 장르별 톤 — 먼저 주제의 장르를 정해 최상위 genre: 에 적는다
 - genre: satire (사회 풍자) → **통쾌하게.** 시청자가 평소 당하기만 하던 쪽(사기·갑질·허세·특권)이
@@ -273,7 +296,8 @@ def system_prompt(cat: dict) -> str:
 {chr(10).join(model_lines)}
 
 장면 필드:
-- duration(초), act(도입|전개|반전|결말, 필수), image(keyframes 번호, 필수), domain(ladder 필수: 생활 영역 이름), role(선택: hook|twist|payoff|snapback),
+- duration(초), act(도입|전개|반전|결말, 필수), image(keyframes 번호, 필수), domain(ladder 필수: 생활 영역 이름),
+  who(등장인물 이름 목록), when(시간 점프 단계), role(선택: hook|twist|payoff|snapback|cliffhanger),
   tangent(선택: 1|2|3 — 웃음 설계의 절), gag(선택: 웃음 장치 이름), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
 - world: {{template: 이름, seed: 정수, params: {{...}}}}
 - shot: 템플릿 샷 이름, 또는 직접 카메라:
@@ -327,11 +351,19 @@ def system_prompt(cat: dict) -> str:
 - card (마무리 장면 전용, world 없이 써도 됨 — 앞 장면을 흐리게 깔아 줌):
     {{question: "당신의 선택은?", options: ["선택지1", "선택지2", "선택지3"], cta: "댓글로 번호를 남겨주세요"}}
     card가 있는 장면은 caption이 화면에 표시되지 않는다(질문·선택지가 자막 역할)
+- 오바 스토리텔링 장치:
+    who: ["하준 씨"] (그 장면 등장인물), when: "몇 주 뒤" (시간 점프)
+    weather: rain | snow 또는 {{type: rain, color: "#6b3a1e"(색 비), density: 1.0, wind: [1, 0], puddles: true, puddle_color}}
+      — 야외 장면 전용. 빗줄기·눈송이가 화면 가득 내리고 하늘이 흐려지며 바닥에 웅덩이
+    vfx {{type: geyser, at: [x,y,z], height: 4, radius: 0.4, from: 초, color: ["#f4efe6", "#8a5a3a"]}} — 거품·물 기둥이 솟구침
+    alert: {{title: "긴급재난문자", sender: "행정안전부", text: "오늘 15시부터 …", from: 초}} — 휴대폰 재난문자 팝업
+    credits: {{heading: "카메오 출연", title: "만약 …라면", cast: [{{name: "하준 씨", color: "#hex"}}, …]}} — 마지막 장면 (world 없이)
 - camera: {{fade_out: 0.6}}
 
 ## 출력 형식
 설명 없이 ```yaml 코드블록 하나만 출력한다. 문자열에 콜론(:)이 있으면 큰따옴표로 감싼다. 최상위 키:
 title, format: broadcast|ladder, genre: satire|science|absurd, style: voxel,
+cast: [{{name: "직장인 하준 씨", role: "…", color: "#hex", foreshadow: true}}, …] (ladder 필수, 2~4명),
 layout: broadcast면 {{title: ["첫 줄(흰색)", "둘째 줄(노란색)"], series: "시리즈명 N편"(선택)}}, ladder면 {{style: simple, title: "만약에 …?"}},
 look: voxel (기본, 픽셀 복셀) 또는 smooth (매끈한 질감 — 우주·과학 실험처럼 깔끔한 느낌이 어울릴 때),
 facts_to_check: ["사실 한 줄 — 출처 URL", ...],
@@ -531,7 +563,7 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
             errs.append(f"장면 {i}: duration이 숫자가 아님")
         errs += _validate_broadcast(s, i)
         w = s.get("world")
-        if w is None and isinstance(s.get("card"), dict):
+        if w is None and (isinstance(s.get("card"), dict) or isinstance(s.get("credits"), dict)):
             continue   # 마무리 카드 장면은 3D 세계 없이도 됨 (앞 장면을 흐리게 깔아 줌)
         if not isinstance(w, dict) or w.get("template") not in cat["templates"]:
             errs.append(f"장면 {i}: world.template이 없거나 지원하지 않음 ({(w or {}).get('template') if isinstance(w, dict) else w})")
@@ -620,9 +652,9 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
 # ------------------------------------------------------------------ 시청 유지 구조
 HOOK_MAX_SEC = 3.5          # 1번 장면(훅)은 이 안에 끝나야 함
 TWIST_WINDOW = (15.0, 30.0)  # 중간 반전 장면이 시작해야 하는 구간(초)
-ROLES = ("hook", "twist", "payoff", "snapback")
+ROLES = ("hook", "twist", "payoff", "snapback", "cliffhanger")
 GAGS = ("정색 반전", "공식 발표체", "숫자 개그", "과잉 진지", "삼천포", "콜백", "의외의 비교", "3의 법칙",
-        "현실 공감", "한 박자 늦은 펀치", "간판 개그", "말장난", "가치 뒤집기")
+        "현실 공감", "한 박자 늦은 펀치", "간판 개그", "말장난", "가치 뒤집기", "과장 물리", "공식 대응")
 ACTS = ("도입", "전개", "반전", "결말")
 LENGTH_RANGE = (60.0, 120.0)   # 영상 전체 길이(초)
 KEYFRAME_RANGE = (6, 10)       # AI 이미지로 만들 때 필요한 그림 수
@@ -640,7 +672,7 @@ LADDER_MAX_AVG_SEC = 4.3     # 장면 평균 길이 상한
 
 def spoken_seconds(scene: dict) -> float:
     """장면 길이 추정 — 실제 영상은 목소리 길이에 맞춰지므로 대사 글자 수로 계산 (card는 duration)"""
-    if isinstance(scene.get("card"), dict):
+    if isinstance(scene.get("card"), dict) or (isinstance(scene.get("credits"), dict) and not scene.get("caption")):
         try:
             return float(scene.get("duration", 5))
         except (TypeError, ValueError):
@@ -665,7 +697,7 @@ def retention_issues(spec: dict) -> list[str]:
         t += spoken_seconds(s)
     for i, s in enumerate(scenes, 1):
         if s.get("role") is not None and s.get("role") not in ROLES:
-            issues.append(f"장면 {i}: role '{s.get('role')}'는 쓸 수 없음 (hook/twist/payoff 중 하나)")
+            issues.append(f"장면 {i}: role '{s.get('role')}'는 쓸 수 없음 ({'/'.join(ROLES)} 중 하나)")
     first = scenes[0]
     if first.get("role") != "hook":
         issues.append("1번 장면에 role: hook이 없음 — 첫 장면을 3초 훅으로 만들 것")
@@ -679,8 +711,9 @@ def retention_issues(spec: dict) -> list[str]:
     elif not any(lo <= st <= hi for _, st in twists):
         where = ", ".join(f"{i}번 장면 {st:.0f}초" for i, st in twists)
         issues.append(f"중간 반전이 {lo:.0f}~{hi:.0f}초 구간에 없음 (지금: {where}) — 앞 장면 대사를 줄이거나 늘려서 맞출 것")
-    tail = scenes[-3:] if isinstance(scenes[-1].get("card"), dict) else scenes[-2:]
-    if not any(s.get("role") == "payoff" for s in tail):
+    ends = [s for s in scenes[-2:] if isinstance(s.get("card"), dict) or isinstance(s.get("credits"), dict)]
+    tail = scenes[-(2 + len(ends)):]
+    if not any(s.get("role") in ("payoff", "cliffhanger") for s in tail):
         issues.append("끝에 role: payoff 장면이 없음 — 마지막 card 바로 앞에 기억에 남는 한 줄(가능하면 첫 장면 콜백)을 둘 것")
     issues += structure_issues(spec, scenes, t)
     issues += humor_issues(scenes)
@@ -715,7 +748,7 @@ def humor_issues(scenes: list) -> list[str]:
     end = [i for i, s in enumerate(scenes, 1) if s.get("act") == "결말"]
     if tang and end and max(i for i, _ in tang) >= min(end):
         issues.append("tangent 장면이 결말 구간에 있음 — 1~3절은 전개·반전 구간 안에서 끝낼 것")
-    talk = [s for s in scenes if not isinstance(s.get("card"), dict)]
+    talk = [s for s in scenes if not isinstance(s.get("card"), dict) and not isinstance(s.get("credits"), dict)]
     gags = [s.get("gag") for s in talk if s.get("gag")]
     bad = sorted({g for g in gags if g not in GAGS})
     if bad:
@@ -739,6 +772,7 @@ PUNCHUP_SYSTEM = """너는 한국 예능·쇼츠 개그 작가다. 정색한 다
 - 웃음의 과녁은 제도·위선·힘 있는 쪽·우리 모두의 습관. 실존 인물·상표·특정 집단·피해자·외모를 조롱하지 않는다.
 - 길이: 각 caption 45자 이내, 원래 대사 길이의 ±30% 안. 1번 장면(hook)은 20자 안팎.
 - caption에 숫자·기호·영문이 있으면 읽는 그대로 한글로 쓴 narration도 함께 준다.
+- 오바 스토리텔링: 시간 점프 말머리("몇 주 뒤,")와 등장인물 이름은 살린다. 결말 클리프행어는 다음 편이 궁금하게 끊는다.
 - 이미 충분히 웃기면 그 장면은 빼도 된다.
 출력: 설명 없이 JSON 배열 하나만. [{"n": 장면번호, "caption": "...", "narration": "...(필요할 때)"}]"""
 
@@ -752,7 +786,7 @@ def _digits(s: str) -> list[str]:
 def punchup_prompt(spec: dict) -> str:
     lines = [f"제목: {spec.get('title', '')}  장르: {GENRES.get(spec.get('genre'), spec.get('genre', ''))}", ""]
     for i, s in enumerate(spec.get("scenes") or [], 1):
-        if not isinstance(s, dict) or isinstance(s.get("card"), dict):
+        if not isinstance(s, dict) or isinstance(s.get("card"), dict) or isinstance(s.get("credits"), dict):
             continue
         tags = [str(s.get(k)) if k != "tangent" else f"{s.get(k)}절" for k in ("act", "role", "tangent", "gag") if s.get(k)]
         lines.append(f"{i}. [{' · '.join(tags)}] 화면: {s.get('visual', '')}")
@@ -782,7 +816,8 @@ def apply_punchup(spec: dict, text: str) -> tuple[dict, int]:
             n = int(it.get("n"))
         except (TypeError, ValueError):
             continue
-        if not 1 <= n <= len(scenes) or not isinstance(scenes[n - 1], dict) or isinstance(scenes[n - 1].get("card"), dict):
+        if (not 1 <= n <= len(scenes) or not isinstance(scenes[n - 1], dict) or isinstance(scenes[n - 1].get("card"), dict)
+                or isinstance(scenes[n - 1].get("credits"), dict)):
             continue
         s = scenes[n - 1]
         old, cap = str(s.get("caption") or ""), str(it.get("caption") or "").strip()
@@ -843,7 +878,8 @@ def structure_issues(spec: dict, scenes: list, total: float) -> list[str]:
             issues.append(f"keyframes가 {len(kfs)}장 — {kf_lo}~{kf_hi}장으로 맞출 것 (이어지는 장면끼리 그림을 공유)")
         used = {str(s.get("image")) for s in scenes if s.get("image") is not None}
         nopic = [i for i, s in enumerate(scenes, 1)
-                 if not isinstance(s.get("card"), dict) and str(s.get("image")) not in ids]
+                 if not isinstance(s.get("card"), dict) and not isinstance(s.get("credits"), dict)
+                 and str(s.get("image")) not in ids]
         if nopic:
             issues.append(f"image가 없거나 keyframes에 없는 번호인 장면: {', '.join(map(str, nopic[:6]))}")
         unused = sorted(ids - used)
@@ -854,10 +890,60 @@ def structure_issues(spec: dict, scenes: list, total: float) -> list[str]:
     return issues
 
 
+STORY_MIN_CAST = 2          # 이름 붙은 등장인물
+STORY_MIN_WHEN = 4          # 시간 점프 단계 (그 시각 → 저녁 → 몇 주 뒤 → 3년 뒤)
+STORY_MIN_OFFICIAL = 3      # 공식 대응 패러디 (재난문자·뉴스 자막띠·현수막·일기예보 화면)
+
+
+def story_issues(spec: dict, scenes: list) -> list[str]:
+    """오바 스토리텔링 검사: 등장인물·복선 인물·시간 점프·공식 대응 패러디·클리프행어 + 크레딧"""
+    issues = []
+    cast = [c for c in spec.get("cast") or [] if isinstance(c, dict) and str(c.get("name") or "").strip()]
+    names = [str(c["name"]).strip() for c in cast]
+    talk_idx = [i for i, s in enumerate(scenes) if not isinstance(s.get("card"), dict) and not isinstance(s.get("credits"), dict)]
+    who = {i: {str(w).strip() for w in (scenes[i].get("who") if isinstance(scenes[i].get("who"), list)
+                                        else [scenes[i].get("who")]) if w} for i in talk_idx}
+    if len(cast) < STORY_MIN_CAST:
+        issues.append(f"cast(이름 붙은 등장인물)가 {len(cast)}명 — '망원시장 순자 사장님', '하준 씨'처럼 이름+직업+동네로 "
+                      f"{STORY_MIN_CAST}~4명을 최상위 cast에 두고 장면마다 who: 로 등장시킬 것")
+    else:
+        unused = [n for n in names if not any(n in ws for ws in who.values())]
+        if unused:
+            issues.append(f"cast {', '.join(unused)}가 어느 장면에도 who로 나오지 않음")
+        seeds = [str(c["name"]).strip() for c in cast if c.get("foreshadow")]
+        if not seeds:
+            issues.append("복선 인물이 없음 — cast 중 한 명에 foreshadow: true, 초반에 사소하게 등장시키고 결말 클리프행어의 주인공으로")
+        elif talk_idx:
+            n = seeds[0]
+            early = [i for i in talk_idx[: max(1, int(len(talk_idx) * 0.45))] if n in who[i]]
+            late = [i for i in talk_idx[-3:] if n in who[i]]
+            if not early or not late:
+                issues.append(f"복선 인물 '{n}'은 앞부분(처음 45% 안)에 한 번, 마지막 3장면 안에 다시 나와야 함 (복선 → 회수)")
+    whens = [str(scenes[i].get("when")).strip() for i in talk_idx if scenes[i].get("when")]
+    if len(dict.fromkeys(whens)) < STORY_MIN_WHEN:
+        issues.append(f"시간 점프(when)가 {len(set(whens))}단계 — '그 시각', '저녁', '다음 날', '몇 주 뒤', '3년 뒤'처럼 "
+                      f"{STORY_MIN_WHEN}단계 이상 점점 멀리 (장면마다 when: 과 caption 첫머리에)")
+    official = 0
+    for i in talk_idx:
+        s = scenes[i]
+        if s.get("alert") or s.get("chyron") or any(isinstance(p, dict) and p.get("shape") == "sign" and
+                                                     p.get("style") in ("banner", "screen", "board")
+                                                     for p in s.get("props") or []):
+            official += 1
+    if official < STORY_MIN_OFFICIAL:
+        issues.append(f"공식 대응 패러디가 {official}장면 — 재난문자(alert)·뉴스 자막띠(chyron)·현수막·일기예보 화면으로 "
+                      f"{STORY_MIN_OFFICIAL}장면 이상")
+    if not any(s.get("role") == "cliffhanger" for s in scenes):
+        issues.append("결말에 role: cliffhanger가 없음 — 복선 인물이 벌인 다음 사건을 던지고 '다음 영상으로 만들어져요'")
+    if not isinstance(scenes[-1].get("credits"), dict) if scenes else True:
+        issues.append("마지막 장면이 credits가 아님 — 검은 화면 '카메오 출연' 크레딧(cast 이름 + cameos)으로 끝낼 것")
+    return issues
+
+
 def ladder_issues(spec: dict, scenes: list, total: float) -> list[str]:
     """결과 사다리 형식 검사: 짧은 컷 여러 개 · 생활 영역 8곳 이상 · 3D 속 글자 개그 · 심플 틀"""
     issues = []
-    talk = [s for s in scenes if not isinstance(s.get("card"), dict)]
+    talk = [s for s in scenes if not isinstance(s.get("card"), dict) and not isinstance(s.get("credits"), dict)]
     if len(scenes) < LADDER_MIN_SCENES:
         issues.append(f"장면이 {len(scenes)}개 — 결과 사다리는 3초 안팎 컷 {LADDER_MIN_SCENES}개 이상 (한 장면 = 한 생활 컷)")
     if talk and total / max(1, len(scenes)) > LADDER_MAX_AVG_SEC:
@@ -869,6 +955,7 @@ def ladder_issues(spec: dict, scenes: list, total: float) -> list[str]:
     signs = sum(1 for s in talk if any(isinstance(p, dict) and p.get("shape") == "sign" for p in s.get("props") or []))
     if signs < LADDER_MIN_SIGNS:
         issues.append(f"3D 속 글자(sign) 장면이 {signs}개 — 간판·가격표·매물 카드·현수막 개그를 {LADDER_MIN_SIGNS}장면 이상")
+    issues += story_issues(spec, scenes)
     lay = spec.get("layout")
     if not (lay == "simple" or (isinstance(lay, dict) and lay.get("style") == "simple")):
         issues.append("결과 사다리는 layout: {style: simple, title: \"만약에 …?\"} (화면 전체 3D + 첫 4초 큰 질문)")
@@ -876,7 +963,7 @@ def ladder_issues(spec: dict, scenes: list, total: float) -> list[str]:
 
 
 EFFECTS = ("shake", "flash", "tint", "whiteout", "rewind", "punch")
-VFX_TYPES = ("shockwave", "orb", "fireball", "mushroom", "embers")
+VFX_TYPES = ("shockwave", "orb", "fireball", "mushroom", "embers", "geyser")
 
 
 def _validate_broadcast(s: dict, i: int) -> list[str]:
@@ -911,6 +998,18 @@ def _validate_broadcast(s: dict, i: int) -> list[str]:
                     errs.append(f"장면 {i}: panel.bars 항목은 {{label, from: 0, to: 0~1, color}}")
             if isinstance(pn.get("stats"), str):
                 errs.append(f"장면 {i}: panel.stats는 문자열 목록")
+    w = s.get("weather")
+    if w is not None:
+        from .voxel.renderer import WEATHER_TYPES
+        kind = w if isinstance(w, str) else (w.get("type", "rain") if isinstance(w, dict) else None)
+        if kind not in WEATHER_TYPES:
+            errs.append(f"장면 {i}: weather는 rain | snow 또는 {{type: rain, color: \"#hex\", density: 1.0, wind: [1, 0]}}")
+    al = s.get("alert")
+    if al is not None and (not isinstance(al, dict) or not al.get("text")):
+        errs.append(f"장면 {i}: alert는 {{title: 긴급재난문자, text: \"...\", from: 초}} 형식")
+    cr = s.get("credits")
+    if cr is not None and (not isinstance(cr, dict) or not isinstance(cr.get("cast"), list) or not cr["cast"]):
+        errs.append(f"장면 {i}: credits는 {{title: 제목, cast: [{{name: 이름, color: \"#hex\"}}]}} 형식")
     chs = s.get("chyron") or []
     for j, c in enumerate([chs] if isinstance(chs, dict) else chs, 1):
         if not isinstance(c, dict) or not c.get("text"):
@@ -1071,7 +1170,7 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
                 return ask_cli(system, u2, tools="Read", workdir=wd)[0]
         log("  · Claude Code + 내 Claude 구독 사용 (추가 비용 없음, 구독 사용량에서 차감)")
     cat = catalog()
-    system = system_prompt(cat)
+    system = system_prompt(cat, fmt if fmt in FORMATS else "auto")
     if fmt in FORMATS:
         lo, hi = FORMATS[fmt]["length"]
         user = (f"주제: {topic}\n대본 형식: format: {fmt} ({FORMATS[fmt]['label']})\n"
@@ -1085,6 +1184,13 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
         user += f"방향 힌트: {angle}\n"
     if tangents:
         user += f"삼천포 아이디어(참고용, 더 웃긴 게 떠오르면 바꿔도 됨): {tangents}\n"
+    cameos = load_cameos()
+    if cameos:
+        user += ("카메오 이름(조연 등장인물·엔딩 credits에 사용, 실존 인물 묘사가 아니라 이름만 빌림): "
+                 + ", ".join(cameos[:12]) + "\n")
+    if fmt != "broadcast":
+        user += ("결과 사다리라면 '오바 스토리텔링' 필수: 이름 붙은 등장인물 2~4명(복선 인물 1명) · 시간 점프 4단계 · "
+                 "공식 대응 패러디 3번 · 클리프행어 결말 + 카메오 크레딧.\n")
     user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · 1절→2절→3절(삼천포)→복귀로 웃기기 · "
              "keyframes(방송형 6~10장, 사다리 8~16장)로 시각화 가능.\n"
              "먼저 웹 검색으로 핵심 사실과 수치를 확인한 뒤, 지정한 형식의 YAML만 출력해.")
@@ -1198,6 +1304,16 @@ def write_image_prompts(spec: dict, out: Path) -> Path | None:
 
 
 # ------------------------------------------------------------------ 주제 목록 (topics.yaml)
+def load_cameos() -> list[str]:
+    """cameos.yaml의 이름 목록 (영상에 이름이 나오길 원한 팔로워·댓글러 — 본인 동의를 받은 이름만)"""
+    path = ROOT / "cameos.yaml"
+    if not path.exists():
+        return []
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    names = data.get("names") if isinstance(data, dict) else data
+    return [str(n).strip() for n in (names or []) if str(n).strip()]
+
+
 def load_topics() -> list[dict]:
     path = ROOT / "topics.yaml"
     if not path.exists():
