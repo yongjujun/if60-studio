@@ -1,0 +1,336 @@
+# 시네마틱 시뮬레이션 예시 — 서울 공원 한가운데 지름 1cm 블랙홀
+# 화면 글자는 전부 한국어: 왼쪽 위 미니멀 수치(readout) · 오른쪽 위 경과 시간 · 아래 명조 자막
+title: 서울 공원에 1cm 블랙홀이 생긴다면?
+format: cinematic
+genre: science
+style: voxel
+look: cinematic
+layout: {style: cinema, title: "서울 공원 한가운데\n1cm 블랙홀이 생긴다면?"}
+facts_to_check:
+  - "슈바르츠실트 반지름 r = 2GM/c², 지구를 압축하면 반지름 약 8.9mm — https://en.wikipedia.org/wiki/Schwarzschild_radius"
+  - "지름 1cm(반지름 5mm) → 질량 약 3.37×10^24 kg, 지구의 약 0.56배 (r·c²/2G 계산)"
+  - "50m 거리 중력가속도 GM/r² ≈ 9.0×10^10 m/s² ≈ 92억 g, 70kg 사람의 무게 약 6.4억 톤 (계산)"
+  - "50m에서 중심까지 자유낙하 시간 (π/2)·√(r³/2GM) ≈ 26µs (계산)"
+  - "50m 지점 시간 지연 √(1−r_s/r) ≈ 0.99995 — 거의 느려지지 않음 (계산)"
+  - "1km 2,300만 g · 10km 23만 g · 부산(약 325km) 217g · 도쿄(약 1,160km) 17g · 지구 반대편(약 12,700km) 0.14g (GM/r² 계산)"
+  - "중력의 변화는 빛의 속도로 전달 — 325km는 약 1.1ms, 1,160km는 약 3.9ms (거리÷광속)"
+  - "지구 표면이 중심까지 떨어지는 시간 대략 12분 (질량 1.56배 기준 자유낙하 근사, 실제 붕괴 과정은 더 복잡)"
+  - "합쳐진 질량 지구 1.56배의 블랙홀 반지름 약 13.9mm, 지름 약 2.8cm (계산)"
+keyframes:
+  - {id: 1, desc: "햇살 가득한 서울 도심 공원, 잔디밭 한가운데 떠 있는 검은 구슬", prompt: "cinematic low-poly city park, dense grass and flowers, round trees, glass skyscrapers, a tiny black sphere floating at the center of the lawn with a faint glowing ring, soft daylight, 9:16"}
+  - {id: 2, desc: "잔디밭에 누운 사람들이 중심으로 끌려감", prompt: "cinematic low-poly park lawn seen from above, people lying on the grass being pulled toward one tiny black point, grass bending inward, 9:16"}
+  - {id: 3, desc: "잔디 높이에서 본 중심점과 빛 고리", prompt: "ground-level cinematic shot through tall grass toward a tiny black hole with a glowing ring, skyscrapers behind, 9:16"}
+  - {id: 4, desc: "공원 위를 도는 항공 샷, 중심으로 모이는 사람들", prompt: "aerial orbit over a low-poly city park, everything converging to a black dot at the center, 9:16"}
+  - {id: 5, desc: "도시 아파트 단지가 한쪽으로 기울며 무너짐", prompt: "cinematic low-poly apartment complex collapsing toward a distant point, shockwave dome, 9:16"}
+  - {id: 6, desc: "먼 도시의 광장, 사람들이 땅에 짓눌림", prompt: "cinematic low-poly city plaza, people pressed flat to the ground by enormous gravity, 9:16"}
+  - {id: 7, desc: "우주에서 본 지구와 작은 검은 점", prompt: "cinematic view of Earth from space with a tiny black hole on its surface, crust starting to cave in, 9:16"}
+  - {id: 8, desc: "어둠 속 작은 블랙홀 하나만 남음", prompt: "tiny black hole floating alone in dark space with a thin glowing ring, minimal, 9:16"}
+scenes:
+  # ── 도입 ─────────────────────────────────────────────
+  - duration: 3.2
+    act: 도입
+    role: hook
+    image: 1
+    visual: 공원 잔디밭 한가운데 검은 구슬이 '툭' 나타나고 주변에 옅은 빛 고리
+    caption: 공원에 1cm 블랙홀이 생겼습니다.
+    narration: 공원에 일 센티 블랙홀이 생겼습니다.
+    world: {template: park, seed: 3}
+    time: "11:00"
+    shot: wide
+    crowds:
+      - {agent: person_lying, count: 70, area: lawn}
+      - {agent: person, count: 24, area: [-12, 30, 12, 36]}
+    props:
+      - {shape: sphere, r: 0.18, at: [0, 1.2, 20], color: "#000000", grow: {from: 0.3, to: 0.6, scale: [0, 1]}}
+    vfx:
+      - {type: orb, at: [0, 1.2, 20], from: 0.4, radius: [0.2, 0.7], color: "#ffcf8a", opacity: 0.35}
+    effects: [{flash: {at: 0.35, length: 0.3}}]
+    readout: {status: 블랙홀 발생, fade_in: true}
+  - duration: 4.4
+    act: 도입
+    image: 3
+    visual: 잔디 높이 카메라, 풀 사이로 보이는 작은 검은 구와 빛 고리
+    caption: 크기는 구슬만 한데, 무게는 지구의 절반이 넘습니다.
+    world: {template: park, seed: 3}
+    time: "11:00"
+    shot: low
+    crowds:
+      - {agent: person_lying, count: 70, area: lawn}
+    props:
+      - {shape: sphere, r: 0.18, at: [0, 1.2, 20], color: "#000000"}
+    vfx:
+      - {type: orb, at: [0, 1.2, 20], radius: 0.7, color: "#ffcf8a", opacity: 0.35}
+    readout:
+      status: 블랙홀 발생
+      label: 블랙홀의 질량
+      value: "지구의 0.56배"
+      note: 지름은 고작 1cm
+  - duration: 4.6
+    act: 도입
+    image: 3
+    visual: 같은 구를 천천히 돌며 비추는 근접 샷, 오른쪽 위 비교 수치
+    caption: 지구를 이만큼 누르면, 지름 1.8cm 블랙홀이 됩니다.
+    narration: 지구를 이만큼 누르면, 지름 일 점 팔 센티미터 블랙홀이 됩니다.
+    tangent: 1
+    gag: 의외의 비교
+    world: {template: park, seed: 3}
+    time: "11:00"
+    shot: center
+    props:
+      - {shape: sphere, r: 0.18, at: [0, 1.2, 20], color: "#000000"}
+    vfx:
+      - {type: orb, at: [0, 1.2, 20], radius: 0.7, color: "#ffcf8a", opacity: 0.35}
+    readout:
+      status: 블랙홀 발생
+      label: 지구를 블랙홀로 만들면
+      value: {from: 0, to: 1.8, format: "{:.1f}", unit: cm}
+      note: 탁구공보다 작습니다
+  # ── 전개 ─────────────────────────────────────────────
+  - duration: 5.2
+    act: 전개
+    image: 2
+    visual: 잔디밭에 누운 사람들이 일제히 중심 쪽으로 미끄러지기 시작
+    caption: 중심에서 50미터. 당기는 힘은 지구 중력의 92억 배.
+    narration: 중심에서 오십 미터. 당기는 힘은 지구 중력의 구십이억 배.
+    tangent: 1
+    world: {template: park, seed: 3}
+    time: "11:00"
+    shot: wide
+    crowds:
+      - {agent: person_lying, count: 90, area: lawn, attract: {to: [0, 20], speed: 1.2}}
+    props:
+      - {shape: sphere, r: 0.18, at: [0, 1.2, 20], color: "#000000"}
+    vfx:
+      - {type: orb, at: [0, 1.2, 20], radius: 0.8, color: "#ffcf8a", opacity: 0.4}
+    readout:
+      status: 모든 것이 끌려가는 중
+      label: 50m 지점의 당기는 힘
+      value: {from: 1, to: 9200000000, format: kr1, unit: g}
+      note: 몸무게가 약 6억 톤이 됩니다
+      right:
+        - {label: 경과, value: {from: 0, to: 2, format: "{:.1f}", unit: µs}}
+        - {label: 느린 화면, big: true, value: "200만 배", note: "영상 1초 = 실제 0.5µs"}
+  - duration: 5.0
+    act: 전개
+    image: 2
+    visual: 위에서 내려다보는 잔디밭, 사람·풀·꽃이 한 점으로 빨려 들어가 사라짐
+    caption: 잔디밭 위 모든 것이, 26마이크로초 만에 한 점으로 사라집니다.
+    narration: 잔디밭 위 모든 것이, 이십육 마이크로초 만에 한 점으로 사라집니다.
+    tangent: 1
+    world: {template: park, seed: 3}
+    time: "11:00"
+    shot: aerial
+    crowds:
+      - {agent: person_lying, count: 120, area: lawn, attract: {to: [0, 20], speed: 3.5}}
+    vfx:
+      - {type: orb, at: [0, 1.2, 20], radius: [0.8, 1.6], color: "#ffcf8a", opacity: 0.45}
+      - {type: embers, at: [0, 0.5, 20], radius: 6, height: 2, count: 160, color: "#ffd9a0", from: 0.5}
+    readout:
+      status: 모든 것이 끌려가는 중
+      label: 중심까지 떨어지는 시간
+      value: {from: 0, to: 26, format: "{:.0f}", unit: µs}
+      note: 비명 지를 틈도 없습니다
+      right:
+        - {label: 경과, value: {from: 2, to: 26, format: "{:.1f}", unit: µs}}
+        - {label: 느린 화면, big: true, value: "200만 배", note: "영상 1초 = 실제 0.5µs"}
+  - duration: 4.6
+    act: 전개
+    image: 4
+    visual: 공원 위를 도는 항공 샷, 텅 빈 잔디밭과 빛 고리
+    caption: 눈 한 번 깜빡이는 시간보다 약 4천 배 빠릅니다.
+    narration: 눈 한 번 깜빡이는 시간보다 약 사천 배 빠릅니다.
+    tangent: 1
+    gag: 숫자 개그
+    world: {template: park, seed: 3}
+    time: "11:00"
+    shot: aerial
+    vfx:
+      - {type: orb, at: [0, 1.2, 20], radius: 1.6, color: "#ffcf8a", opacity: 0.45}
+    readout:
+      status: 잔디밭 정리 완료
+      label: 눈 깜빡임 대비
+      value: "4천 배 빠름"
+      note: 눈 깜빡임 약 0.1초
+      right:
+        - {label: 경과, value: "26 µs"}
+  # ── 반전 ─────────────────────────────────────────────
+  - duration: 5.4
+    act: 반전
+    role: twist
+    image: 3
+    visual: 잔디 높이에서 본 고요한 공원, 바람만 살짝
+    caption: 그런데 영화와 달리, 50미터 밖 시간은 거의 느려지지 않습니다.
+    narration: 그런데 영화와 달리, 오십 미터 밖 시간은 거의 느려지지 않습니다.
+    tangent: 1
+    gag: 정색 반전
+    world: {template: park, seed: 3}
+    time: "11:00"
+    shot: eye
+    vfx:
+      - {type: orb, at: [0, 1.2, 20], radius: 1.6, color: "#ffcf8a", opacity: 0.45}
+    readout:
+      status: 시간은 그대로
+      label: 50m 지점 시간 흐름
+      value: "0.99995배"
+      note: 1년에 약 26분 늦어지는 정도
+      right:
+        - {label: 경과, value: "30 µs"}
+  - duration: 5.0
+    act: 반전
+    image: 5
+    visual: 아파트 단지 위로 충격파 돔이 퍼지며 건물이 한쪽으로 기움
+    caption: 진짜 문제는 거리입니다. 1km 밖도 중력이 2,300만 배.
+    narration: 진짜 문제는 거리입니다. 일 킬로미터 밖도 중력이 이천삼백만 배.
+    tangent: 2
+    world: {template: apartments, seed: 4}
+    time: "11:00"
+    shot: aerial
+    crowds:
+      - {agent: person, count: 60, area: lawn, attract: {to: [0, 60], speed: 2.0}}
+    vfx:
+      - {type: shockwave, at: [0, 0, 60], from: 0.2, to: 4.5, radius: [0, 60]}
+    readout:
+      status: 도시가 끌려가는 중
+      label: 1km 지점의 당기는 힘
+      value: {from: 1, to: 23000000, format: kr1, unit: g}
+      note: 빌딩이 2.3밀리초 만에 떨어집니다
+      right:
+        - {label: 경과, value: {from: 0.03, to: 2.3, format: "{:.2f}", unit: ms}}
+  - duration: 5.0
+    act: 반전
+    image: 5
+    visual: 아파트 단지를 아래에서 올려다봄, 건물들 너머로 번지는 빛
+    caption: 10km 밖에서도 23만 g. 서울이 통째로 한 점을 향해 무너집니다.
+    narration: 십 킬로미터 밖에서도 이십삼만 지. 서울이 통째로 한 점을 향해 무너집니다.
+    tangent: 2
+    world: {template: apartments, seed: 4}
+    time: "11:00"
+    shot: low
+    vfx:
+      - {type: shockwave, at: [0, 0, 60], radius: [40, 90], from: 0, to: 5}
+      - {type: embers, at: [0, 1, 40], radius: 20, height: 12, count: 220, color: "#ffd9a0"}
+    readout:
+      status: 서울 붕괴
+      label: 10km 지점의 당기는 힘
+      value: {from: 1, to: 230000, format: kr1, unit: g}
+      note: 몸무게 약 1만 6천 톤
+      right:
+        - {label: 경과, value: {from: 2.3, to: 30, format: "{:.0f}", unit: ms}}
+  - duration: 5.0
+    act: 반전
+    image: 6
+    visual: 다른 도시의 광장, 사람들이 땅에 납작 엎드림
+    caption: 부산은 1밀리초 뒤에야 압니다. 중력도 빛보다 빠를 순 없거든요.
+    narration: 부산은 일 밀리초 뒤에야 압니다. 중력도 빛보다 빠를 순 없거든요.
+    tangent: 2
+    gag: 한 박자 늦은 펀치
+    world: {template: plaza, seed: 5}
+    time: "11:00"
+    shot: forward
+    crowds:
+      - {agent: person_lying, count: 260, area: plaza}
+    readout:
+      status: 소식이 도착하는 중
+      label: 부산(약 325km)의 당기는 힘
+      value: {from: 1, to: 217, format: "{:.0f}", unit: g}
+      note: 몸무게 약 15톤
+      right:
+        - {label: 경과, value: {from: 1.0, to: 1.1, format: "{:.1f}", unit: ms}}
+  - duration: 4.6
+    act: 반전
+    image: 6
+    visual: 광장을 위에서 내려다봄, 납작해진 사람들
+    caption: 도쿄도 17g. 전투기 조종사도 정신을 잃는 힘입니다.
+    narration: 도쿄도 십칠 지. 전투기 조종사도 정신을 잃는 힘입니다.
+    tangent: 2
+    gag: 의외의 비교
+    world: {template: plaza, seed: 6}
+    time: "11:00"
+    shot: aerial
+    crowds:
+      - {agent: person_lying, count: 400, area: plaza}
+    readout:
+      status: 바다 건너까지
+      label: 도쿄(약 1,160km)의 당기는 힘
+      value: {from: 1, to: 17, format: "{:.0f}", unit: g}
+      note: 조종사 한계 약 9g
+      right:
+        - {label: 경과, value: {from: 1.1, to: 3.9, format: "{:.1f}", unit: ms}}
+  - duration: 4.8
+    act: 반전
+    image: 7
+    visual: 우주에서 본 지구, 한반도 자리에 작은 검은 점과 빛
+    caption: 지구 반대편 남미 앞바다에서도, 몸무게가 14% 늘어납니다.
+    narration: 지구 반대편 남미 앞바다에서도, 몸무게가 십사 퍼센트 늘어납니다.
+    tangent: 2
+    world: {template: studio, params: {color: "#05060b"}}
+    shot: {from: [-1.2, 1.3, -5.2], to: [-0.6, 1.3, -5.0], target: [0, 1.1, 0], fov: 42}
+    props:
+      - {shape: sphere, r: 0.9, at: [0, 1.1, 0], color: "#2f6fd0"}
+      - {shape: sphere, r: 0.35, at: [0.45, 1.55, -0.55], color: "#3f9a4a"}
+      - {shape: sphere, r: 0.3, at: [-0.5, 0.75, -0.55], color: "#3f9a4a"}
+      - {shape: sphere, r: 0.05, at: [0.3, 1.55, -0.86], color: "#000000"}
+    vfx:
+      - {type: orb, at: [0.3, 1.55, -0.86], radius: 0.12, color: "#ffcf8a", opacity: 0.6}
+    readout:
+      status: 지구 전체
+      label: 지구 반대편의 당기는 힘
+      value: {from: 0, to: 14, format: "+{:.0f}", unit: "%"}
+      note: 체중계가 놀랄 정도
+      right:
+        - {label: 경과, value: {from: 3.9, to: 43, format: "{:.0f}", unit: ms}}
+  # ── 결말 ─────────────────────────────────────────────
+  - duration: 4.6
+    act: 결말
+    image: 7
+    visual: 우주에서 본 지구, 검은 점 주변 빛이 커지며 화면이 흔들림
+    caption: 그리고 계산상 약 12분 뒤, 지구는 이 점으로 무너집니다.
+    narration: 그리고 계산상 약 십이 분 뒤, 지구는 이 점으로 무너집니다.
+    world: {template: studio, params: {color: "#05060b"}}
+    shot: {from: [-1.2, 1.3, -5.2], to: [-0.6, 1.3, -5.0], target: [0, 1.1, 0], fov: 42}
+    props:
+      - {shape: sphere, r: 0.9, at: [0, 1.1, 0], color: "#2f6fd0"}
+      - {shape: sphere, r: 0.35, at: [0.45, 1.55, -0.55], color: "#3f9a4a"}
+      - {shape: sphere, r: 0.05, at: [0.3, 1.55, -0.86], color: "#000000"}
+    vfx:
+      - {type: orb, at: [0.3, 1.55, -0.86], radius: [0.12, 0.45], color: "#ffcf8a", opacity: 0.6}
+    effects: [{shake: {at: 1.0, length: 3.0, amp: 3}}]
+    readout:
+      status: 지구 붕괴
+      label: 지구가 무너지는 데
+      value: "약 12분"
+      note: 자유낙하로 어림한 값
+      right:
+        - {label: 경과, value: {from: 0, to: 12, format: "{:.0f}", unit: 분}}
+  - duration: 4.6
+    act: 결말
+    role: payoff
+    image: 8
+    visual: 어둠 속 작은 검은 구 하나와 얇은 빛 고리만 남음
+    caption: 남는 건 지름 2.8cm짜리 구슬 하나. 우리 행성의 새 이름입니다.
+    narration: 남는 건 지름 이 점 팔 센티미터짜리 구슬 하나. 우리 행성의 새 이름입니다.
+    gag: 과잉 진지
+    world: {template: studio, params: {color: "#020205"}}
+    shot: front
+    props:
+      - {shape: sphere, r: 0.14, at: [0, 0.9, 0], color: "#000000"}
+    vfx:
+      - {type: orb, at: [0, 0.9, 0], radius: 0.24, color: "#ffcf8a", opacity: 0.5}
+    readout:
+      status: 끝
+      label: 남은 블랙홀
+      value: {from: 1.0, to: 2.8, format: "{:.1f}", unit: cm}
+      note: 무게는 지구의 1.56배
+    camera: {fade_out: 0.6}
+  - duration: 3.6
+    act: 결말
+    role: cliffhanger
+    image: 1
+    visual: 다시 처음의 햇살 가득한 공원, 아무 일도 없었던 듯
+    caption: 다음엔, 이게 1mm였다면 어떨까요?
+    narration: 다음엔, 이게 일 밀리미터였다면 어떨까요?
+    world: {template: park, seed: 3}
+    time: "11:00"
+    shot: wide
+    crowds:
+      - {agent: person_lying, count: 70, area: lawn}

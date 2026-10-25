@@ -728,10 +728,63 @@ def farm(rng, **_) -> Built:
     return Built(b, areas, shots, shadow_radius=40, sun_azimuth=35, texel=10.0)
 
 
+def park(rng, **_) -> Built:
+    """도심 공원 (시네마틱 기본 세트): 풀잎·들꽃이 촘촘한 잔디 + 둥근 나무 줄 + 창문 격자 고층 빌딩 스카이라인 + 구름.
+    가운데 (0, 0, 20)이 '사건 지점'. 카메라는 잔디 높이(low)·눈높이(eye)·넓게(wide)·하늘(aerial)."""
+    b = WorldBuilder()
+    b.box((-300, -0.1, -60), (300, 0.0, 400), "#5c9a40", "grass")
+    b.box((-1.2, 0.0, -60), (1.2, 0.01, 1.5), "#c8b896", "stone")            # 산책로
+    for k in range(44):                                                       # 둥근 나무 줄 (공원 가장자리)
+        a = k / 44 * math.pi * 2
+        r = rng.uniform(36, 46)
+        x, z = math.sin(a) * r, 20 + math.cos(a) * r * 0.9
+        if z < 2:
+            continue
+        b.stamp(models.tree_round(), (x, 0, z), rng.uniform(0, 6), c1=["#6aa84a", "#5b9a40", "#7bb556"][k % 3],
+                c2="#6b4a2e", scale=rng.uniform(1.1, 1.6))
+    for k in range(10):                                                       # 가로등
+        x = -20 + k * 4.5
+        b.box((x, 0, 52), (x + 0.12, 3.6, 52.12), "#3a3a42")
+        b.box((x - 0.2, 3.6, 51.9), (x + 0.32, 3.75, 52.2), "#fff4d6", "glow")
+    palette = ["#8f97a8", "#a8a4a0", "#b8b0a4", "#6f7c8c", "#9a8f86", "#c4bfb6", "#7f8aa0", "#a07060"]
+    xs = np.arange(-120, 125, 11.0)
+    for x in xs:                                                               # 창문 격자 고층 빌딩
+        for row, (z0, hmax) in enumerate(((95, 45), (120, 75), (150, 110))):
+            if rng.random() < 0.18:
+                continue
+            w = rng.uniform(7, 10.5)
+            d = rng.uniform(7, 12)
+            h = rng.uniform(16, hmax) * (1.2 if abs(x) < 35 and row > 0 else 1.0)
+            xx = x + rng.uniform(-2, 2)
+            zz = z0 + rng.uniform(-4, 4)
+            b.box((xx, 0, zz), (xx + w, h, zz + d), palette[int(rng.integers(len(palette)))], "facade")
+            if rng.random() < 0.3:
+                b.box((xx + w * 0.3, h, zz + d * 0.3), (xx + w * 0.7, h + rng.uniform(4, 14), zz + d * 0.7),
+                      palette[int(rng.integers(len(palette)))], "facade")
+    for k in range(9):                                                         # 구름
+        b.stamp(models.cloud(), (rng.uniform(-120, 120), rng.uniform(70, 110), rng.uniform(120, 260)),
+                rng.uniform(0, 6), c1="#ffffff", c2="#eef2f6", scale=rng.uniform(14, 26))
+    crowds = [
+        {"agent": "grass", "count": 26000, "area": [-14, 1.5, 14, 34], "scale": [0.8, 1.4], "avoid_camera": False},
+        {"agent": "grass", "count": 9000, "area": [-34, 34, 34, 60], "scale": [1.0, 1.8], "avoid_camera": False},
+        {"agent": "flower", "count": 1500, "area": [-14, 1.5, 14, 40], "scale": [0.9, 1.4], "avoid_camera": False},
+    ]
+    shots = {
+        "low": {"from": [0, 1.0, -2.0], "to": [0, 1.0, 1.5], "target": [0, 7, 80], "fov": 58},
+        "eye": {"from": [-1.5, 1.6, -2.0], "to": [-0.5, 1.6, 1.0], "target": [0, 1.4, 20], "fov": 55},
+        "wide": {"from": [0, 11, -8], "to": [0, 10, -5], "target": [0, 0, 22], "fov": 55},
+        "aerial": {"type": "orbit", "center": [0, 0, 20], "radius": 26, "height": 30, "from_deg": 160,
+                   "to_deg": 200, "look_height": 0, "fov": 55},
+        "center": {"from": [0, 2.2, 8], "to": [0, 1.8, 11], "target": [0, 0.3, 20], "fov": 50},
+    }
+    areas = {"lawn": [-12, 6, 12, 34], "center": [-4, 16, 4, 24], "near": [-8, 2, 8, 14], "path": [-1, -40, 1, 4]}
+    return Built(b, areas, shots, crowds=crowds, shadow_radius=40, sun_azimuth=30, texel=10.0)
+
+
 TEMPLATES = {"plaza": plaza, "boulevard": boulevard, "crossroad": crossroad, "river_bridge": river_bridge,
              "apartments": apartments, "room": room, "field": field, "planet": planet,
              "studio": studio, "tabletop": tabletop, "office": office, "elevator": elevator, "shop": shop,
-             "shopfront": shopfront, "clinic": clinic, "pool": pool, "farm": farm}
+             "shopfront": shopfront, "clinic": clinic, "pool": pool, "farm": farm, "park": park}
 
 
 def build_template(world: dict, rng) -> Built:

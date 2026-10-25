@@ -139,6 +139,16 @@ def grade_smooth(img: np.ndarray) -> np.ndarray:
     return (f * 255).astype(np.uint8)
 
 
+def grade_cinematic(img: np.ndarray) -> np.ndarray:
+    """시네마틱 룩: 살짝 들어 올린 그림자 + 부드러운 대비 + 약한 비네트 (다큐·애니메이션 영화 같은 공기감)"""
+    f = img.astype(np.float32) / 255.0
+    f = 0.035 + f * 0.95
+    g = f.mean(-1, keepdims=True)
+    f = g + (f - g) * 1.04
+    f *= _vignette(img.shape[0], img.shape[1], 0.22)
+    return (np.clip(f, 0, 1) * 255).astype(np.uint8)
+
+
 def darken(img: np.ndarray, k: float = 0.4, blur: bool = False) -> np.ndarray:
     im = Image.fromarray(img)
     if blur:
@@ -174,6 +184,7 @@ class Layout:
     """상단 띠(채널·시리즈·두 줄 제목)와 하단 경고 줄무늬. 영상 전체에 고정되어 '방송' 느낌을 만든다."""
 
     def __init__(self, cfg: dict | bool, title: str, font_path: str, size: tuple[int, int]):
+        cfg_raw = cfg
         cfg = cfg if isinstance(cfg, dict) else {}
         self.w, self.h = size
         self.u = self.w / 1080
@@ -249,6 +260,7 @@ class SimpleLayout:
     채널명은 왼쪽 위에 아주 작게. (결과 사다리 형식의 기본 틀)"""
 
     def __init__(self, cfg: dict | str, title: str, font_path: str, size: tuple[int, int]):
+        cfg_raw = cfg
         cfg = cfg if isinstance(cfg, dict) else {}
         self.w, self.h = size
         self.u = self.w / 1080
@@ -257,6 +269,10 @@ class SimpleLayout:
         if isinstance(cfg.get("title"), list):
             self.title = "\n".join(map(str, cfg["title"]))
         self.seconds = float(cfg.get("title_seconds", 4.0))
+        self.cinema = bool(cfg.get("cinema")) or cfg.get("style") == "cinema" or cfg_raw == "cinema"
+        if self.cinema:
+            from .text import find_serif
+            self.serif = find_serif()
         self.channel = str(cfg.get("channel", CHANNEL))
         self.accent = hexrgb(cfg.get("accent", "#ffd23f"))
         self._title_img = self._make_title()
@@ -287,6 +303,15 @@ class SimpleLayout:
         if not lines:
             return None
         u = self.u
+        if self.cinema:                                          # 명조 흰 글씨, 외곽선 없음 (그림자는 붙일 때)
+            f = fit(self.serif, max(lines, key=len), 80 * u, self.w * 0.84)
+            lh = int(f.size * 1.35)
+            im = Image.new("RGBA", (self.w, lh * len(lines) + int(40 * u)), (0, 0, 0, 0))
+            d = ImageDraw.Draw(im)
+            for i, line in enumerate(lines):
+                tw = f.getlength(line)
+                d.text(((self.w - tw) / 2, i * lh + 10 * u), line, font=f, fill=(255, 255, 255, 255))
+            return np.asarray(im)
         f = fit(self.font_path, max(lines, key=len), 92 * u, self.w * 0.86)
         lh = int(f.size * 1.28)
         im = Image.new("RGBA", (self.w, lh * len(lines) + int(40 * u)), (0, 0, 0, 0))
@@ -313,8 +338,15 @@ class SimpleLayout:
         paste_rgba(img, self._mark, int(28 * self.u), int(28 * self.u), opacity=0.75)
         if first and self._title_img is not None and t < self.seconds:
             k = min(1.0, t / 0.25) * min(1.0, (self.seconds - t) / 0.35)
-            y = int(self.h * 0.3 - self._title_img.shape[0] / 2)
-            paste_rgba(img, self._title_img, 0, y, opacity=k)
+            y = int(self.h * (0.42 if self.cinema else 0.3) - self._title_img.shape[0] / 2)
+            if self.cinema:
+                full = Image.new("RGBA", (self.w, self.h), (0, 0, 0, 0))
+                ti = Image.fromarray(self._title_img)
+                ti.putalpha(Image.fromarray((np.asarray(ti.getchannel("A")) * k).astype(np.uint8)))
+                full.paste(ti, (0, y), ti)
+                _soft_shadow_paste(img, full, self.u, strength=0.6 * k)
+            else:
+                paste_rgba(img, self._title_img, 0, y, opacity=k)
         return img
 
 
@@ -322,9 +354,126 @@ def make_layout(cfg, title: str, font_path: str, size: tuple[int, int]):
     """layout 설정 → 방송형(Layout) 또는 심플(SimpleLayout). layout: simple / {style: simple}"""
     if not cfg:
         return None
-    if cfg == "simple" or (isinstance(cfg, dict) and cfg.get("style") == "simple"):
+    if cfg in ("simple", "cinema") or (isinstance(cfg, dict) and cfg.get("style") in ("simple", "cinema")):
         return SimpleLayout(cfg, title, font_path, size)
     return Layout(cfg, title, font_path, size)
+
+
+# ------------------------------------------------------------------ 시네마틱: 미니멀 HUD · 명조 자막
+def _spaced(d: ImageDraw.ImageDraw, xy, text: str, f, fill, spacing: float, anchor_right: bool = False) -> float:
+    """자간을 넓힌 글자 (얇은 라벨용). 그린 폭을 돌려준다"""
+    widths = [f.getlength(c) for c in text]
+    total = sum(widths) + spacing * max(0, len(text) - 1)
+    x, y = xy
+    if anchor_right:
+        x -= total
+    for c, w in zip(text, widths):
+        d.text((x, y), c, font=f, fill=fill)
+        x += w + spacing
+    return total
+
+
+def _soft_shadow_paste(img: np.ndarray, layer: Image.Image, u: float, strength: float = 0.55) -> None:
+    """글자 레이어를 은은한 그림자와 함께 얹는다 (외곽선 없이 깨끗한 영화 자막 느낌)"""
+    arr = np.asarray(layer)
+    a = layer.getchannel("A")
+    small = a.resize((max(1, a.width // 3), max(1, a.height // 3)), Image.Resampling.BILINEAR)
+    sh = np.asarray(small.filter(ImageFilter.GaussianBlur(max(1.0, 5 * u))).resize(a.size, Image.Resampling.BILINEAR),
+                    np.float32) / 255.0
+    dark = img.astype(np.float32) * (1 - np.clip(sh * strength, 0, 0.75))[..., None]
+    img[:] = dark.astype(np.uint8)
+    paste_rgba(img, arr, 0, 0)
+
+
+def draw_readout(img: np.ndarray, ro: dict, t: float, duration: float, serif: str, light: str, u: float,
+                 top: float = 0.165) -> None:
+    """미니멀 데이터 표시 (시네마틱): 왼쪽 위 — ● 상태 / 작은 라벨 / 큰 명조 숫자+단위 / 설명,
+    오른쪽 위 — 경과 시간 · 시간 감속 배율 같은 보조 수치. 상자 없이 글자만, 은은한 그림자."""
+    H, W = img.shape[:2]
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    white, dim = (255, 255, 255, 255), (232, 236, 242, 235)
+    x0, y = 64 * u, H * top
+    small = font(light, int(27 * u))
+    sp = 2.5 * u
+    if ro.get("status"):
+        dot = hexrgb(ro.get("dot", "#f2a13a"))
+        r = 7 * u
+        pulse = 0.6 + 0.4 * abs(math.sin(t * 2.2))
+        d.ellipse([x0, y + 9 * u, x0 + 2 * r, y + 9 * u + 2 * r], fill=(*dot, int(255 * pulse)))
+        _spaced(d, (x0 + 2 * r + 14 * u, y), safe_text(str(ro["status"])), small, white, sp)
+        y += 56 * u
+    if ro.get("label"):
+        _spaced(d, (x0, y), safe_text(str(ro["label"])), small, dim, sp)
+        y += 44 * u
+    if ro.get("value") is not None:
+        num, unit = counter_value(ro["value"], t, duration)
+        sample = counter_value(ro["value"], duration, duration)[0] if isinstance(ro["value"], dict) else num
+        f = fit(serif, sample + (" " + unit if unit else ""), 118 * u, W * 0.5)  # 최종값 기준 → 크기가 안 흔들림
+        d.text((x0, y), num, font=f, fill=white)
+        if unit:
+            fu = font(serif, int(f.size * 0.62))
+            d.text((x0 + f.getlength(num) + 16 * u, y + f.size * 0.3), safe_text(unit), font=fu, fill=white)
+        y += f.size * 1.3
+    if ro.get("note"):
+        _spaced(d, (x0, y), safe_text(str(ro["note"])), font(light, int(24 * u)), dim, sp * 0.8)
+    xr, yr = W - 60 * u, H * top
+    for item in ro.get("right") or []:
+        if not isinstance(item, dict):
+            continue
+        val = item.get("value")
+        txt, unit = counter_value(val, t, duration) if isinstance(val, dict) else (safe_text(str(val or "")), "")
+        txt = f"{txt} {safe_text(unit)}".strip()
+        if item.get("big"):
+            if item.get("label"):
+                _spaced(d, (xr, yr), safe_text(str(item["label"])), small, dim, sp, anchor_right=True)
+                yr += 44 * u
+            fb = fit(serif, txt, 76 * u, W * 0.36)
+            d.text((xr - fb.getlength(txt), yr), txt, font=fb, fill=white)
+            yr += fb.size * 1.2
+            if item.get("note"):
+                fn = font(light, int(23 * u))
+                nt = safe_text(str(item["note"]))
+                d.text((xr - fn.getlength(nt), yr), nt, font=fn, fill=dim)
+                yr += 40 * u
+        else:
+            fv = font(serif, int(32 * u))
+            vw = fv.getlength(txt)
+            d.text((xr - vw, yr - 4 * u), txt, font=fv, fill=white)
+            if item.get("label"):
+                _spaced(d, (xr - vw - 18 * u, yr), safe_text(str(item["label"])), small, dim, sp, anchor_right=True)
+            yr += 64 * u
+    k = ease_out(t / 0.35) if ro.get("fade_in") else 1.0
+    if k < 1:
+        layer.putalpha(Image.fromarray((np.asarray(layer.getchannel("A")) * k).astype(np.uint8)))
+    _soft_shadow_paste(img, layer, u)
+
+
+def cinema_lines(text: str, f, max_w: float) -> list[str]:
+    return _wrap(safe_text(text), f, max_w)[:3]
+
+
+def draw_cinema_caption(img: np.ndarray, text: str, serif: str, u: float, alpha: float = 1.0,
+                        y_frac: float = 0.865) -> None:
+    """영화 자막: 명조 글꼴, 살짝 기울임, 외곽선 없이 은은한 그림자. 화면 아래 가운데 1~2줄"""
+    if not text or alpha <= 0:
+        return
+    H, W = img.shape[:2]
+    f = font(serif, int(50 * u))
+    lines = cinema_lines(text, f, W * 0.8)
+    lh = f.size * 1.32
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    y = H * y_frac - lh * len(lines) / 2
+    for line in lines:
+        tw = f.getlength(line)
+        d.text(((W - tw) / 2, y), line, font=f, fill=(255, 255, 255, int(255 * alpha)))
+        y += lh
+    shear = 0.12                                               # 이탤릭 느낌 (한글 명조엔 기울임체가 없어 살짝 기울임)
+    cy = H * y_frac
+    layer = layer.transform(layer.size, Image.Transform.AFFINE, (1, shear, -shear * cy, 0, 1, 0),
+                            resample=Image.Resampling.BICUBIC)
+    _soft_shadow_paste(img, layer, u, strength=0.6)
 
 
 # ------------------------------------------------------------------ 숫자 카운터
@@ -342,6 +491,17 @@ def kr_number(v: float) -> str:
         parts.append(f"{v:,.0f}" if not parts else f"{int(v):,}")
     s = " ".join(parts[:2])
     return ("-" if neg else "") + s
+
+
+def kr_short(v: float) -> str:
+    """9,170,000,000 → '92억', 23,000,000 → '2,300만' (큰 단위 하나, 유효숫자 2~3자리)"""
+    neg, v = v < 0, abs(v)
+    for unit, name in ((1e16, "경"), (1e12, "조"), (1e8, "억"), (1e4, "만")):
+        if v >= unit:
+            q = v / unit
+            s = f"{q:,.1f}".rstrip("0").rstrip(".") if q < 10 else f"{round(q):,}"
+            return ("-" if neg else "") + s + name
+    return ("-" if neg else "") + (f"{v:,.1f}".rstrip("0").rstrip(".") if v < 10 else f"{v:,.0f}")
 
 
 def counter_value(spec, t: float, duration: float) -> tuple[str, str]:
@@ -368,6 +528,8 @@ def counter_value(spec, t: float, duration: float) -> tuple[str, str]:
     fmt = spec.get("format", "{:,.0f}")
     if fmt == "kr":
         return kr_number(v), unit
+    if fmt == "kr1":
+        return kr_short(v), unit
     try:
         return safe_text(fmt.format(v)), unit
     except (ValueError, IndexError, KeyError):

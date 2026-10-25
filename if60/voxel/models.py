@@ -450,6 +450,45 @@ def person_umbrella() -> Model:
     return m
 
 
+def lying(src: Model, name: str) -> Model:
+    """서 있는 모델을 등을 대고 누운 자세로 (얼굴이 하늘, 머리는 -z 쪽). 강한 중력·쓰러짐 연출용"""
+    m = Model(name, src.palette1, src.palette2)
+    d = src.data.copy()
+    zmin = float(d[:, 2].min())
+    x, y, z = d[:, 0].copy(), d[:, 1].copy(), d[:, 2].copy()
+    d[:, 0], d[:, 1], d[:, 2] = x, z - zmin, -y                    # (x, y, z) → (x, z, -y) 회전
+    nx, ny, nz = d[:, 3].copy(), d[:, 4].copy(), d[:, 5].copy()
+    d[:, 3], d[:, 4], d[:, 5] = nx, nz, -ny
+    m._parts = [d]
+    return m
+
+
+def grass() -> Model:
+    """풀잎 한 포기 (높이 0.3m) — 공원 잔디를 수만 개 깔 때"""
+    m = Model("grass", ["#4f8f3a", "#5fa044", "#3f7d32", "#6aa84a", "#7bb556"], ["#3a6e2c"])
+    m.part((-0.012, 0.0, -0.012), (0.012, 0.3, 0.012), 1)
+    m.part((0.02, 0.0, 0.0), (0.04, 0.22, 0.02), 2)
+    return m
+
+
+def flower() -> Model:
+    """들꽃 (높이 0.28m) — color = 꽃 색"""
+    m = Model("flower", ["#ffffff", "#f6e27a", "#c9a0e8", "#f2a6c0", "#ffd6a0"], ["#4f8f3a"])
+    m.part((-0.008, 0.0, -0.008), (0.008, 0.24, 0.008), 2)
+    m.part((-0.035, 0.22, -0.035), (0.035, 0.28, 0.035), 1)
+    return m
+
+
+def tree_round() -> Model:
+    """동그란 가로수 (높이 약 5m) — 공원·시네마틱 장면용"""
+    m = Model("tree_round", ["#6aa84a", "#5b9a40", "#7bb556", "#4f8f3a"], ["#6b4a2e"])
+    m.cylinder((0, 0, 0), 0.16, 2.4, 2)
+    m.sphere((0, 3.3, 0), [1.55, 1.35, 1.55], 1)
+    m.sphere((0.6, 2.9, 0.3), 0.9, 1)
+    m.sphere((-0.5, 3.0, -0.4), 0.85, 1)
+    return m
+
+
 EXPRESSIONS = ("neutral", "surprised", "happy", "sad", "smug")
 
 
@@ -524,7 +563,8 @@ MODELS = {"person": person, "cat": cat, "dog": dog, "car": car, "train": train_c
           "molecule_n2": molecule_n2, "molecule_o2": molecule_o2, "molecule_co2": molecule_co2,
           "molecule_h2o": molecule_h2o, "bottle": bottle, "cup": cup, "phone": phone, "book": book,
           "parcel": parcel, "rocket": rocket, "coin": coin, "lightbulb": lightbulb, "flame": flame,
-          "cloud": cloud, "ball": ball, "germ": germ, "table": table, "spark": spark, "bolt": bolt, "pig": pig, "chicken": chicken,
+          "cloud": cloud, "ball": ball, "germ": germ, "table": table, "spark": spark, "bolt": bolt, "pig": pig, "chicken": chicken, "grass": grass, "flower": flower, "tree_round": tree_round,
+          "person_lying": lambda: lying(person(), "person_lying"),
           "raindrop": raindrop, "snowflake": snowflake, "foam": foam, "umbrella": umbrella,
           "person_umbrella": person_umbrella,
           **{f"bust{'' if e == 'neutral' else '_' + e}": (lambda e=e: bust(e)) for e in EXPRESSIONS},
@@ -544,6 +584,8 @@ DESCRIPTIONS = {
     "germ": "세균·바이러스 확대 모형 (0.3m)", "table": "식탁 (윗면 높이 0.9m)",
     "spark": "불티·빛 입자 (8cm, 빛남 — 보통 vfx embers로 씀)", "bolt": "번개 줄기 (10m, 빛남)",
     "pig": "돼지 (몸길이 1.1m)", "chicken": "닭 (0.45m)",
+    "person_lying": "바닥에 누운·쓰러진 사람 (강한 중력·기절·낮잠)", "tree_round": "동그란 가로수 (5m)",
+    "grass": "풀잎 (보통 park 템플릿이 자동으로 깜)", "flower": "들꽃 (color = 꽃 색)",
     "person_umbrella": "우산 쓴 사람 (군중용, color = 우산 색, color2 = 옷 색)", "umbrella": "펼친 우산 소품 (높이 2m)",
     "foam": "거품·튀는 액체 덩어리 (보통 vfx geyser로 씀)", "raindrop": "빗줄기 (보통 weather로 씀)", "snowflake": "눈송이 (보통 weather로 씀)",
     "bust": "얼굴 클로즈업용 상반신 (큰 머리, 높이 1.2m, 정색 무표정) — yaw: 180이면 카메라를 봄. color=옷, color2=머리",

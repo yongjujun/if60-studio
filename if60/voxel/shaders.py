@@ -143,6 +143,7 @@ uniform float u_bob;
 uniform float u_bob_freq;
 uniform float u_spin;
 uniform float u_gscale;         // 자라나기(grow) 배율 — 0이면 안 보임
+uniform vec3 u_sink;            // 끌려가기: (x, z, 켜짐) — 그 지점을 지나간 개체는 사라짐(빨려 들어감)
 in vec3 in_pos;
 in vec3 in_norm;
 in vec3 in_col;
@@ -171,6 +172,11 @@ void main() {
     if (u_wrap_size.z > 0.0) base.z = u_wrap_min.z + mod(base.z - u_wrap_min.z, u_wrap_size.z);
     if (u_wrap_size.y > 0.0) base.y = u_wrap_min.y + mod(base.y - u_wrap_min.y, u_wrap_size.y);
     base.y += u_bob * abs(sin(u_time * u_bob_freq + i_phase));
+    if (u_sink.z > 0.5) {
+        vec2 rel = base.xz - u_sink.xy;
+        if (dot(rel, i_vel.xz) > 0.0) p = vec3(0.0);             // 중심을 지나치면 사라짐
+        else p *= clamp(length(rel) / 1.5, 0.15, 1.0);           // 중심 가까이에서 작아짐
+    }
     vec3 w = base + p;
     v_world = w;
     v_norm = n;

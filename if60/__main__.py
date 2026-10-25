@@ -45,7 +45,7 @@ def main(argv: list[str] | None = None) -> int:
     mk = sub.add_parser("make", help="주제만 입력하면 조사 → 대본 → 렌더링까지 한 번에")
     mk.add_argument("topic", nargs="?", help="주제 또는 목록 번호(3, 1-3, 1,4, 전체) — 비우면 목록과 입력창이 뜸")
     mk.add_argument("--length", type=int, default=None, help="목표 길이(초). 기본: 방송형 90 · 결과 사다리 110")
-    mk.add_argument("--format", default="auto", choices=["auto", "broadcast", "ladder"],
+    mk.add_argument("--format", default="auto", choices=["auto", "broadcast", "ladder", "cinematic"],
                     help="대본 형식: auto(주제 보고 선택) | broadcast(방송형) | ladder(결과 사다리 — 상상 하나를 생활 곳곳에)")
     mk.add_argument("--preview", action="store_true", help="저화질 미리보기로만 빠르게")
     mk.add_argument("--no-open", action="store_true", help="완성 후 영상을 자동으로 열지 않기")
@@ -67,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
     pl.add_argument("topic")
     pl.add_argument("-o", "--out", required=True)
     pl.add_argument("--length", type=int, default=None)
-    pl.add_argument("--format", default="auto", choices=["auto", "broadcast", "ladder"])
+    pl.add_argument("--format", default="auto", choices=["auto", "broadcast", "ladder", "cinematic"])
 
     sub.add_parser("styles", help="스타일 프리셋 목록")
     sub.add_parser("topics", help="저장된 주제 목록 (topics.yaml) — make 번호로 바로 제작")
