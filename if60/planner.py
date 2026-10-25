@@ -114,9 +114,6 @@ TEMPLATE_NOTES = {
                  "위쪽 간판 띠 at [0, 2.8, -0.07] (폭 5.6m). 인도 area: sidewalk / queue",
     "clinic": "병원·피부과 대기실: 접수대 + 대기 의자 줄(area: seats, 앉은 높이 자동). 접수대 뒤 벽 간판 at [0, 1.6, 3.88] (폭 3.4m)",
     "pool": "워터파크·수영장: 물 area: water(사람이 물에 잠김), 데크 area: deck, 선베드 area: loungers. 현수막 at [0, 1.4, 13.9] (폭 11m)",
-    "park": "★시네마틱 도시 공원(look: cinematic에 어울림): 촘촘한 잔디·꽃밭 + 둥근 나무 + 창문 격자 빌딩 스카이라인 + 구름. "
-            "잔디밭 중심은 (0, 0, 20). area: lawn(잔디밭 전체), center(중심 8m), near(카메라 쪽), path(산책로). "
-            "누운 사람 agent: person_lying + attract: {to: [0, 20], speed} 로 한 점에 끌려가게. shots: low(풀숲 높이), eye, wide(내려다봄), aerial(회전), center",
     "farm": "농장: 울타리 우리 area: pen (pig·chicken), 마당 area: yard, 빨간 헛간. 헛간 간판 at [0, 3.2, 10.85] (폭 3m)",
 }
 
@@ -134,13 +131,11 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
     ex0 = ROOT / "scenes" / "juvenile_law_abolished.yaml"
     ex1 = ROOT / "scenes" / "lightning_power.yaml"
     ex2 = ROOT / "scenes" / "nitrogen_snack.yaml"
-    exC = ROOT / "scenes" / "blackhole_park.yaml"
     examples = (("예시 0 — 결과 사다리(format: ladder) + 오바 스토리텔링 — 등장인물·시간 점프·공식 대응·클리프행어·크레딧", exL),
          ("예시 1 — 사회 풍자(satire) + 4단 구성 + keyframes 9장 (사회·제도 주제, 찬반 균형)", ex0),
          ("예시 2 — 방송형 연출 (콜드 오픈·대시보드·VFX·마무리 카드)", ex1),
-         ("예시 3 — 사물을 화면에 직접 만들어 보여주기", ex2),
-         ("예시 4 — 시네마틱 시뮬레이션(format: cinematic) — 한국어 미니멀 수치(readout)·명조 자막·한 공간에서 연속으로", exC))
-    pick = {"ladder": (0,), "broadcast": (1, 2, 3), "cinematic": (4,), "auto": (0, 1)}.get(fmt, (0, 1))   # 프롬프트 길이(사용량) 절약
+         ("예시 3 — 사물을 화면에 직접 만들어 보여주기", ex2))
+    pick = {"ladder": (0,), "broadcast": (1, 2, 3), "auto": (0, 1)}.get(fmt, (0, 1))   # 프롬프트 길이(사용량) 절약
     example_txt = "\n".join(f"### {label}\n```yaml\n{p.read_text(encoding='utf-8')}```"
                              for k, (label, p) in enumerate(examples) if k in pick and p.exists())
     return f"""너는 쇼츠 채널 '만물제작소'(유튜브 'IF 60')의 작가 겸 연출가다. 주제는 무엇이든 올 수 있다(사물, 음식, 몸, 동물, 우주, 사회, 제도, 상상).
@@ -159,28 +154,7 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 ## 대본 형식 — 먼저 최상위 format: 을 정한다 (사용자가 지정하면 그대로)
 - format: broadcast (방송형) — 설명·계산·풍자형. 상단 두 줄 제목 틀 + 대시보드 + 콜드 오픈/되감기. 60~120초, 장면 4~6초. (아래 '콘텐츠 공식')
 - format: ladder (결과 사다리) — "만약에 ~라면?" 상상 하나를 생활 곳곳에 차례로 터뜨린다. 90~135초, 장면 2.5~4초. (아래 '결과 사다리')
-- format: cinematic (시네마틱 시뮬레이션) — 극단적인 물리 상황 하나를 한 공간에서 슬로모션으로 지켜본다. 60~110초, 장면 4~6초. (아래 '시네마틱')
-  일상과 맞닿은 황당한 가정(모기·잠·날씨·몸·돈·동물…)이면 ladder, 숫자 계산·제도 해설이 중심이면 broadcast,
-  물리·우주·재난 시뮬레이션(블랙홀·중력·속도·온도·충돌)이면 cinematic.
-
-## ★시네마틱 시뮬레이션 (format: cinematic) — 한국 시청자용, 화면 글자는 전부 한국어
-영화 같은 매끈한 3D(look: cinematic) 속에서 한 가지 극단적인 물리 상황이 시간·거리에 따라 커지는 과정을 담담하게 보여준다.
-- 최상위: format: cinematic, look: cinematic, layout: {{style: cinema, title: "서울 공원에 … 생긴다면?"}} (첫 장면 4초 동안 가운데 명조 제목)
-- 자막은 자동으로 명조 영화 자막(화면 아래 1~2줄)이 된다. caption은 짧은 문장 2개 이내, 담담한 다큐 내레이션 말투.
-- ★readout (장면 대부분에 필수) — 상자 없는 미니멀 수치 표시. 왼쪽 위 + 오른쪽 위. 모든 글자는 한국어 (단위 기호 m·km·g·µs·℃만 예외):
-    readout: {{status: "모든 것이 끌려가는 중"(지금 상태, 12자 이내, 앞에 주황 점), dot: "#f2a13a",
-              label: "50m 지점의 당기는 힘", value: {{from: 1, to: 9200000000, format: kr1, unit: g, at: 초, length: 초}},
-              note: "몸무게가 약 6억 톤이 됩니다"(값을 생활 감각으로 번역, 20자 이내),
-              right: [{{label: 경과, value: {{from: 0, to: 26, format: "{{:.1f}}", unit: µs}}}},
-                      {{label: 느린 화면, big: true, value: "200만 배", note: "영상 1초 = 실제 0.5µs"}}]}}
-    format: kr1은 '92억'·'2,300만'처럼 한국식 큰 단위 하나로 짧게. "{{:,.0f}}" 등 파이썬 형식도 가능.
-    장면이 바뀔 때마다 label/value가 다음 단계로 커진다(거리·시간·규모의 사다리): 50m → 1km → 부산 → 도쿄 → 지구 반대편.
-    오른쪽 '경과'는 이전 장면의 끝값에서 이어서 시작해 시간이 실제로 흐르는 느낌을 준다.
-- 화면: 같은 world(예: park)를 여러 샷(low·eye·wide·aerial·center)으로 이어 찍는다. 장소가 바뀌면 다른 템플릿으로 넘어가되 look은 그대로.
-  끌려가는 장면은 crowds에 attract: {{to: [x, z], speed: m/s}} (중심 쪽으로 이동하다 중심에서 사라짐), 누운 사람은 agent: person_lying.
-  vfx orb(검은 구 color "#000000" + 주변 빛 고리 orb)·shockwave·embers 로 사건의 중심을 보여준다.
-- 이야기: 실제 물리 계산 그대로(과장 금지). 숫자는 웹 검색·공식으로 확인하고 facts_to_check에 근거를 적는다.
-  유머는 아주 가볍게 — 수치를 생활 감각으로 번역하는 한마디(note·caption) 정도. 등장인물 이름 금지, cast 불필요.
+  일상과 맞닿은 황당한 가정(모기·잠·날씨·몸·돈·동물…)이면 ladder, 숫자 계산·제도 해설이 중심이면 broadcast.
 
 ## ★결과 사다리 (format: ladder) — 상상 하나, 생활 영역 10곳 이상
 "모기가 피 대신 지방을 빨아 간다면?"처럼 규칙 하나만 바꾸고, 그 결과가 생활의 각 영역에서 실제로 어떻게 번질지 짧은 컷으로 이어 붙인다.
@@ -375,11 +349,10 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 
 ## 출력 형식
 설명 없이 ```yaml 코드블록 하나만 출력한다. 문자열에 콜론(:)이 있으면 큰따옴표로 감싼다. 최상위 키:
-title, format: broadcast|ladder|cinematic, genre: satire|science|absurd, style: voxel,
+title, format: broadcast|ladder, genre: satire|science|absurd, style: voxel,
 cast: [{{role: "한 직장인", color: "#hex"}}, …] (ladder 필수, 2~4명, 사람 이름 금지),
-layout: broadcast면 {{title: ["첫 줄(흰색)", "둘째 줄(노란색)"], series: "시리즈명 N편"(선택)}}, ladder면 {{style: simple, title: "만약에 …?"}}, cinematic이면 {{style: cinema, title: "…?"}},
-look: voxel (기본, 픽셀 복셀) 또는 smooth (매끈한 질감 — 우주·과학 실험처럼 깔끔한 느낌이 어울릴 때) 또는 cinematic (영화 같은 색감 — format: cinematic 필수),
-화면에 보이는 글자(caption·title·readout·간판·big_text·labels)는 모두 한국어. 영어 단어 금지(단위 기호 m·km·g·µs·℃·kg 정도만 허용),
+layout: broadcast면 {{title: ["첫 줄(흰색)", "둘째 줄(노란색)"], series: "시리즈명 N편"(선택)}}, ladder면 {{style: simple, title: "만약에 …?"}},
+look: voxel (기본, 픽셀 복셀) 또는 smooth (매끈한 질감 — 우주·과학 실험처럼 깔끔한 느낌이 어울릴 때),
 facts_to_check: ["사실 한 줄 — 출처 URL", ...],
 keyframes: [{{id, desc, prompt}}, ...] (6~10개),
 scenes: [...]
@@ -652,19 +625,12 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
             except (TypeError, ValueError):
                 errs.append(f"장면 {i} 군중 {j}: count가 숫자가 아님")
     lay = spec.get("layout")
-    if lay is not None and not isinstance(lay, (dict, bool)) and lay not in ("simple", "cinema"):
-        errs.append("layout은 {title: [첫 줄, 둘째 줄], series: 시리즈명} 또는 {style: simple|cinema, title: 질문} 형식")
+    if lay is not None and not isinstance(lay, (dict, bool)) and lay != "simple":
+        errs.append("layout은 {title: [첫 줄, 둘째 줄], series: 시리즈명} 또는 {style: simple, title: 질문} 형식")
     if spec.get("format", "broadcast") not in FORMATS:
-        errs.append(f"format '{spec.get('format')}' 없음 ({' | '.join(FORMATS)})")
-    if spec.get("look", "voxel") not in LOOKS:
-        errs.append(f"look '{spec.get('look')}' 지원 안 함 ({' | '.join(LOOKS)})")
-    for i, s in enumerate(spec.get("scenes") or [], 1):
-        ro = s.get("readout") if isinstance(s, dict) else None
-        if ro is not None:
-            if not isinstance(ro, dict):
-                errs.append(f"장면 {i}: readout은 {{status, label, value, note, right: [...]}} 형식")
-            elif not isinstance(ro.get("right", []) or [], list):
-                errs.append(f"장면 {i}: readout.right는 [{{label, value}}, …] 목록")
+        errs.append(f"format '{spec.get('format')}' 없음 (broadcast | ladder)")
+    if spec.get("look", "voxel") not in ("voxel", "smooth"):
+        errs.append(f"look '{spec.get('look')}' 지원 안 함 (voxel 또는 smooth)")
     if target_len and not (target_len * 0.75 <= total <= target_len * 1.3):
         errs.append(f"전체 길이 {total:.0f}초 — 목표 {target_len:.0f}초에 맞춰 장면 길이를 조정")
     return errs
@@ -684,10 +650,8 @@ LENGTH_RANGE = (60.0, 120.0)   # 영상 전체 길이(초)
 KEYFRAME_RANGE = (6, 10)       # AI 이미지로 만들 때 필요한 그림 수
 GENRES = {"satire": "사회 풍자 — 통쾌하게", "science": "과학 — 흥미롭게", "absurd": "황당한 가정 — 진지하게"}
 # 대본 형식: broadcast(방송형 — 설명·계산·풍자) | ladder(결과 사다리 — 상상 하나를 생활 곳곳에 터뜨리기)
-LOOKS = ("voxel", "smooth", "cinematic")
 FORMATS = {
     "broadcast": {"label": "방송형", "length": (60.0, 120.0), "keyframes": (6, 10), "target": 90},
-    "cinematic": {"label": "시네마틱 시뮬레이션", "length": (60.0, 110.0), "keyframes": (6, 12), "target": 80},
     "ladder": {"label": "결과 사다리", "length": (90.0, 135.0), "keyframes": (8, 16), "target": 110},
 }
 LADDER_MIN_SCENES = 20       # 3초 안팎 컷이 이어져야 사다리 리듬이 나온다
@@ -913,84 +877,6 @@ def structure_issues(spec: dict, scenes: list, total: float) -> list[str]:
             issues.append(f"어느 장면도 쓰지 않는 keyframe: {', '.join(unused)}")
     if spec.get("format") == "ladder":
         issues += ladder_issues(spec, scenes, total)
-    if spec.get("format") == "cinematic":
-        issues += cinematic_issues(spec, scenes)
-    issues += korean_screen_issues(spec)
-    return issues
-
-
-CINE_MIN_SCENES = 12        # 4~6초 장면이 이어져야 60초 이상
-CINE_READOUT_SHARE = 0.6    # 대사 장면 중 readout이 있는 비율
-CINE_MIN_STEPS = 4          # readout label이 바뀌는 단계 수 (거리·시간·규모의 사다리)
-UNIT_OK = {"m", "km", "cm", "mm", "g", "kg", "s", "ms", "µs", "ns", "ps", "fs", "℃", "K", "km/h", "m/s", "%", "×"}
-LATIN_WORD = re.compile(r"[A-Za-z]{3,}")
-
-
-def screen_texts(spec: dict) -> list[str]:
-    """화면에 실제로 보이는 글자 모음 (자막·제목·수치 표시·간판·큰 글자·라벨·자막띠·알림·카드)"""
-    out = []
-    lay = spec.get("layout")
-    if isinstance(lay, dict):
-        t = lay.get("title")
-        out += [str(x) for x in (t if isinstance(t, list) else [t]) if x]
-        if lay.get("series"):
-            out.append(str(lay["series"]))
-    for s in spec.get("scenes") or []:
-        if not isinstance(s, dict):
-            continue
-        out += [str(s.get(k)) for k in ("caption", "title") if s.get(k)]
-        out += [str(c) for c in s.get("captions") or []]
-        ro = s.get("readout")
-        if isinstance(ro, dict):
-            out += [str(ro.get(k)) for k in ("status", "label", "note") if ro.get(k)]
-            for r in ro.get("right") or []:
-                if isinstance(r, dict):
-                    out += [str(r.get(k)) for k in ("label", "note") if r.get(k)]
-                    if isinstance(r.get("value"), str):
-                        out.append(r["value"])
-        for pr in s.get("props") or []:
-            if isinstance(pr, dict) and pr.get("shape") == "sign":
-                out += [str(pr.get(k)) for k in ("title", "text") if pr.get(k)]
-        for key in ("big_text", "labels", "chyron", "markers"):
-            v = s.get(key) or []
-            for it in [v] if isinstance(v, dict) else v:
-                if isinstance(it, dict):
-                    out += [str(it.get(k)) for k in ("text", "tag") if it.get(k)]
-        if isinstance(s.get("alert"), dict):
-            out += [str(s["alert"].get(k)) for k in ("title", "text", "sender") if s["alert"].get(k)]
-    return out
-
-
-def korean_screen_issues(spec: dict) -> list[str]:
-    """한국 시장용: 화면 글자에 영어 단어가 섞이면 알려준다 (단위 기호는 허용)"""
-    bad = []
-    for t in screen_texts(spec):
-        bad += [w for w in LATIN_WORD.findall(t) if w not in UNIT_OK and w.upper() not in ("CCTV", "SNS", "AI", "TV")]
-    if bad:
-        uniq = ", ".join(dict.fromkeys(bad))
-        return [f"화면 글자에 영어({uniq}) — 한국 시청자용이라 화면에 보이는 글자는 모두 한국어로 (단위 기호 m·g·µs 등만 허용)"]
-    return []
-
-
-def cinematic_issues(spec: dict, scenes: list) -> list[str]:
-    """시네마틱 시뮬레이션 검사: 영화 색감 · 명조 틀 · 미니멀 수치(readout)가 단계별로 커짐"""
-    issues = []
-    if spec.get("look") != "cinematic":
-        issues.append("시네마틱은 최상위 look: cinematic")
-    lay = spec.get("layout")
-    if not (lay == "cinema" or (isinstance(lay, dict) and lay.get("style") == "cinema")):
-        issues.append("시네마틱은 layout: {style: cinema, title: \"…?\"} (첫 장면 가운데 명조 제목)")
-    if len(scenes) < CINE_MIN_SCENES:
-        issues.append(f"장면이 {len(scenes)}개 — 시네마틱은 4~6초 장면 {CINE_MIN_SCENES}개 이상")
-    talk = [s for s in scenes if not isinstance(s.get("card"), dict) and not isinstance(s.get("credits"), dict)]
-    ro = [s["readout"] for s in talk if isinstance(s.get("readout"), dict)]
-    if talk and len(ro) < len(talk) * CINE_READOUT_SHARE:
-        issues.append(f"readout(미니멀 수치)이 {len(ro)}/{len(talk)}장면 — 장면 대부분에 상태·수치·경과 시간을 띄울 것")
-    steps = {str(r.get("label") or r.get("status") or "").strip() for r in ro} - {""}
-    if ro and len(steps) < CINE_MIN_STEPS:
-        issues.append(f"readout 단계가 {len(steps)}개 — 거리·시간·규모가 커지는 단계 {CINE_MIN_STEPS}개 이상 (label을 바꿔 가며)")
-    if ro and not any(r.get("right") for r in ro):
-        issues.append("readout.right(오른쪽 위 경과 시간·느린 화면 배율)가 한 번도 없음")
     return issues
 
 
@@ -1290,22 +1176,18 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
         user = (f"주제: {topic}\n대본 형식: format: {fmt} ({FORMATS[fmt]['label']})\n"
                 f"목표 길이: 약 {length or FORMATS[fmt]['target']}초 ({lo:.0f}~{hi:.0f}초 안)\n")
     else:
-        user = (f"주제: {topic}\n대본 형식: 주제에 맞게 broadcast(방송형)·ladder(결과 사다리)·cinematic(시네마틱 시뮬레이션) 중 골라 format: 에 적을 것\n"
-                f"목표 길이: broadcast면 약 {length or 90}초, ladder면 약 {length or 110}초, cinematic이면 약 {length or 80}초\n")
+        user = (f"주제: {topic}\n대본 형식: 주제에 맞게 broadcast(방송형) 또는 ladder(결과 사다리) 중 골라 format: 에 적을 것\n"
+                f"목표 길이: broadcast면 약 {length or 90}초, ladder면 약 {length or 110}초\n")
     if genre in GENRES:
         user += f"장르: {genre} ({GENRES[genre]})\n"
     if angle:
         user += f"방향 힌트: {angle}\n"
     if tangents:
         user += f"전개 아이디어(참고용, 더 현실적인 게 떠오르면 바꿔도 됨): {tangents}\n"
-    if fmt == "cinematic":
-        user += ("시네마틱이라면: look: cinematic · layout {style: cinema} · 장면 대부분에 한국어 readout(상태·수치·생활 감각 한 줄·경과 시간) · "
-                 "같은 공간을 여러 샷으로 · 실제 물리 계산 그대로.\n")
-    elif fmt != "broadcast":
+    if fmt != "broadcast":
         user += ("결과 사다리라면 '현실적인 가짜 다큐' 필수: 이름 없이 역할로 부르는 등장인물 2~4명 · 시간 흐름 4단계 · "
                  "사회의 공식 대응 2번 · 실제 사실 2~3개.\n")
-    user += ("화면에 보이는 글자는 모두 한국어(영어 단어 금지, 단위 기호만 허용) · "
-             "조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · 1단계(직접 결과)→2단계(현실적인 파급), 삼천포 금지 · "
+    user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · 1단계(직접 결과)→2단계(현실적인 파급), 삼천포 금지 · "
              "유머는 장면 3개 중 1개 정도로 가볍게 · 사람 이름 금지 · "
              "keyframes(방송형 6~10장, 사다리 8~16장)로 시각화 가능.\n"
              "먼저 웹 검색으로 핵심 사실과 수치를 확인한 뒤, 지정한 형식의 YAML만 출력해.")

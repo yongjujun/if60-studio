@@ -26,38 +26,6 @@ FONT_CANDIDATES = [
 ]
 
 
-SERIF_CANDIDATES = [
-    *sorted(str(p) for p in (ROOT / "fonts").glob("*[Ss]erif*.[ot]t[fc]")),
-    *sorted(str(p) for p in (ROOT / "fonts").glob("*[Mm]yeongjo*.[ot]t[fc]")),
-    "/Library/Fonts/NanumMyeongjo.ttf",
-    "/System/Library/Fonts/Supplemental/AppleMyungjo.ttf",
-    "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
-    "/usr/share/fonts/opentype/noto/NotoSerifCJK-Medium.ttc",
-    "C:/Windows/Fonts/batang.ttc",
-]
-LIGHT_CANDIDATES = [
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "/System/Library/Fonts/AppleSDGothicNeo.ttc",
-    "C:/Windows/Fonts/malgun.ttf",
-]
-
-
-def find_serif() -> str:
-    """명조(세리프) 한글 글꼴 — 시네마틱 자막·큰 숫자용. 없으면 일반 글꼴"""
-    for p in SERIF_CANDIDATES:
-        if p and os.path.exists(p):
-            return p
-    return find_font()
-
-
-def find_light() -> str:
-    """가는 고딕 — 시네마틱 HUD의 작은 라벨용"""
-    for p in LIGHT_CANDIDATES:
-        if os.path.exists(p):
-            return p
-    return find_font()
-
-
 def find_font(explicit: str | None = None) -> str:
     for p in ([explicit] if explicit else []) + FONT_CANDIDATES:
         if p and os.path.exists(p):

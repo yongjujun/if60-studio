@@ -5,5 +5,5 @@ cd /d "%~dp0"
 call .venv\Scripts\activate.bat || (echo 먼저 README의 설치를 해주세요 & pause & exit /b 1)
 git pull --quiet 2>nul
 pip install -q -r requirements.txt 2>nul
-python -m if60 make --format cinematic
+python -m if60 make
 pause

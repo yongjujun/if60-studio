@@ -42,7 +42,6 @@ class Crowd:
     wrap_size: tuple = (0.0, 0.0, 0.0)
     spin: float = 0.0
     grow: object = None                    # {from, to, scale: [0, 1], until} — 시간에 따라 커지기/나타나기
-    sink: tuple = (0.0, 0.0, 0.0)          # 끌려가기 중심 (x, z, 켜짐)
     mdl: object = None                     # 이름 대신 직접 만든 모델 (자라나는 소품)
 
 
@@ -119,17 +118,7 @@ def make_crowd(spec: dict, areas: dict, rng: np.random.Generator, avoid: np.ndar
         spread = float(spec.get("speed_jitter", 0.15))
         k = 1 + rng.normal(0, spread, n)
         vel[:, 0], vel[:, 1], vel[:, 2] = vx * k, vy * k, vz * k
-    sink = (0.0, 0.0, 0.0)
-    if "attract" in spec:    # 한 점으로 끌려감: {to: [x, z], speed: m/s} — 중심에 닿으면 사라짐
-        at = spec["attract"] if isinstance(spec["attract"], dict) else {"to": spec["attract"]}
-        tx, tz = (list(at.get("to", [0, 0])) + [0, 0])[:2]
-        dx, dz = float(tx) - xs, float(tz) - zs
-        dist = np.sqrt(dx * dx + dz * dz) + 1e-6
-        spd = float(at.get("speed", 3.0)) * (1 + rng.normal(0, 0.1, n))
-        vel[:, 0], vel[:, 2] = dx / dist * spd, dz / dist * spd
-        sink = (float(tx), float(tz), 1.0)
-        spec = {**spec, "wrap": False}
-    facing = spec.get("facing", "velocity" if ("velocity" in spec or "attract" in spec) else "random")
+    facing = spec.get("facing", "velocity" if "velocity" in spec else "random")
     if facing == "random":
         yaw = rng.uniform(0, 2 * math.pi, n)
     elif facing == "velocity":
@@ -173,7 +162,7 @@ def make_crowd(spec: dict, areas: dict, rng: np.random.Generator, avoid: np.ndar
              yhi - ylo if (wrap and y_range and abs(v[:, 1]).max() > 0) else 0,
              z1 - z0 if (wrap and abs(v[:, 2]).max() > 0) else 0)
     return Crowd(name, inst, bob=float(spec.get("bob", 0.0)), bob_freq=float(spec.get("bob_freq", 6.0)),
-                 wrap_min=(x0, ylo, z0), wrap_size=wsize, spin=float(spec.get("spin", 0.0)), grow=grow, sink=sink)
+                 wrap_min=(x0, ylo, z0), wrap_size=wsize, spin=float(spec.get("spin", 0.0)), grow=grow)
 
 
 def prop_model(pr: dict, rng):
@@ -452,7 +441,7 @@ class VoxelRenderer:
                 vfx=None, look: str | None = None, weather=None) -> Prepared:
         from . import geometry
         old_detail = geometry.DETAIL
-        geometry.DETAIL = 2.5 if look in ("smooth", "cinematic") else 1.0
+        geometry.DETAIL = 2.5 if look == "smooth" else 1.0
         try:
             return self._prepare(world, crowds, seed, shot, props, vfx, look, weather)
         finally:
@@ -477,7 +466,7 @@ class VoxelRenderer:
             world_vbo=vbo, shots=built.shots, shadow_radius=built.shadow_radius,
             sky=world.get("sky", built.sky), sun_azimuth=built.sun_azimuth,
             lighting_override=built.lighting, texel=built.texel,
-            vfx=[v for v in (vfx or []) if v.get("type") not in ("embers", "geyser")], smooth=look in ("smooth", "cinematic"),
+            vfx=[v for v in (vfx or []) if v.get("type") not in ("embers", "geyser")], smooth=look == "smooth",
             overcast=float((weather or {}).get("overcast", 1.0)) if isinstance(weather, dict) else (1.0 if weather else 0.0))
         cam = shot if isinstance(shot, dict) else built.shots.get(shot or next(iter(built.shots)))
         avoid = None
@@ -636,7 +625,6 @@ class VoxelRenderer:
         """군중 uniform 설정. 크기 배율이 0(아직 안 나타남)이면 False → 그리지 않음"""
         g = grow_factor(cr.grow, t)
         self._set(prog, u_time=t, u_bob=cr.bob, u_bob_freq=cr.bob_freq, u_spin=cr.spin, u_gscale=g,
-                  u_sink=np.asarray(cr.sink, np.float32),
                   u_wrap_min=np.asarray(cr.wrap_min, np.float32), u_wrap_size=np.asarray(cr.wrap_size, np.float32))
         return g > 1e-4
 

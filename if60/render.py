@@ -9,8 +9,6 @@
 """
 from __future__ import annotations
 
-import re
-
 import math
 import tempfile
 from dataclasses import dataclass, field
@@ -162,9 +160,7 @@ class Scene:
     weather: object = None                       # rain | snow | {type, color, density, wind, puddles}
     alert: dict | None = None                    # 휴대폰 재난문자 팝업 {title, text, from, to}
     credits: dict | None = None                  # 엔딩 크레딧 {title, heading: 카메오 출연, cast: [{name, color, color2}]}
-    look: str = "voxel"                          # voxel | smooth | cinematic
-    readout: dict | None = None                  # 시네마틱 미니멀 수치 {status, label, value, note, right: [...]}
-    caption_style: str = "pixel"                 # pixel(도트 자막) | cinema(명조 영화 자막)
+    look: str = "voxel"                          # voxel | smooth
     # --- 내레이션 (TTS)
     narration: str | None = None                 # 읽을 문장 (없으면 caption). 숫자·기호를 읽는 그대로 쓸 때
     audio_start: float | None = None             # 이 장면 안에서 목소리가 시작하는 시각
@@ -207,8 +203,6 @@ def caption_at(scene: "Scene", t: float) -> str:
     """현재 시각에 보여줄 자막. chunk 모드는 글자 수에 비례해 덩어리를 순서대로 보여준다."""
     if scene.captions:
         chunks = scene.captions
-    elif scene.caption_style == "cinema" and scene.caption:    # 영화 자막: 문장 단위로 1~2줄
-        chunks = [c.strip() for c in re.split(r"(?<=[.?!])\s+", scene.caption) if c.strip()]
     elif scene.caption_mode == "chunk" and scene.caption and not scene.typewriter:
         chunks = text.chunk_caption(scene.caption)
     else:
@@ -354,18 +348,8 @@ def load_project(path: str, style_override: str | None = None,
             chyron=_as_list(s.get("chyron")), beat=float(s.get("beat", 0) or 0),
             weather=s.get("weather"), alert=s.get("alert"), credits=s.get("credits"),
             look=str(s.get("look", spec.get("look", "voxel"))),
-            readout=s.get("readout"), caption_style=caption_style_of(spec, s),
-            bloom=float(s.get("bloom", spec.get("bloom", {"smooth": 0.7, "cinematic": 0.25}.get(spec.get("look"), 0.45))))))
+            bloom=float(s.get("bloom", spec.get("bloom", 0.7 if spec.get("look") == "smooth" else 0.45)))))
     return spec, style, scenes
-
-
-def caption_style_of(spec: dict, s: dict | None = None) -> str:
-    """시네마틱 화면이면 자막도 기본으로 명조 영화 자막"""
-    s = s or {}
-    st = s.get("caption_style", spec.get("caption_style"))
-    if st:
-        return str(st)
-    return "cinema" if s.get("look", spec.get("look")) == "cinematic" else "pixel"
 
 
 def _as_list(v) -> list:
@@ -390,7 +374,7 @@ def _text_layer(scene: Scene, t: float, style: Style, font: str, layout: bool = 
             out[m] = layer[m]
 
     cap_text = caption_at(scene, t) if (scene.caption or scene.captions) and not scene.card and not scene.credits else ""
-    if cap_text and scene.caption_style != "cinema":
+    if cap_text:
         vis = None
         if scene.typewriter or scene.caption_mode == "typewriter":
             vis = int(len(cap_text) * min(1.0, t / max(0.6, scene.duration * 0.45))) + 1
@@ -420,7 +404,6 @@ class Composer:
         self._first = None
         self.prev: np.ndarray | None = None
         self._card_bg: dict = {}
-        self.serif, self.light = text.find_serif(), text.find_light()
 
     def viewport(self) -> tuple[int, int]:
         return self.layout.viewport if self.layout else (0, self.h)
@@ -472,13 +455,6 @@ class Composer:
             if prep is not None:
                 big = overlay.darken(big, 0.45)
             overlay.draw_card(big, sc.card, t, sc.duration, self.font, self.u, (top, bottom))
-        if sc.readout:
-            overlay.draw_readout(big, sc.readout, t, sc.duration, self.serif, self.light, self.u,
-                                 top=float(sc.readout.get("top", 0.165)))
-        if sc.caption_style == "cinema" and (sc.caption or sc.captions) and not sc.card and not sc.credits:
-            cap = caption_at(sc, t)
-            alpha = min(1.0, t / 0.18, max(0.0, sc.duration - t) / 0.12)
-            overlay.draw_cinema_caption(big, cap, self.serif, self.u, alpha)
         tl = _text_layer(sc, t, self.style, self.font, layout=self.broadcast)
         if tl is not None:
             th, tw = tl.shape[:2]
@@ -527,11 +503,6 @@ def scale_times(sc: Scene, k: float) -> None:
     for g in [p.get("grow") for p in sc.props] + [c.get("grow") for c in sc.crowds]:
         if isinstance(g, dict):
             mul(g, ("from", "to", "until"))
-    if isinstance(sc.readout, dict):
-        vals = [sc.readout.get("value")] + [r.get("value") for r in sc.readout.get("right") or [] if isinstance(r, dict)]
-        for v in vals:
-            if isinstance(v, dict):
-                mul(v, ("at", "length"))
     if isinstance(sc.panel, dict):
         if isinstance(sc.panel.get("value"), dict):
             mul(sc.panel["value"], ("at", "length"))
@@ -732,8 +703,6 @@ def render_3d_frame(vr, prep, cam: dict, sc: Scene, t: float, font: str | None =
     out = overlay.bloom(out, sc.bloom)
     if sc.look == "smooth":
         out = overlay.grade_smooth(out)
-    elif sc.look == "cinematic":
-        out = overlay.grade_cinematic(out)
     if sc.labels:
         out = draw_labels(out, vr, sc.labels, t, font)
     if level < 1.0:
