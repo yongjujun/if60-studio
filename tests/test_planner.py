@@ -271,10 +271,9 @@ def _retention_spec(hook="만 10세, 지우개 절도. 판결은…", twist_at=4
     for s, act, img in zip(scenes, acts, images):
         s["act"], s["image"] = act, img
     scenes[twist_at - 1]["role"] = "twist"
-    for s, tang in zip(scenes[4:7], (1, 2, 3)):                 # 전개~반전: 1절 → 2절 → 3절(삼천포)
+    for s, tang in zip(scenes[4:7], (1, 2, 2)):                 # 전개~반전: 1단계(직접 결과) → 2단계(현실적인 파급)
         s["tangent"] = tang
-    scenes[7]["role"] = "snapback"
-    for s, gag in zip(scenes[:7], ("과잉 진지", "숫자 개그", "", "", "정색 반전", "숫자 개그", "삼천포")):
+    for s, gag in zip(scenes[:7], ("과잉 진지", "", "", "", "정색 반전", "", "")):     # 유머는 가볍게 (장면 1/3 정도)
         if gag:
             s["gag"] = gag
     scenes.append(_scene("상대는… 젤리 도둑.", role="payoff", act="결말", image=6, gag="콜백"))
@@ -381,28 +380,44 @@ def test_plan_sends_genre_and_angle(monkeypatch):
     t = planner.pick_topics("4")[0]
     planner.plan(t["title"], 60, interactive=False, review_pass=False, log=lambda *a: None,
                  genre=t["genre"], angle=t["angle"], punchup=False, tangents=t["tangents"])
-    assert len(sent) == 1 and "과학 — 흥미롭게" in sent[0] and "방향 힌트" in sent[0] and "삼천포 아이디어" in sent[0]
+    assert len(sent) == 1 and "과학 — 흥미롭게" in sent[0] and "방향 힌트" in sent[0] and "전개 아이디어" in sent[0] and "사람 이름 금지" in sent[0]
 
 
-# ------------------------------------------------------------------ 웃음 설계 (1절 → 2절 → 3절 삼천포 → 복귀)
-def test_humor_flags_missing_tangent_snapback_and_gags():
+# ------------------------------------------------------------------ 웃음 설계 (현실적인 연쇄 + 가벼운 유머, 이름 금지)
+def test_humor_flags_missing_steps_and_gags():
     spec = _retention_spec()
     for s in spec["scenes"]:
         s.pop("gag", None)
-        if s.get("tangent") == 3:
+        if s.get("tangent") == 2:
             s.pop("tangent")
-        if s.get("role") == "snapback":
-            s.pop("role")
     issues = " / ".join(planner.retention_issues(spec))
-    assert "3절" in issues and "snapback" in issues and "웃음 장치" in issues
+    assert "2단계" in issues and "웃음 장치" in issues
 
 
-def test_humor_flags_unknown_gag_and_wrong_order():
+def test_humor_rejects_tangent_3_and_wrong_order():
     spec = _retention_spec()
-    spec["scenes"][4]["tangent"], spec["scenes"][6]["tangent"] = 3, 1
+    spec["scenes"][4]["tangent"], spec["scenes"][6]["tangent"] = 2, 1
     spec["scenes"][0]["gag"] = "슬랩스틱"
     issues = " / ".join(planner.retention_issues(spec))
     assert "순서" in issues and "슬랩스틱" in issues
+    spec = _retention_spec()
+    spec["scenes"][6]["tangent"] = 3
+    spec["scenes"][5]["gag"] = "삼천포"
+    issues = " / ".join(planner.retention_issues(spec))
+    assert "삼천포" in issues and "tangent는 1" in issues
+
+
+def test_no_person_names():
+    spec = _retention_spec()
+    assert planner.name_issues(spec) == []
+    spec["scenes"][2]["caption"] = "그 시각, 하준 씨는 혼자 알람시계를 샀습니다."
+    spec["scenes"][3]["caption"] = "김 대리는 오늘도 야근입니다."
+    spec["cast"] = [{"name": "순자", "role": "시장 상인"}]
+    msg = " ".join(planner.name_issues(spec))
+    assert "하준 씨" in msg and "김 대리" in msg and "순자" in msg
+    ok = _retention_spec()
+    ok["scenes"][2]["caption"] = "한 직장인은 아저씨에게 길을 물었고, 편의점 알바생은 웃었습니다."
+    assert planner.name_issues(ok) == []
 
 
 def test_punchup_applies_safe_lines_only():

@@ -1,21 +1,21 @@
 # 만약에 잠을 저축할 수 있다면? (약 1분 50초) — 결과 사다리(format: ladder) 예시
-# 상상 하나를 생활 영역 곳곳에 차례로 터뜨린다: 침실 → 출근길 → 회사 → 은행 → 병원 → 부동산 → 카페 → 편의점 → 놀이시설
-#   → (3절 삼천포) 상속·세무서·농장 → 복귀 → 반전 → 콜백 → 질문 카드
+# 가정 하나만 비현실, 그 뒤는 현실적으로: 침실 → 출근길 → 회사 → 은행 → 병원 → 부동산 → 카페 → 편의점 → 놀이시설
+#   → 제도(인증제·시험장 안내문) → 반전(실제 연구) → 콜백 → 다음 편 예고 → 질문 카드. 사람 이름 없이 역할로만, 유머는 가볍게.
 # 웃음의 절반은 3D 속 글자(sign): 은행 간판, 매물 카드, 시술 안내, 가격표, 현수막. 얼굴 클로즈업은 bust(표정).
 #
 # facts_to_check
 #   - 성인(18~60세) 권장 수면 하루 7시간 이상 — CDC https://www.cdc.gov/sleep/about/index.html
 #   - 8시간 × 연 3.5% = 16.8분 (계산, 상상 속 '수면 적금')
 #   - 3년 × 365일 × 8시간 = 8,760시간 (계산)
+#   - 주말에 몰아 자도 평일 수면 부족의 영향이 다 회복되지 않음 (2019 연구) — NIH https://www.nih.gov/news-events/nih-research-matters/weekend-catch-cant-counter-chronic-sleep-deprivation
 #   - 나머지는 전부 상상(가상 상황)
 title: 만약에 잠을 저축할 수 있다면?
 format: ladder
 genre: absurd
 style: voxel
 cast:
-  - {name: 김 대리, role: "주말에 몰아 자는 직장인", color: "#f4f4f4"}
-  - {name: 말순 할머니, role: "잠 부자 할머니", color: "#8a5a8a"}
-  - {name: 하준 씨, role: "편의점 알바 — 혼자 알람시계를 사 모음", color: "#f2c94c", foreshadow: true}
+  - {role: 한 직장인, color: "#f4f4f4"}
+  - {role: 편의점 알바생, color: "#f2c94c"}
 layout:
   style: simple
   title: 만약에 잠을 통장처럼 저축할 수 있다면?
@@ -23,6 +23,7 @@ facts_to_check:
   - "성인 권장 수면 하루 7시간 이상 — https://www.cdc.gov/sleep/about/index.html"
   - "8시간 × 3.5% ≈ 17분 (계산)"
   - "3년 × 365일 × 8시간 = 8,760시간 (계산)"
+  - "주말 몰아 자기로는 수면 부족이 다 회복되지 않음 — https://www.nih.gov/news-events/nih-research-matters/weekend-catch-cant-counter-chronic-sleep-deprivation"
 keyframes:
   - {id: 1, desc: "주말 침대에 이불을 뒤집어쓴 직장인, 벽 화면에 수면 잔고", prompt: "cozy bedroom at night, office worker buried under blanket on a bed, wall screen glowing, voxel art, vertical 9:16, no text"}
   - {id: 2, desc: "정색한 직장인 얼굴 클로즈업", prompt: "close-up of a blocky voxel office worker face with a deadpan expression, plain warm background, vertical 9:16, no text"}
@@ -34,9 +35,9 @@ keyframes:
   - {id: 8, desc: "텅 빈 카페 계산대", prompt: "empty cafe counter with a menu board, no customers, voxel art, vertical 9:16, no text"}
   - {id: 9, desc: "편의점 계산대 가격표", prompt: "convenience store counter with colorful shelves, voxel art, vertical 9:16, no text"}
   - {id: 10, desc: "워터파크 선베드에서 단체로 자는 사람들", prompt: "water park deck with many people sleeping on loungers, banner in background, voxel art, vertical 9:16, no text"}
-  - {id: 11, desc: "할머니와 손주, 탁자 위 유언장", prompt: "grandmother and grandchild in a cozy room with a will document on a stand, voxel art, vertical 9:16, no text"}
-  - {id: 12, desc: "세무서 앞 길게 늘어선 줄", prompt: "long queue of people on a sidewalk in front of a government office, voxel art, vertical 9:16, no text"}
-  - {id: 13, desc: "농장 우리에서 자는 돼지들", prompt: "farm pen with pigs sleeping in front of a red barn, voxel art, vertical 9:16, no text"}
+  - {id: 11, desc: "시험장 복도 게시판의 안내문", prompt: "school exam hallway with a notice board, calm morning light, voxel art, vertical 9:16, no text"}
+  - {id: 12, desc: "주민센터 앞 인증 줄", prompt: "queue of people on a sidewalk in front of a community service center, voxel art, vertical 9:16, no text"}
+  - {id: 13, desc: "밤의 아파트 단지", prompt: "apartment complex at night seen from above, most windows dark, voxel art, vertical 9:16, no text"}
 
 scenes:
   # ── 도입 ─────────────────────────────
@@ -47,7 +48,7 @@ scenes:
     domain: 침실
     visual: 이불을 뒤집어쓴 직장인이 누운 침대, 벽 화면에 '수면 잔고 +30시간'이 빛남
     caption: 잠을 통장처럼 모을 수 있다면?
-    who: [김 대리]
+    who: [한 직장인]
     world: {template: room, seed: 1}
     time: "23:00"
     shot: {from: [0.2, 1.9, -1.4], to: [0.4, 1.8, -1.0], target: [1.6, 0.8, 1.6], fov: 52}
@@ -62,10 +63,10 @@ scenes:
     domain: 침실
     gag: 과잉 진지
     visual: 같은 침대, 우측 상단 시계가 토요일 밤에서 일요일 새벽으로 휙휙 넘어감
-    caption: 토요일 밤, 김 대리는 30시간을 잡니다.
-    who: [김 대리]
+    caption: 토요일 밤, 한 직장인이 30시간을 잡니다.
+    who: [한 직장인]
     when: 토요일 밤
-    narration: 토요일 밤, 김 대리는 서른 시간을 잡니다.
+    narration: 토요일 밤, 한 직장인이 서른 시간을 잡니다.
     hud: {from: "23:00", to: "05:00", step: 30, format: "토→일 {}"}
     world: {template: room, seed: 1}
     shot: inside
@@ -79,9 +80,9 @@ scenes:
     image: 2
     domain: 침실
     gag: 정색 반전
-    visual: 정색한 김 대리 얼굴 클로즈업, 가슴 앞에 '평일 수면 0시간' 종이
+    visual: 정색한 직장인 얼굴 클로즈업, 머리 위 '평일 수면 0시간' 종이
     caption: 그리고 평일엔 한숨도 안 잡니다.
-    who: [김 대리]
+    who: [한 직장인]
     when: 평일
     world: {template: studio, seed: 2, params: {color: "#cfe0ee"}}
     shot: face
@@ -89,7 +90,7 @@ scenes:
       - {model: bust, at: [0, 0, 0], yaw: 180, color: "#f4f4f4", color2: "#1c1a22"}
       - {shape: sign, style: paper, text: "평일 수면\n**0시간**", size: [0.62, 0.3], at: [0, 1.2, -0.26]}
 
-  # ── 전개: 1절 (개인·출근길·회사) ─────────────────────
+  # ── 전개: 1단계 (개인·출근길·회사) ─────────────────────
   - duration: 3.5
     act: 전개
     tangent: 1
@@ -98,7 +99,7 @@ scenes:
     gag: 숫자 개그
     visual: 출근길 엘리베이터 안, 꼿꼿이 선 사람들, 문 위 화면 '오늘 하품 0회'
     caption: 출근길 엘리베이터, 하품 소리 0회.
-    who: [김 대리]
+    who: [한 직장인]
     when: 월요일 아침
     narration: 출근길 엘리베이터, 하품 소리 영 회.
     world: {template: elevator, seed: 4}
@@ -114,10 +115,10 @@ scenes:
     image: 9
     domain: 편의점
     gag: 과잉 진지
-    visual: 편의점 계산대, 알람시계 50개가 쌓여 있고 노란 옷의 하준 씨가 혼자 결제
-    caption: 그 시각, 하준 씨는 혼자 알람시계 50개를 샀습니다.
-    narration: 그 시각, 하준 씨는 혼자 알람시계 오십 개를 샀습니다.
-    who: [하준 씨]
+    visual: 편의점 계산대, 알람시계 50개가 쌓여 있고 노란 옷의 알바생이 계산대에 섬
+    caption: 그 시각, 한 편의점 알바생은 알람시계 50개를 샀습니다.
+    narration: 그 시각, 한 편의점 알바생은 알람시계 오십 개를 샀습니다.
+    who: [편의점 알바생]
     when: 그 시각
     world: {template: shop, seed: 11, params: {kind: store}}
     shot: counter
@@ -134,7 +135,7 @@ scenes:
     gag: 공식 발표체
     visual: 넓은 사무실, 뒷벽 현수막 '회의 중 졸음 0건 달성'
     caption: 회의 중 조는 사람도 0명입니다.
-    who: [김 대리]
+    who: [한 직장인]
     when: 월요일 아침
     narration: 회의 중 조는 사람도 영 명입니다.
     world: {template: office, seed: 5}
@@ -152,7 +153,7 @@ scenes:
     gag: 한 박자 늦은 펀치
     visual: 눈을 부릅뜬 정색 얼굴 클로즈업 (밤새 안 잔 얼굴)
     caption: 다들 눈이 조금 무섭긴 합니다.
-    who: [김 대리]
+    who: [한 직장인]
     when: 월요일 아침
     beat: 0.6
     world: {template: office, seed: 5}
@@ -172,7 +173,7 @@ scenes:
     time: "02:00"
     shot: aerial
 
-  # ── 반전 신호: 잠이 돈이 된다 / 2절 (돈·가게·업계) ─────────────
+  # ── 반전 신호: 잠이 돈이 된다 / 2단계 (돈·가게·업계) ─────────────
   - duration: 3.5
     act: 전개
     role: twist
@@ -215,14 +216,14 @@ scenes:
     image: 4
     domain: 회사
     gag: 공식 발표체
-    visual: 책상 모니터에 '김 대리 수면 잔고 -42시간' 빨간 글씨
+    visual: 책상 모니터에 '내 수면 잔고 -42시간' 빨간 글씨
     caption: 연봉 협상도 이제 수면 잔고로 합니다.
-    who: [김 대리]
+    who: [한 직장인]
     when: 다음 달
     world: {template: office, seed: 5}
     shot: desk
     props:
-      - {shape: sign, style: screen, text: "김 대리 수면 잔고\n**-42시간**", size: [0.46, 0.3], at: [-1.1, 0.8, 1.585]}
+      - {shape: sign, style: screen, text: "내 수면 잔고\n**-42시간**", size: [0.46, 0.3], at: [-1.1, 0.8, 1.585]}
 
   - duration: 3.4
     act: 전개
@@ -230,9 +231,9 @@ scenes:
     image: 2
     domain: 회사
     gag: 숫자 개그
-    visual: 울상인 김 대리 얼굴 클로즈업, 앞에 '승진 보류' 빨간 도장
+    visual: 울상인 직장인 얼굴 클로즈업, '승진 보류' 빨간 도장
     caption: 잔고 마이너스 42시간. 승진 보류.
-    who: [김 대리]
+    who: [한 직장인]
     when: 다음 달
     narration: 잔고 마이너스 사십이 시간. 승진 보류.
     world: {template: studio, seed: 2, params: {color: "#cfe0ee"}}
@@ -295,10 +296,10 @@ scenes:
     domain: 편의점
     gag: 의외의 비교
     visual: 편의점 계산대 위 가격표 '판매 1위 귀마개 / 2위 안대'
-    caption: 하준 씨네 편의점 판매 1위는 귀마개.
-    who: [하준 씨]
+    caption: 그 편의점 판매 1위는 귀마개.
+    who: [편의점 알바생]
     when: 몇 달 뒤
-    narration: 하준 씨네 편의점 판매 일 위는 귀마개.
+    narration: 그 편의점 판매 일 위는 귀마개.
     world: {template: shop, seed: 11, params: {kind: store}}
     shot: counter
     props:
@@ -320,109 +321,43 @@ scenes:
     props:
       - {shape: sign, style: banner, text: "단체 낮잠장 · 성수기 할증 30%", size: [11.6, 1.2], at: [0, 1.4, 13.9], color: "#2f6fd6"}
 
-  # ── 전개: 3절 (삼천포 — 상속·세무서·농장) ─────────────────
-  - duration: 3.6
+  # ── 전개: 2단계 계속 (제도로 번짐) ─────────────────
+  - duration: 3.8
     act: 전개
-    tangent: 3
-    image: 11
-    domain: 가족
-    gag: 과잉 진지
-    visual: 방 안 할머니(긴 머리 회색)와 손주, 세움 판 '유언장 수면 3,000시간 → 손주에게'
-    caption: 잠 부자 말순 할머니는 손주에게 잠을 물려줍니다.
-    who: [말순 할머니]
-    when: 1년 뒤
-    world: {template: room, seed: 13, params: {window_sky: "#a9cbe8"}}
-    time: "14:00"
-    shot: inside
-    props:
-      - {model: bust_long_happy, at: [-0.6, 0.1, 0.8], yaw: 200, color: "#8a5a8a", color2: "#d8d8d8"}
-      - {model: person, at: [0.5, 0, 0.6], yaw: 200, scale: 0.6, color: "#f2c94c"}
-      - {shape: sign, style: paper, title: "유언장", text: "수면 3,000시간\n**→ 손주에게**", size: [0.6, 0.7], at: [0.0, 0.6, -0.1], mount: stand}
-
-  - duration: 3.6
-    act: 전개
-    tangent: 3
+    tangent: 2
     image: 12
-    domain: 세무서
+    domain: 관공서
     gag: 공식 발표체
-    visual: 세무서 외관 간판 '국세청 수면세과', 창에 '수면 상속세 신고 마감 D-1' 카드
-    caption: 그러자 국세청은 잠에도 상속세를 매겼고,
-    who: [말순 할머니]
+    visual: 주민센터 외관, 창에 '수면 잔고 인증 · 신분증 지참' 안내 카드, 줄 선 사람들
+    caption: 1년 뒤, 잔고를 부풀리는 앱이 퍼지자 정부는 수면 잔고 인증제를 만듭니다.
     when: 1년 뒤
     world: {template: shopfront, seed: 14, params: {color: "#d8dce4"}}
     shot: front
     props:
-      - {shape: sign, style: shop, text: "국세청 수면세과", size: [5.6, 0.7], at: [0, 2.8, -0.07], color: "#ffffff"}
-      - {shape: sign, style: card, title: "신고 마감", text: "수면 상속세\n**D-1**", size: [0.8, 0.95], at: [-1.6, 1.2, -0.01]}
+      - {shape: sign, style: shop, text: "주민센터", size: [5.6, 0.7], at: [0, 2.8, -0.07], color: "#ffffff"}
+      - {shape: sign, style: card, title: "수면 잔고 인증", text: "신분증 지참\n**위조 앱 단속 중**", size: [0.9, 1.0], at: [-1.6, 1.15, -0.01], color: "#2f6fd6"}
+    crowds:
+      - {agent: person, count: 10, area: queue, layout: queue, gap: 0.7, facing: 0}
 
   - duration: 3.6
     act: 전개
-    tangent: 3
-    image: 12
-    domain: 세무서
-    gag: 숫자 개그
-    visual: 인도를 따라 끝없이 늘어선 줄, 우측 상단 '대기 300m'
-    caption: 마감 날 세무서 앞 줄은 300m.
+    tangent: 2
+    image: 11
+    domain: 학교
+    visual: 시험장 복도 게시판에 '시험 전날 잔고 사용 자제 · 감독관 확인' 안내문
+    caption: 수능 시험장에는 '전날 몰아 자기 자제' 안내문이 붙었고요.
     when: 1년 뒤
-    narration: 마감 날 세무서 앞 줄은 삼백 미터.
-    hud: "대기 300m"
-    world: {template: shopfront, seed: 14, params: {color: "#d8dce4"}}
-    shot: street
+    world: {template: clinic, seed: 16, params: {wall: "#eef0f2", accent: "#3a6ad6"}}
+    shot: {from: [0, 2.0, -1.2], to: [0, 1.95, -0.8], target: [0, 1.8, 3.9], fov: 52}
     props:
-      - {shape: sign, style: shop, text: "국세청 수면세과", size: [5.6, 0.7], at: [0, 2.8, -0.07], color: "#ffffff"}
-    crowds:
-      - {agent: person, count: 40, area: [-30, -2.4, 0, -1.6], layout: queue, axis: x, gap: 0.75, facing: 90}
-
-  - duration: 3.4
-    act: 전개
-    tangent: 3
-    image: 2
-    domain: 세무서
-    gag: 한 박자 늦은 펀치
-    visual: 줄 선 채 반쯤 감긴 눈의 으쓱한 얼굴 클로즈업, '잔고 -2시간' 종이
-    caption: 다들 줄 서서 졸았고, 잔고가 줄었습니다.
-    when: 1년 뒤
-    beat: 0.7
-    world: {template: studio, seed: 2, params: {color: "#d8dce4"}}
-    shot: face
-    props:
-      - {model: bust_long_smug, at: [0, 0, 0], yaw: 180, color: "#c8384a", color2: "#3a2a20"}
-      - {shape: sign, style: paper, text: "수면 잔고\n**-2시간**", size: [0.62, 0.3], at: [0, 1.2, -0.26]}
-
-  - duration: 3.8
-    act: 전개
-    tangent: 3
-    image: 13
-    domain: 농장
-    gag: 삼천포
-    visual: 농장 우리에서 자는 돼지들, 헛간 간판 '수면 재벌 농장 견학 1인 5만 원'
-    caption: 이 나라 최고 부자는 하루 종일 자는 돼지들입니다.
-    when: 2년 뒤
-    world: {template: farm, seed: 15}
-    shot: pen
-    crowds:
-      - {agent: pig, count: 14, area: pen, scale: [0.9, 1.2]}
-    props:
-      - {shape: sign, style: board, title: "수면 재벌 농장", text: "견학 1인 5만 원", size: [3.0, 1.0], at: [0, 3.0, 10.85]}
-
-  - duration: 2.6
-    act: 반전
-    role: snapback
-    image: 2
-    domain: 침실
-    visual: 정색한 얼굴 클로즈업, 아무 말 없이 카메라를 봄
-    caption: …돼지 얘기는 여기까지 하고요.
-    world: {template: studio, seed: 2, params: {color: "#cfe0ee"}}
-    shot: face
-    props:
-      - {model: bust, at: [0, 0, 0], yaw: 180, color: "#f4f4f4", color2: "#1c1a22"}
+      - {shape: sign, style: board, title: "수험생 안내", text: "전날 몰아 자기 자제\n**감독관 확인 후 입실**", size: [3.4, 0.95], at: [0, 1.6, 3.88], color: "#3a6ad6"}
 
   # ── 반전 ─────────────────────────────
   - duration: 3.2
     act: 반전
     image: 1
     domain: 침실
-    visual: 다시 김 대리의 침대, 벽 화면 '출금 방법 — 누워서 자기'
+    visual: 다시 그 직장인의 침대, 벽 화면 '출금 방법 — 누워서 자기'
     caption: 문제는, 모아 둔 잠을 꺼내 쓰려면…
     world: {template: room, seed: 1}
     time: "23:00"
@@ -458,6 +393,18 @@ scenes:
     props:
       - {shape: sign, style: board, title: "실제 정보", text: "성인 권장 수면\n**하루 7시간 이상** (CDC)", size: [3.4, 0.95], at: [0, 1.6, 3.88], color: "#3aa45a"}
 
+  - duration: 3.8
+    act: 반전
+    image: 6
+    domain: 현실
+    gag: 현실 공감
+    visual: 병원 안내판 '실제 연구 — 주말 몰아 자기로는 평일 수면 부족이 다 회복되지 않음'
+    caption: 실제로 주말에 몰아 자도, 평일 수면 부족은 다 회복되지 않는다는 연구가 있죠.
+    world: {template: clinic, seed: 8}
+    shot: {from: [0, 2.0, -1.2], to: [0, 1.95, -0.8], target: [0, 1.8, 3.9], fov: 52}
+    props:
+      - {shape: sign, style: board, title: "실제 연구 (2019)", text: "주말 몰아 자기로는\n**평일 수면 부족 회복 안 됨**", size: [3.4, 0.95], at: [0, 1.6, 3.88], color: "#3aa45a"}
+
   # ── 결말 ─────────────────────────────
   - duration: 3.8
     act: 결말
@@ -465,11 +412,11 @@ scenes:
     image: 1
     domain: 침실
     gag: 콜백
-    visual: 토요일 밤 침대로 돌아온 김 대리, 벽 화면 '빚 상환 중 -42시간'
-    caption: 그래서 김 대리는 오늘도 30시간을 잡니다. 빚 갚느라.
-    who: [김 대리]
+    visual: 토요일 밤 침대로 돌아온 그 직장인, 벽 화면 '빚 상환 중 -42시간'
+    caption: 그래서 그 직장인은 오늘도 30시간을 잡니다. 빚 갚느라.
+    who: [한 직장인]
     when: 3년 뒤
-    narration: 그래서 김 대리는 오늘도 서른 시간을 잡니다. 빚 갚느라.
+    narration: 그래서 그 직장인은 오늘도 서른 시간을 잡니다. 빚 갚느라.
     beat: 0.8
     world: {template: room, seed: 1}
     time: "23:00"
@@ -485,16 +432,16 @@ scenes:
     image: 9
     domain: 편의점
     gag: 숫자 개그
-    visual: 텅 빈 편의점, 알람시계 50개가 한꺼번에 울리고 하준 씨의 놀란 얼굴, 화면 '수면 잔고 -8,760시간'
-    caption: 그런데 3년 동안 한숨도 안 잔 하준 씨, 잔고는 마이너스 8,760시간.
-    narration: 그런데 삼 년 동안 한숨도 안 잔 하준 씨, 잔고는 마이너스 팔천칠백육십 시간.
-    who: [하준 씨]
+    visual: 텅 빈 편의점, 알바생의 놀란 얼굴, 뒤 화면 '수면 잔고 -8,760시간'
+    caption: 그런데 3년 동안 한숨도 안 잔 그 알바생, 잔고는 마이너스 8,760시간.
+    narration: 그런데 삼 년 동안 한숨도 안 잔 그 알바생, 잔고는 마이너스 팔천칠백육십 시간.
+    who: [편의점 알바생]
     when: 3년 뒤
     world: {template: shop, seed: 11, params: {kind: store}}
     shot: face
     props:
-      - {model: bust_surprised, at: [0, 0, 0.2], yaw: 180, color: "#f2c94c", color2: "#1c1a22"}
-      - {shape: sign, style: screen, text: "하준 씨 수면 잔고\n**-8,760시간**", size: [1.6, 0.6], at: [0, 1.75, 3.4]}
+      - {model: bust_surprised, at: [0, 0, 0.75], yaw: 180, color: "#f2c94c", color2: "#1c1a22"}
+      - {shape: sign, style: screen, text: "알바생 수면 잔고\n**-8,760시간**", size: [1.6, 0.6], at: [0, 1.75, 3.4]}
     effects:
       - shake: {at: 2.6, length: 1.4, amp: 3}
 
@@ -504,9 +451,9 @@ scenes:
     image: 5
     domain: 은행
     gag: 공식 발표체
-    visual: 수면은행 앞, 하준 씨가 '수면 대출 8,760시간' 신청서를 들고 문을 엶, 은행 화면에 경보
-    caption: 하준 씨가 수면 대출을 신청한 날, 서울은 어떻게 됐을까요? 다음 영상으로 만들어져요.
-    who: [하준 씨]
+    visual: 수면은행 앞, 노란 옷의 알바생이 문 앞에 서 있고 창에 '수면 대출 8,760시간' 신청 카드
+    caption: 그 알바생이 수면 대출을 신청한 날, 은행은 어떻게 됐을까요? 다음 영상에서.
+    who: [편의점 알바생]
     when: 3년 뒤
     world: {template: shopfront, seed: 7, params: {color: "#e2e6ec"}}
     shot: front
@@ -515,19 +462,15 @@ scenes:
       - {model: person, at: [1.6, 0.15, -0.6], yaw: 0, color: "#f2c94c"}
       - {shape: sign, style: card, title: "수면 대출 신청", text: "8,760시간\n**전액**", size: [0.8, 0.95], at: [-1.6, 1.2, -0.01]}
     chyron:
-      - {tag: 다음 편 예고, text: "수면 대출 8,760시간… 은행 금고가 비던 날", from: 1.0}
+      - {tag: 다음 편 예고, text: "수면 대출 8,760시간 신청… 은행의 선택은?", from: 1.0}
     camera: {fade_out: 0.6}
 
   - duration: 6
     act: 결말
-    visual: 검은 화면 '카메오 출연' 크레딧, 등장인물이 걸어 다님
-    caption: 팔로우하고 기다려 주세요.
-    credits:
-      heading: 카메오 출연
-      title: 만약에 잠을 저축할 수 있다면?
-      cast:
-        - {name: 김 대리, color: "#f4f4f4"}
-        - {name: 말순 할머니, color: "#8a5a8a", hair: "#d8d8d8"}
-        - {name: 하준 씨, color: "#f2c94c"}
-        - {name: 수면은행 직원, color: "#2f6fd6"}
-        - {name: 수면 재벌 돼지들, color: "#f2a8b0", color2: "#e8949e"}
+    visual: 어두운 배경 위 질문과 선택지 두 개
+    caption: 여러분이라면 몰아서 자겠어요, 매일 7시간 자겠어요?
+    narration: 여러분이라면 몰아서 자겠어요, 매일 일곱 시간 자겠어요?
+    card:
+      question: 잠을 저축할 수 있다면?
+      options: ["주말에 몰아 자고 평일엔 달린다", "그래도 매일 7시간"]
+      cta: 댓글로 남겨주세요 · 다음 편은 '수면 대출'

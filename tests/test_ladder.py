@@ -138,21 +138,19 @@ def test_plan_passes_format_to_writer(monkeypatch):
 # ------------------------------------------------------------------ 오바 스토리텔링 + 날씨·크레딧
 def test_story_checks():
     spec = _spec()
-    assert len(spec["cast"]) >= 2 and any(c.get("foreshadow") for c in spec["cast"])
+    assert len(spec["cast"]) >= 2 and all("name" not in c for c in spec["cast"])
+    assert planner.name_issues(spec) == []
     s2 = copy.deepcopy(spec)
     s2.pop("cast")
     for sc in s2["scenes"]:
         sc.pop("when", None)
-        if sc.get("role") == "cliffhanger":
-            sc["role"] = "payoff"
-    s2["scenes"] = s2["scenes"][:-1]                      # 크레딧 제거
     issues = " ".join(planner.retention_issues(s2))
-    assert "cast" in issues and "when" in issues and "cliffhanger" in issues and "credits" in issues
+    assert "cast" in issues and "when" in issues
     s3 = copy.deepcopy(spec)
-    for sc in s3["scenes"]:                                 # 복선 인물이 결말에 안 나오면
-        if "하준 씨" in (sc.get("who") or []) and sc.get("act") == "결말":
-            sc["who"] = ["김 대리"]
-    assert any("복선" in i for i in planner.retention_issues(s3))
+    s3["scenes"][3]["caption"] = "그 시각, 하준 씨는 알람시계를 샀습니다."
+    assert any("이름" in i for i in planner.retention_issues(s3))
+    ytxt = open(EX, encoding="utf-8").read()
+    assert "tangent: 3" not in ytxt and "삼천포" not in ytxt and "snapback" not in ytxt
 
 
 def test_weather_geyser_alert_credits_render():
@@ -180,11 +178,5 @@ def test_weather_geyser_alert_credits_render():
     overlay.draw_alert(img, {"text": "오늘 15시부터 식혜 비가 내립니다."}, 1.0, 4, font, 1 / 3, 40)
     assert (img[40:110] > 230).mean() > 0.3                 # 흰 알림 상자
     cr = np.zeros((640, 360, 3), np.uint8)
-    overlay.draw_credits(cr, {"title": "제목", "cast": [{"name": "하준 씨"}, {"name": "보리"}]}, 1.0, 5, font, 1 / 3)
+    overlay.draw_credits(cr, {"title": "제목", "cast": [{"name": "편의점 알바생"}, {"name": "강아지"}]}, 1.0, 5, font, 1 / 3)
     assert (cr[..., 0] > 200).sum() > 200 and (cr.max(-1) < 12).mean() > 0.8   # 검은 바탕 + 글자·캐릭터
-
-
-def test_cameos_feed_into_prompt(tmp_path, monkeypatch):
-    (tmp_path / "cameos.yaml").write_text("names: [보리맘, 망원동 민지]\n", encoding="utf-8")
-    monkeypatch.setattr(planner, "ROOT", tmp_path)
-    assert planner.load_cameos() == ["보리맘", "망원동 민지"]

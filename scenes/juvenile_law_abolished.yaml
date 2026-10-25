@@ -1,7 +1,7 @@
 # 촉법소년 제도가 폐지된 대한민국? (약 95초, 17장면) — 블랙코미디·풍자 예시
 # 구조: 콜드 오픈(지우개 재판) → 되감기 → 사실 설정 → 가상 전개(황당함이 커짐) → 찬성·반대 양쪽 → 실제 상황 → 질문 카드
 # 4단 구성: 도입(1~5) → 전개(6~11) → 반전(12~14) → 결말(15~17), AI 이미지 9장(keyframes)
-# 웃음 설계: 1절(7 법원 앞 줄) → 2절(8~9 판사 야근) → 3절 삼천포(10~11 3층 침대) → 12 복귀(snapback)
+# 결과의 연쇄: 1단계(7 법원 앞 줄) → 2단계(8~10 판사 업무량·소년원 수용률 — 실제 수치로 계산한 현실적인 파급)
 # 시청 유지: 1장면 훅(3초 안) → 5장면 중간 반전(약 20초) → 15장면 펀치라인(payoff) → 질문 카드
 # 풍자의 과녁은 '제도와 숫자'. 아이·피해자를 웃음거리로 쓰지 않고, 찬반 어느 편도 들지 않는다.
 #
@@ -14,7 +14,7 @@
 #   - 소년원 등 수용률 전국 평균 112% (뉴시스, 정부 자료)
 #   - 소년부 판사 약 25명 — 한 법학 교수의 지적 (파이낸셜뉴스) / 21,095 ÷ 25 ≈ 843건, ÷ 365 ≈ 2.3건 (계산)
 #   - 정부안(2026.7): 강력·중대·반복 범죄에 한해 13세부터 형사처벌 추진, 법 개정 전 (뉴시스)
-#   - 3층 침대·지우개 재판 장면은 상상(가상 상황)이며 실제 정책이 아님
+#   - 지우개 재판 장면은 상상(가상 상황)이며 실제 정책이 아님
 title: 촉법소년이 사라진 대한민국?
 genre: satire
 style: voxel
@@ -35,7 +35,7 @@ keyframes:  # AI 이미지로 만들 때 쓰는 그림 9장 — 장면의 image 
   - {id: 3, desc: "단색 무대 위 키가 다른 아이 넷과 파란 서류 상자", prompt: "four children of different heights standing in a row on a plain stage, a blue document box in front of them, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
   - {id: 4, desc: "법원 성문 앞까지 이어진 책가방 멘 아이들의 긴 줄", prompt: "a very long queue of children with school backpacks leading up to a grand courthouse gate, parents waiting beside them, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
   - {id: 5, desc: "서류 더미에 파묻혀 가는 판사 한 명", prompt: "a lone judge at a small desk being buried by towering stacks of white paperwork, late at night, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
-  - {id: 6, desc: "아이들로 꽉 찬 방, 3층 침대가 쌓여 올라감", prompt: "a cramped dormitory room overflowing with children, bunk beds stacked three levels high, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
+  - {id: 6, desc: "정원보다 사람이 많은 소년원 방", prompt: "a cramped dormitory room with more children than beds, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
   - {id: 7, desc: "피해자 쪽 의자와 한쪽으로 기우는 저울", prompt: "an empty chair beside a large balance scale tipping heavily to one side on a dark stage, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
   - {id: 8, desc: "무대 위 피고인이 된 지우개·젤리·필통", prompt: "a tiny eraser, three gummy candies and a pencil case placed on a courtroom table like defendants, spotlight, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
   - {id: 9, desc: "국회 모형 앞 '실제 상황' 뉴스 화면", prompt: "a miniature national assembly building under a cloudy sky, news broadcast mood, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
@@ -228,7 +228,7 @@ scenes:
   - duration: 5.5
     act: 전개
     image: 6
-    tangent: 3
+    tangent: 2
     gag: 숫자 개그
     visual: 방 안에 작은 아이들이 빼곡히 들어찬 모습, 대시보드 막대가 정원선을 넘어 빨갛게
     caption: 갈 곳은요? 소년원은 이미 정원의 112%가 차 있어요.
@@ -246,36 +246,14 @@ scenes:
       status: 초과
       status_color: red
 
-  # 11. 3층 침대 — 황당함 최고조
-  - duration: 5.5
-    act: 전개
-    image: 6
-    tangent: 3
-    gag: 삼천포
-    visual: 무대 위 침대가 한 층씩 쌓여 올라가 3층 침대가 되고, '검토 중' 도장
-    caption: 남은 공간은 위쪽뿐. 3층 침대 시대가 열립니다.
-    narration: 남은 공간은 위쪽뿐. 삼 층 침대 시대가 열립니다.
-    beat: 0.6
-    world: {template: studio, seed: 20, params: {color: "#e9e4da"}}
-    shot: wide
-    props:
-      - {model: bed, at: [0, 0, 0], scale: 0.8, color: "#e8e4dc", color2: "#2f6fd6"}
-      - {model: bed, at: [0, 0.82, 0], scale: 0.8, color: "#e8e4dc", color2: "#2f6fd6", grow: {from: 1.0, to: 1.4}}
-      - {model: bed, at: [0, 1.64, 0], scale: 0.8, color: "#e8e4dc", color2: "#2f6fd6", grow: {from: 2.0, to: 2.4}}
-    chyron:
-      - {tag: 가상 상황, text: "법무부(가상), 3층 침대 도입 '긍정 검토'", from: 2.4}
-    big_text:
-      - {text: "검토 중", style: stamp, from: 3.2, pos: [0.5, 0.36], angle: -6}
-
   # ── 3막: 양쪽 + 현실 + 반전 ───────────────────────────
   # 12. 찬성 쪽 기대
   - duration: 6
     act: 반전
     image: 7
-    role: snapback
     visual: 무대 위 피해자 쪽 의자와 저울, 저울이 한쪽으로 기울며 '변명 불가' 글자
-    caption: 침대 얘기는 여기까지. 사실 기대하는 효과도 있어요. "어리니까 괜찮아"는 끝.
-    narration: 침대 얘기는 여기까지. 사실 기대하는 효과도 있어요. 어리니까 괜찮아는 끝.
+    caption: 물론 기대하는 효과도 있어요. "어리니까 괜찮아"는 이제 안 통하죠.
+    narration: 물론 기대하는 효과도 있어요. 어리니까 괜찮아는 이제 안 통하죠.
     world: {template: studio, seed: 21, params: {color: "#141a33"}}
     shot: wide
     props:

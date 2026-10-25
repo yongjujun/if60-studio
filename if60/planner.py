@@ -157,46 +157,40 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
   일상과 맞닿은 황당한 가정(모기·잠·날씨·몸·돈·동물…)이면 ladder, 숫자 계산·제도 해설이 중심이면 broadcast.
 
 ## ★결과 사다리 (format: ladder) — 상상 하나, 생활 영역 10곳 이상
-"모기가 피 대신 지방을 빨아 간다면?"처럼 규칙 하나만 바꾸고, 그 결과가 생활의 각 영역에서 어떻게 터지는지 짧은 컷으로 이어 붙인다.
-각 컷이 독립된 작은 개그라 어디서부터 봐도 웃기고, 다음 컷이 궁금해 끝까지 본다.
+"모기가 피 대신 지방을 빨아 간다면?"처럼 규칙 하나만 바꾸고, 그 결과가 생활의 각 영역에서 실제로 어떻게 번질지 짧은 컷으로 이어 붙인다.
+각 컷은 "정말 그렇게 되겠네" 싶은 그럴듯한 결과 하나 — 다음 영역이 궁금해 끝까지 본다. 유머는 그 위에 가볍게.
 - 화면 틀: 최상위 layout: {{style: simple, title: "만약에 모기가 피 대신 지방을 빨아 간다면 어떻게 될까요?"}}
   → 화면 전체가 3D, 첫 4초만 가운데에 큰 질문(마지막 줄 노란색). 상단 제목 띠·대시보드는 쓰지 않는다(필요한 숫자는 sign이나 big_text로).
 - 장면 = 컷 하나 = 2.5~4초 = caption 12~22자. 20~34장면. 장면마다 domain: (생활 영역 이름)을 적는다.
 - 도입(act 도입): ①질문 제목 + 가장 일상적인 첫 장면(열대야 침실, 출근길…) ②"첫 번째 결과"를 바로 보여주는 컷.
-- 전개(사다리를 오른다): 개인 → 가족 → 동네·가게 → 회사 → 병원·시술 → 부동산·돈 → 산업(농장·공장) → 사회 전체 순으로
-  영역을 옮기며 한 단계씩 커진다. 서로 다른 domain 8곳 이상. tangent 1(개인·가족) → 2(가게·회사·돈) → 3(삼천포: 농장·축산·전혀 엉뚱한 업계).
-- 반전: 정말 좋기만 할까? — 뜻밖의 부작용 한두 컷, 그리고 snapback("…아무튼.")으로 본론 복귀.
+- 전개(사다리를 오른다): 개인 → 가족 → 동네·가게 → 회사 → 병원 → 부동산·돈 → 산업 → 사회 전체 순으로
+  영역을 옮기며 한 단계씩 커진다. 서로 다른 domain 8곳 이상. tangent 1(개인·가족이 바로 겪는 일) → 2(경제·제도·산업으로 번지는 현실적인 파급).
+  주제와 상관없는 엉뚱한 곳으로 튀는 '삼천포' 전개는 쓰지 않는다. 모든 컷이 주제의 현실적인 결과여야 한다.
+- 반전: 정말 좋기만 할까? — 실제로 생길 법한 부작용·한계 한두 컷 (가능하면 실제 사실·수치로).
 - 결말: 질문으로 끝낸다. "여러분이라면 ○○ 그대로인데 ○○ 하시겠어요?" 같은 양자택일 + card(선택지 2~3개,
   cta: "댓글로 남겨주세요 · 답은 다음 영상에서")로 팔로우를 부른다.
-- 웃음의 절반은 **3D 속 글자(sign)**: 간판·현수막·가격표·매물 카드·병원 시술 안내·뉴스 화면에 상황을 비튼 문구를 적는다.
+- 3D 속 글자(sign)로 상황을 보여준다: 간판·현수막·가격표·매물 카드·병원 안내·뉴스 화면. 가끔 살짝 비튼 문구로 웃음을 준다.
   예: 부동산 매물 카드 {{title: "1층", text: "개울 앞\n**모기 많음**\n★★★"}}, 피부과 안내 "모기 20만 마리 코스\n누워만 계세요",
   워터파크 현수막 "모기 보장! 없으면 환불", 정육점 가격표 "삼겹살 **품절**\n이겹살 8,600원"(말장난). sign 장면 4개 이상.
 - 가치 뒤집기: 원래 귀찮던 것이 귀해지고 귀하던 것이 골칫거리가 되는 순간을 끝까지 민다(모기 많은 집이 비싸짐).
-- 얼굴 클로즈업 컷: bust 모델(표정 5종)로 반응을 보여준다. 정색(bust) 얼굴이 가장 웃길 때가 많다.
+- 얼굴 클로즈업 컷: bust 모델(표정 5종)로 반응을 보여준다. 정색(bust) 얼굴이 가장 자연스럽게 웃길 때가 많다.
   예: 정색한 얼굴 + 손에 든 계기판 sign "오늘 37방 / 목표 200,000".
 - 생활 세트를 적극적으로: office · elevator · shop(kind) · shopfront · clinic · pool · farm · room · tabletop · apartments.
 - 사실: 기본 수치(예: 하루 필요 열량, 지방 1kg 열량)는 검색으로 확인해 숫자 개그에 쓰고, 상상 부분은 상상임이 분명하게.
 
-## ★오바 스토리텔링 — 과장인데 웃긴 '가짜 다큐' (format: ladder는 필수, broadcast도 권장)
-목표: 시청자가 "아 말도 안 돼ㅋㅋ" 하면서도 "근데 진짜 그럴 것 같은데?" 하게 만든다. 과장은 크게, 말투는 담담하게, 근거는 진짜로.
-1. 이름 붙은 등장인물(cast) 2~4명 — 평범한 한국 이름 + 직업 + 실제 동네: "망원시장 순자 사장님", "강남 치과 원장님", "직장인 하준 씨".
-   최상위 cast: [{{name, role, color}}]. 장면마다 who: [이름]. 익명의 '사람들'보다 이름 한 명이 훨씬 웃기다.
-   · 한 명은 복선 인물(foreshadow: true): 앞부분에 사소하게 이상한 행동으로 스쳐 지나가고(예: 혼자 멘토스를 사 모음),
-     결말에서 그 인물이 다음 사건의 주인공이 된다(클리프행어).
-2. 시간 점프 사다리(when) — "그 시각" → "저녁엔" → "다음 날" → "몇 주 뒤" → "3년 뒤". 4단계 이상, 점점 멀리.
-   caption 첫머리에 그대로 쓴다 ("몇 주 뒤, 첫눈이 오던 날…").
-3. 규모 점프 사다리 — 웅덩이 하나 → 가게 → 동네 시장 → 한강 → 서해·전국 → 남극·지구. 결과가 한 단계씩 커진다.
-4. 공식 대응 패러디 3번 이상 — 재난문자(alert), 뉴스 자막띠(chyron), "상인회 일동" 현수막, 일기예보 화면(sign screen:
-   "내일 서울 · 탄산 강함"), 공항 검색대 반입 금지 표지, 번호표 "대기 300번". 황당한 상황에 사회가 진지하게 대응할수록 웃기다.
-5. 정밀한 숫자로 오바 — "하루 내린 양이 2,600캔꼴", "뒤집은 우산 한 시간 = 캔 16개". 계산 근거가 있는 숫자를 끝자리까지.
-6. 몸 개그 화면(과장 물리) — 물리적 결과를 화면에 크게: 거품 기둥(vfx geyser), 색이 변한 강아지(colors), 녹슨 자전거,
-   이상한 색의 첫눈을 숟가락으로 퍼 먹는 사람(weather snow + color). 말로 설명하지 말고 보여준다.
-7. 진짜 과학 한 스푼 — 오바 사이사이에 검색으로 확인한 실제 사실 1~2개 (예: "pH 5.5 아래면 치아가 녹기 시작").
-   진짜가 섞이면 가짜가 그럴듯해진다. facts_to_check에 출처.
-8. 오바하되 정색 — 내레이터는 끝까지 차분한 다큐 톤. 대신 등장인물 리액션은 크게(입을 벌리고 하늘을 봄, 만세, bust_surprised).
-9. 결말 = 클리프행어(role: cliffhanger) — 복선 인물이 벌인 다음 사건을 던지고 끝낸다:
-   "남극으로 떠난 하준 씨가 뿌린 멘토스 한 줌에, 서울은 어떻게 됐을까요?" → "다음 영상으로 만들어져요. 팔로우하고 기다려 주세요."
-   (질문 card는 선택) 마지막 장면은 credits: 검은 화면 "카메오 출연" + 제목 + 출연진 이름(cast + 카메오 목록).
+## ★현실적인 가짜 다큐 — 그럴듯하게 풀고, 유머는 가볍게 (format: ladder는 필수, broadcast도 권장)
+목표: 시청자가 "진짜 이렇게 되겠는데?" 하고 끝까지 보게 만든다. 가정 하나만 비현실이고, 그 뒤의 전개는 최대한 현실적으로.
+웃음은 덤이다 — 장면 3개 중 1개 정도에 가볍게. 과장된 몸 개그·엉뚱한 옆길보다 "있을 법해서 웃긴" 디테일.
+1. 사람 이름은 쓰지 않는다. 등장인물은 역할로만: "한 직장인", "편의점 알바생", "시장 상인", "치과 의사".
+   최상위 cast: [{{role: "한 직장인", color}}] 2~4명. 장면마다 who: [역할]. 같은 인물이 여러 장면에 다시 나오면 이야기가 이어진다.
+2. 시간 흐름(when) — "첫날" → "일주일 뒤" → "한 달 뒤" → "1년 뒤". 4단계 이상. caption 첫머리에 자연스럽게 ("한 달 뒤, …").
+3. 규모가 커지는 순서 — 집 → 가게 → 동네 → 도시 → 전국. 단계마다 실제로 그렇게 번질 이유가 있어야 한다.
+4. 사회의 공식 대응 2번 이상 — 재난문자(alert), 뉴스 자막띠(chyron), 안내문·공지(sign), 일기예보 화면.
+   실제 기관이 실제로 낼 법한 말투로. (유머는 문구 끝에 살짝만)
+5. 숫자는 계산으로 — 실제 수치(검색 확인)에서 출발해 계산한 값을 쓴다. 근거 없는 큰 숫자 금지. facts_to_check에 계산식.
+6. 진짜 사실 2~3개 — 검색으로 확인한 실제 사실을 전개 곳곳에 (예: "pH 5.5 아래면 치아 법랑질이 녹기 시작"). 출처를 facts_to_check에.
+7. 내레이터는 차분한 다큐 톤. 등장인물 리액션도 과하지 않게(놀란 얼굴 한두 번이면 충분).
+8. 결말: 현실 확인 한 줄 + 질문 card, 또는 다음 편이 궁금한 한 문장(role: cliffhanger — 이름 없이 "그런데 이 편의점 알바생은…").
 - 날씨가 주제면 weather: 로 실제로 비·눈을 내리게 하고, 사람들은 person_umbrella 로 우산을 씌운다.
 
 ## 장르별 톤 — 먼저 주제의 장르를 정해 최상위 genre: 에 적는다
@@ -259,25 +253,19 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 - 마지막 card의 질문은 hook에서 던진 궁금증과 이어지게 한다.
 - 장면 시작 시각은 앞 장면들의 대사 길이(글자 수 ÷ 6.5 + 0.6초)를 더해 계산한다.
 
-## ★웃음 설계: 1절로 끝내지 말고 2절·3절, 삼천포까지 갔다가 돌아온다
-정보를 한 번 말하고 끝내면 재미가 없다. 가정의 결과 → 그 결과의 결과 → 또 그 결과로 꼬리를 물며 점점 엉뚱한 곳까지 간 뒤,
-정색하고 본론으로 돌아와 결론을 낸다. 장면에 tangent: 1|2|3 과 role: snapback 을 붙인다 (전개~반전 구간, 각 절 1~3장면).
-- tangent: 1 — 1절: 누구나 예상하는 직접적인 결과. (예: 머리 위 전과 표시 → 보이스피싱범이 출근길 지하철에서 바로 들통)
-- tangent: 2 — 2절: 그 결과가 낳은 엉뚱한 부작용. 이미 살짝 옆길. (→ 사기꾼들이 모자를 쓰기 시작, 여름에도 털모자 매출 폭증)
-- tangent: 3 — 3절(삼천포): 주제에서 한참 벗어났지만 논리적으로는 이어지는 황당한 결과. 가장 진지하게, 실제 숫자까지 동원해서.
-  (→ 모자 쓴 사람 = 수상한 사람이 되자, 모자 업계가 '투명 모자'를 출시. 실제 국내 모자 시장 규모 ○○억 원이 위기)
-- role: snapback — 정색하고 복귀하는 한 문장. "…아무튼." "모자 얘기는 여기까지 하고요." 바로 뒤에 반전이 온다.
-- 3절의 소재를 결말 payoff에서 콜백으로 다시 꺼내면 최고 (예: 마지막에 투명 모자를 쓴 진짜 범인).
-- 장면마다 gag: 에 그 장면의 웃음 장치를 하나 적는다 (아래 이름 중 하나). 웃음 없는 장면은 gag를 쓰지 않는다.
-  장면의 절반 이상에 gag가 있어야 하고, 종류는 3가지 이상 섞는다:
-  정색 반전 · 공식 발표체 · 숫자 개그 · 과잉 진지 · 삼천포 · 콜백 · 의외의 비교 · 3의 법칙 · 현실 공감 · 한 박자 늦은 펀치 ·
-  간판 개그(3D 속 글자로 웃김) · 말장난(삼겹살→이겹살) · 가치 뒤집기(귀찮던 게 귀해짐)
+## ★웃음 설계: 현실적인 결과의 연쇄 + 가벼운 유머
+정보를 한 번 말하고 끝내지 않는다. 가정의 결과 → 그 결과가 현실에서 번지는 모습으로 한 단계 더 들어간다.
+주제와 상관없는 곳으로 튀는 '삼천포' 전개, "…아무튼." 하고 돌아오는 복귀 장면은 쓰지 않는다. 장면에 tangent: 1|2 를 붙인다.
+- tangent: 1 — 1단계: 가정이 바로 바꾸는 일, 누구나 예상하는 직접적인 결과. (예: 머리 위 전과 표시 → 보이스피싱범이 출근길에 바로 들통)
+- tangent: 2 — 2단계: 그 결과가 경제·제도·생활 습관으로 번지는 현실적인 파급. (→ 채용·임대 심사에서 표시 확인이 관행이 됨, 오표시 정정 소송 증가)
+- 장면에 gag: 로 웃음 장치를 하나 적을 수 있다 (아래 이름 중 하나). 장면 3개 중 1개 정도, 2가지 이상 섞되 과하게 넣지 않는다:
+  정색 반전 · 공식 발표체 · 숫자 개그 · 과잉 진지 · 콜백 · 의외의 비교 · 3의 법칙 · 현실 공감 · 한 박자 늦은 펀치 ·
+  간판 개그(3D 속 글자로 웃김) · 말장난 · 가치 뒤집기(귀찮던 게 귀해짐) · 공식 대응
 - 웃긴 대사 쓰는 법:
   · 펀치라인은 문장 맨 끝 단어에 둔다. ("1년이면 끝나긴 합니다. 주말을 반납하면요.")
   · 웃음을 설명하지 않는다. "웃기게도", "황당하게도" 같은 말 금지. 감탄사·유행어·물음표 남발 금지.
-  · 추상어보다 구체적인 사물 하나가 웃기다 ("불편"보다 "젤리 세 알", "혼란"보다 "털모자 매출").
-  · 3의 법칙: 평범한 것 둘 + 비튼 것 하나. ("회의 줄고, 야근 줄고, 이혼은 늘었습니다.")
-  · 내레이터는 끝까지 정색. 상황이 황당할수록 목소리는 더 차분하게.
+  · 추상어보다 구체적인 사물 하나가 웃기다 ("불편"보다 "젤리 세 알").
+  · 웃음 장면이 아닌 곳은 담백하게 사실과 결과만. 모든 문장을 웃기려 하지 않는다.
 
 ## ★AI 이미지 6~10장으로 시각화 가능하게 (keyframes — ladder는 8~16장)
 이 대본은 3D 복셀로도 렌더링되지만, AI 이미지 6~10장만으로도 영상을 만들 수 있어야 한다.
@@ -297,7 +285,7 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 
 장면 필드:
 - duration(초), act(도입|전개|반전|결말, 필수), image(keyframes 번호, 필수), domain(ladder 필수: 생활 영역 이름),
-  who(등장인물 이름 목록), when(시간 점프 단계), role(선택: hook|twist|payoff|snapback|cliffhanger),
+  who(등장인물 역할 목록), when(시간 흐름 단계), role(선택: hook|twist|payoff|cliffhanger),
   tangent(선택: 1|2|3 — 웃음 설계의 절), gag(선택: 웃음 장치 이름), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
 - world: {{template: 이름, seed: 정수, params: {{...}}}}
 - shot: 템플릿 샷 이름, 또는 직접 카메라:
@@ -351,19 +339,18 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 - card (마무리 장면 전용, world 없이 써도 됨 — 앞 장면을 흐리게 깔아 줌):
     {{question: "당신의 선택은?", options: ["선택지1", "선택지2", "선택지3"], cta: "댓글로 번호를 남겨주세요"}}
     card가 있는 장면은 caption이 화면에 표시되지 않는다(질문·선택지가 자막 역할)
-- 오바 스토리텔링 장치:
-    who: ["하준 씨"] (그 장면 등장인물), when: "몇 주 뒤" (시간 점프)
+- 이야기 장치:
+    who: ["한 직장인"] (그 장면 등장인물 — 역할로만, 이름 금지), when: "한 달 뒤" (시간 흐름)
     weather: rain | snow 또는 {{type: rain, color: "#6b3a1e"(색 비), density: 1.0, wind: [1, 0], puddles: true, puddle_color}}
       — 야외 장면 전용. 빗줄기·눈송이가 화면 가득 내리고 하늘이 흐려지며 바닥에 웅덩이
     vfx {{type: geyser, at: [x,y,z], height: 4, radius: 0.4, from: 초, color: ["#f4efe6", "#8a5a3a"]}} — 거품·물 기둥이 솟구침
     alert: {{title: "긴급재난문자", sender: "행정안전부", text: "오늘 15시부터 …", from: 초}} — 휴대폰 재난문자 팝업
-    credits: {{heading: "카메오 출연", title: "만약 …라면", cast: [{{name: "하준 씨", color: "#hex"}}, …]}} — 마지막 장면 (world 없이)
 - camera: {{fade_out: 0.6}}
 
 ## 출력 형식
 설명 없이 ```yaml 코드블록 하나만 출력한다. 문자열에 콜론(:)이 있으면 큰따옴표로 감싼다. 최상위 키:
 title, format: broadcast|ladder, genre: satire|science|absurd, style: voxel,
-cast: [{{name: "직장인 하준 씨", role: "…", color: "#hex", foreshadow: true}}, …] (ladder 필수, 2~4명),
+cast: [{{role: "한 직장인", color: "#hex"}}, …] (ladder 필수, 2~4명, 사람 이름 금지),
 layout: broadcast면 {{title: ["첫 줄(흰색)", "둘째 줄(노란색)"], series: "시리즈명 N편"(선택)}}, ladder면 {{style: simple, title: "만약에 …?"}},
 look: voxel (기본, 픽셀 복셀) 또는 smooth (매끈한 질감 — 우주·과학 실험처럼 깔끔한 느낌이 어울릴 때),
 facts_to_check: ["사실 한 줄 — 출처 URL", ...],
@@ -652,9 +639,12 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
 # ------------------------------------------------------------------ 시청 유지 구조
 HOOK_MAX_SEC = 3.5          # 1번 장면(훅)은 이 안에 끝나야 함
 TWIST_WINDOW = (15.0, 30.0)  # 중간 반전 장면이 시작해야 하는 구간(초)
-ROLES = ("hook", "twist", "payoff", "snapback", "cliffhanger")
-GAGS = ("정색 반전", "공식 발표체", "숫자 개그", "과잉 진지", "삼천포", "콜백", "의외의 비교", "3의 법칙",
-        "현실 공감", "한 박자 늦은 펀치", "간판 개그", "말장난", "가치 뒤집기", "과장 물리", "공식 대응")
+ROLES = ("hook", "twist", "payoff", "cliffhanger")
+GAGS = ("정색 반전", "공식 발표체", "숫자 개그", "과잉 진지", "콜백", "의외의 비교", "3의 법칙",
+        "현실 공감", "한 박자 늦은 펀치", "간판 개그", "말장난", "가치 뒤집기", "공식 대응")
+GAG_SHARE = 1 / 3            # 웃음 장치는 장면 3개 중 1개 정도 — '약간의 유머'
+NAME_RE = re.compile(r"(?<![가-힣])[가-힣]{2,3} 씨(?!앗|름|감|족)|(?<![가-힣])[김이박최정강조윤장임한오신권황안송홍고문양손배백허유남노하곽성차주우구민진나지][가-힣]{0,2} "
+                     r"(?:대리|과장|부장|차장|사원|주임|사장님|원장님|할머니|할아버지)")
 ACTS = ("도입", "전개", "반전", "결말")
 LENGTH_RANGE = (60.0, 120.0)   # 영상 전체 길이(초)
 KEYFRAME_RANGE = (6, 10)       # AI 이미지로 만들 때 필요한 그림 수
@@ -717,11 +707,12 @@ def retention_issues(spec: dict) -> list[str]:
         issues.append("끝에 role: payoff 장면이 없음 — 마지막 card 바로 앞에 기억에 남는 한 줄(가능하면 첫 장면 콜백)을 둘 것")
     issues += structure_issues(spec, scenes, t)
     issues += humor_issues(scenes)
+    issues += name_issues(spec)
     return issues
 
 
 def humor_issues(scenes: list) -> list[str]:
-    """웃음 설계 검사: 1절→2절→3절(삼천포)→복귀, 장면 절반 이상에 웃음 장치"""
+    """웃음 설계 검사: 현실적인 결과의 연쇄(1단계 직접 결과 → 2단계 현실적인 파급) + 가벼운 유머(장면 1/3 정도)"""
     issues = []
     tang = []
     for i, s in enumerate(scenes, 1):
@@ -729,36 +720,34 @@ def humor_issues(scenes: list) -> list[str]:
         if v is None:
             continue
         try:
-            tang.append((i, int(v)))
+            v = int(v)
         except (TypeError, ValueError):
-            issues.append(f"장면 {i}: tangent는 1, 2, 3 중 하나")
+            v = -1
+        if v not in (1, 2):
+            issues.append(f"장면 {i}: tangent는 1(직접 결과) 또는 2(현실적인 파급)만 — 삼천포(3)처럼 주제에서 벗어나는 전개는 쓰지 않음")
+            continue
+        tang.append((i, v))
     levels = [v for _, v in tang]
-    missing = [n for n in (1, 2, 3) if n not in levels]
+    missing = [n for n in (1, 2) if n not in levels]
     if missing:
-        issues.append(f"웃음 설계 {', '.join(f'{n}절' for n in missing)}이 없음 — 결과의 결과로 꼬리를 물어 "
-                      "1절(직접 결과) → 2절(엉뚱한 부작용) → 3절(삼천포)까지 갈 것")
+        issues.append(f"결과의 연쇄 {', '.join(f'{n}단계' for n in missing)}가 없음 — "
+                      "1단계(가정이 바로 바꾸는 일) → 2단계(그 결과가 경제·제도·생활에 현실적으로 번지는 일) 순서로")
     elif levels != sorted(levels):
-        issues.append("tangent 순서가 뒤섞임 — 1절 → 2절 → 3절 순서로 점점 멀리")
-    snaps = [i for i, s in enumerate(scenes, 1) if s.get("role") == "snapback"]
-    last3 = max((i for i, v in tang if v == 3), default=None)
-    if not snaps:
-        issues.append("role: snapback이 없음 — 3절(삼천포) 뒤에 정색하고 본론으로 돌아오는 한 문장을 둘 것")
-    elif last3 and not any(i > last3 for i in snaps):
-        issues.append("snapback이 3절보다 앞에 있음 — 삼천포 장면들이 끝난 직후에 둘 것")
+        issues.append("tangent 순서가 뒤섞임 — 1단계(직접 결과) → 2단계(현실적인 파급) 순서로")
     end = [i for i, s in enumerate(scenes, 1) if s.get("act") == "결말"]
     if tang and end and max(i for i, _ in tang) >= min(end):
-        issues.append("tangent 장면이 결말 구간에 있음 — 1~3절은 전개·반전 구간 안에서 끝낼 것")
+        issues.append("tangent 장면이 결말 구간에 있음 — 1~2단계는 전개·반전 구간 안에서 끝낼 것")
     talk = [s for s in scenes if not isinstance(s.get("card"), dict) and not isinstance(s.get("credits"), dict)]
     gags = [s.get("gag") for s in talk if s.get("gag")]
     bad = sorted({g for g in gags if g not in GAGS})
     if bad:
         issues.append(f"gag 이름 '{', '.join(map(str, bad))}'는 목록에 없음 ({' / '.join(GAGS)})")
     good = [g for g in gags if g in GAGS]
-    need = (len(talk) + 1) // 2
+    need = max(1, round(len(talk) * GAG_SHARE))
     if len(good) < need:
-        issues.append(f"웃음 장치(gag)가 있는 장면이 {len(good)}개 — 장면 절반 이상({need}개)에 웃음 장치를 넣을 것")
-    elif len(set(good)) < 3:
-        issues.append("웃음 장치가 한두 종류뿐 — 3가지 이상 섞을 것")
+        issues.append(f"웃음 장치(gag)가 있는 장면이 {len(good)}개 — 장면 3개 중 1개 정도({need}개)에 가볍게 넣을 것")
+    elif len(set(good)) < 2:
+        issues.append("웃음 장치가 한 종류뿐 — 2가지 이상 섞을 것")
     return issues
 
 
@@ -768,11 +757,12 @@ PUNCHUP_SYSTEM = """너는 한국 예능·쇼츠 개그 작가다. 정색한 다
 - 장면의 뜻·사실·순서는 그대로. 아라비아 숫자는 한 글자도 바꾸거나 빼지 않는다. 화면(visual)과 어긋나는 말을 넣지 않는다.
 - 펀치라인은 문장 맨 끝 단어에. 웃음을 설명하지 않는다("웃기게도" 금지). 유행어·감탄사·이모지·과한 물음표 금지.
 - 추상어 대신 구체적인 사물·숫자, 3의 법칙(평범 둘 + 비튼 하나), 한 박자 늦은 펀치, 앞 장면 콜백을 활용한다.
-- 내레이터는 끝까지 정색. 3절(삼천포)일수록 더 진지하게. snapback은 짧고 건조하게 ("…아무튼.").
+- 내레이터는 끝까지 차분하게. 웃음은 가볍게 — 모든 장면을 웃기려 하지 말고, 이미 담백하게 좋은 대사는 건드리지 않는다.
+- 주제에서 벗어나는 엉뚱한 옆길(삼천포)을 새로 만들지 않는다. 사람 이름을 넣지 않는다(역할로만).
 - 웃음의 과녁은 제도·위선·힘 있는 쪽·우리 모두의 습관. 실존 인물·상표·특정 집단·피해자·외모를 조롱하지 않는다.
 - 길이: 각 caption 45자 이내, 원래 대사 길이의 ±30% 안. 1번 장면(hook)은 20자 안팎.
 - caption에 숫자·기호·영문이 있으면 읽는 그대로 한글로 쓴 narration도 함께 준다.
-- 오바 스토리텔링: 시간 점프 말머리("몇 주 뒤,")와 등장인물 이름은 살린다. 결말 클리프행어는 다음 편이 궁금하게 끊는다.
+- 시간 흐름 말머리("한 달 뒤,")는 살린다.
 - 이미 충분히 웃기면 그 장면은 빼도 된다.
 출력: 설명 없이 JSON 배열 하나만. [{"n": 장면번호, "caption": "...", "narration": "...(필요할 때)"}]"""
 
@@ -890,39 +880,53 @@ def structure_issues(spec: dict, scenes: list, total: float) -> list[str]:
     return issues
 
 
-STORY_MIN_CAST = 2          # 이름 붙은 등장인물
+STORY_MIN_CAST = 2          # 역할로 부르는 등장인물 (이름 없이)
 STORY_MIN_WHEN = 4          # 시간 점프 단계 (그 시각 → 저녁 → 몇 주 뒤 → 3년 뒤)
-STORY_MIN_OFFICIAL = 3      # 공식 대응 패러디 (재난문자·뉴스 자막띠·현수막·일기예보 화면)
+STORY_MIN_OFFICIAL = 2      # 사회의 공식 대응 (재난문자·뉴스 자막띠·안내문·일기예보 화면)
+
+
+def name_issues(spec: dict) -> list[str]:
+    """사람 이름 금지: 등장인물은 역할로만 ("한 직장인", "편의점 알바생") — "하준 씨", "김 대리" 같은 이름 X"""
+    found = []
+    for s in spec.get("scenes") or []:
+        if not isinstance(s, dict):
+            continue
+        texts = [str(s.get(k) or "") for k in ("caption", "narration", "title", "visual")]
+        texts += [str(w) for w in (s.get("who") if isinstance(s.get("who"), list) else [s.get("who")]) if w]
+        for pr in s.get("props") or []:
+            if isinstance(pr, dict):
+                texts += [str(pr.get("text") or ""), str(pr.get("title") or "")]
+        for t in texts:
+            found += NAME_RE.findall(t)
+    for c in spec.get("cast") or []:
+        if isinstance(c, dict) and c.get("name"):
+            found.append(str(c["name"]))
+    if found:
+        uniq = ", ".join(dict.fromkeys(found))
+        return [f"사람 이름이 들어감({uniq}) — 이름 없이 역할로만 쓸 것: '한 직장인', '편의점 알바생', '시장 상인' "
+                "(cast는 role만, 장면 who도 역할로)"]
+    return []
 
 
 def story_issues(spec: dict, scenes: list) -> list[str]:
-    """오바 스토리텔링 검사: 등장인물·복선 인물·시간 점프·공식 대응 패러디·클리프행어 + 크레딧"""
+    """현실적인 가짜 다큐 검사: 역할로 부르는 등장인물 · 시간 점프 · 공식 대응"""
     issues = []
-    cast = [c for c in spec.get("cast") or [] if isinstance(c, dict) and str(c.get("name") or "").strip()]
-    names = [str(c["name"]).strip() for c in cast]
+    cast = [c for c in spec.get("cast") or [] if isinstance(c, dict) and str(c.get("role") or "").strip()]
     talk_idx = [i for i, s in enumerate(scenes) if not isinstance(s.get("card"), dict) and not isinstance(s.get("credits"), dict)]
-    who = {i: {str(w).strip() for w in (scenes[i].get("who") if isinstance(scenes[i].get("who"), list)
-                                        else [scenes[i].get("who")]) if w} for i in talk_idx}
     if len(cast) < STORY_MIN_CAST:
-        issues.append(f"cast(이름 붙은 등장인물)가 {len(cast)}명 — '망원시장 순자 사장님', '하준 씨'처럼 이름+직업+동네로 "
-                      f"{STORY_MIN_CAST}~4명을 최상위 cast에 두고 장면마다 who: 로 등장시킬 것")
+        issues.append(f"cast(역할로 부르는 등장인물)가 {len(cast)}명 — '한 직장인', '편의점 알바생'처럼 이름 없이 역할로 "
+                      f"{STORY_MIN_CAST}~4명을 최상위 cast에 {{role: ...}}로 두고 장면마다 who: 로 등장시킬 것")
     else:
-        unused = [n for n in names if not any(n in ws for ws in who.values())]
+        roles = [str(c["role"]).strip() for c in cast]
+        whos = {str(w).strip() for i in talk_idx for w in (scenes[i].get("who") if isinstance(scenes[i].get("who"), list)
+                                                           else [scenes[i].get("who")]) if w}
+        unused = [r for r in roles if r not in whos]
         if unused:
             issues.append(f"cast {', '.join(unused)}가 어느 장면에도 who로 나오지 않음")
-        seeds = [str(c["name"]).strip() for c in cast if c.get("foreshadow")]
-        if not seeds:
-            issues.append("복선 인물이 없음 — cast 중 한 명에 foreshadow: true, 초반에 사소하게 등장시키고 결말 클리프행어의 주인공으로")
-        elif talk_idx:
-            n = seeds[0]
-            early = [i for i in talk_idx[: max(1, int(len(talk_idx) * 0.45))] if n in who[i]]
-            late = [i for i in talk_idx[-3:] if n in who[i]]
-            if not early or not late:
-                issues.append(f"복선 인물 '{n}'은 앞부분(처음 45% 안)에 한 번, 마지막 3장면 안에 다시 나와야 함 (복선 → 회수)")
     whens = [str(scenes[i].get("when")).strip() for i in talk_idx if scenes[i].get("when")]
     if len(dict.fromkeys(whens)) < STORY_MIN_WHEN:
-        issues.append(f"시간 점프(when)가 {len(set(whens))}단계 — '그 시각', '저녁', '다음 날', '몇 주 뒤', '3년 뒤'처럼 "
-                      f"{STORY_MIN_WHEN}단계 이상 점점 멀리 (장면마다 when: 과 caption 첫머리에)")
+        issues.append(f"시간 흐름(when)이 {len(set(whens))}단계 — '첫날', '일주일 뒤', '한 달 뒤', '1년 뒤'처럼 "
+                      f"{STORY_MIN_WHEN}단계 이상 (장면마다 when: 과 caption 첫머리에)")
     official = 0
     for i in talk_idx:
         s = scenes[i]
@@ -931,12 +935,8 @@ def story_issues(spec: dict, scenes: list) -> list[str]:
                                                      for p in s.get("props") or []):
             official += 1
     if official < STORY_MIN_OFFICIAL:
-        issues.append(f"공식 대응 패러디가 {official}장면 — 재난문자(alert)·뉴스 자막띠(chyron)·현수막·일기예보 화면으로 "
-                      f"{STORY_MIN_OFFICIAL}장면 이상")
-    if not any(s.get("role") == "cliffhanger" for s in scenes):
-        issues.append("결말에 role: cliffhanger가 없음 — 복선 인물이 벌인 다음 사건을 던지고 '다음 영상으로 만들어져요'")
-    if not isinstance(scenes[-1].get("credits"), dict) if scenes else True:
-        issues.append("마지막 장면이 credits가 아님 — 검은 화면 '카메오 출연' 크레딧(cast 이름 + cameos)으로 끝낼 것")
+        issues.append(f"사회의 공식 대응이 {official}장면 — 재난문자(alert)·뉴스 자막띠(chyron)·안내문·화면으로 "
+                      f"{STORY_MIN_OFFICIAL}장면 이상 (현실에서 실제로 나올 법한 대응)")
     return issues
 
 
@@ -1183,15 +1183,12 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
     if angle:
         user += f"방향 힌트: {angle}\n"
     if tangents:
-        user += f"삼천포 아이디어(참고용, 더 웃긴 게 떠오르면 바꿔도 됨): {tangents}\n"
-    cameos = load_cameos()
-    if cameos:
-        user += ("카메오 이름(조연 등장인물·엔딩 credits에 사용, 실존 인물 묘사가 아니라 이름만 빌림): "
-                 + ", ".join(cameos[:12]) + "\n")
+        user += f"전개 아이디어(참고용, 더 현실적인 게 떠오르면 바꿔도 됨): {tangents}\n"
     if fmt != "broadcast":
-        user += ("결과 사다리라면 '오바 스토리텔링' 필수: 이름 붙은 등장인물 2~4명(복선 인물 1명) · 시간 점프 4단계 · "
-                 "공식 대응 패러디 3번 · 클리프행어 결말 + 카메오 크레딧.\n")
-    user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · 1절→2절→3절(삼천포)→복귀로 웃기기 · "
+        user += ("결과 사다리라면 '현실적인 가짜 다큐' 필수: 이름 없이 역할로 부르는 등장인물 2~4명 · 시간 흐름 4단계 · "
+                 "사회의 공식 대응 2번 · 실제 사실 2~3개.\n")
+    user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · 1단계(직접 결과)→2단계(현실적인 파급), 삼천포 금지 · "
+             "유머는 장면 3개 중 1개 정도로 가볍게 · 사람 이름 금지 · "
              "keyframes(방송형 6~10장, 사다리 8~16장)로 시각화 가능.\n"
              "먼저 웹 검색으로 핵심 사실과 수치를 확인한 뒤, 지정한 형식의 YAML만 출력해.")
     log("▶ 1/3 자료 조사 + 대본·연출 작성 중 (1~5분)")
@@ -1214,11 +1211,11 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
         issues = retention_issues(spec)
         if not issues:
             break
-        log(f"▶ 제작 조건 맞추는 중 ({attempt + 1}/2 — 3초 훅 · 4단 구성 · 삼천포 웃음 · 길이 · 이미지): "
+        log(f"▶ 제작 조건 맞추는 중 ({attempt + 1}/2 — 3초 훅 · 4단 구성 · 현실적 연쇄 · 길이 · 이미지): "
             + "; ".join(issues[:2]) + (" …" if len(issues) > 2 else ""))
         fix = ("아래 YAML이 제작 조건을 어겼어. 문제:\n- " + "\n- ".join(issues) +
-               "\n\n시스템 프롬프트의 '시청 유지 설계'·'4단 구성'·'웃음 설계'·'keyframes' 규칙을 따른다. 확인된 사실·수치·출처는 바꾸지 말고, "
-               "장면 순서·장면 추가(삼천포 2·3절)·대사·role·act·tangent·gag·image·keyframes만 손봐. ```yaml 블록 하나로 출력해.\n\n```yaml\n" + ytxt + "```")
+               "\n\n시스템 프롬프트의 '시청 유지 설계'·'4단 구성'·'웃음 설계'·'현실적인 가짜 다큐'·'keyframes' 규칙을 따른다. 확인된 사실·수치·출처는 바꾸지 말고, "
+               "장면 순서·장면 추가(1·2단계)·대사·role·act·tangent·gag·image·keyframes만 손봐. ```yaml 블록 하나로 출력해.\n\n```yaml\n" + ytxt + "```")
         try:
             ytxt2 = extract_yaml(call(fix, False)[0])
             spec2, errs2 = _validated(ytxt2, cat, length, log)
@@ -1304,16 +1301,6 @@ def write_image_prompts(spec: dict, out: Path) -> Path | None:
 
 
 # ------------------------------------------------------------------ 주제 목록 (topics.yaml)
-def load_cameos() -> list[str]:
-    """cameos.yaml의 이름 목록 (영상에 이름이 나오길 원한 팔로워·댓글러 — 본인 동의를 받은 이름만)"""
-    path = ROOT / "cameos.yaml"
-    if not path.exists():
-        return []
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    names = data.get("names") if isinstance(data, dict) else data
-    return [str(n).strip() for n in (names or []) if str(n).strip()]
-
-
 def load_topics() -> list[dict]:
     path = ROOT / "topics.yaml"
     if not path.exists():
