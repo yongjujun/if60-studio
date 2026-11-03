@@ -273,13 +273,11 @@ def _retention_spec(hook="만 10세, 지우개 절도. 판결은…", twist_at=4
     scenes[twist_at - 1]["role"] = "twist"
     for s, tang in zip(scenes[4:7], (1, 2, 2)):                 # 전개~반전: 1단계(직접 결과) → 2단계(현실적인 파급)
         s["tangent"] = tang
-    for s, gag in zip(scenes[:7], ("과잉 진지", "", "", "", "정색 반전", "", "")):     # 유머는 가볍게 (장면 1/3 정도)
-        if gag:
-            s["gag"] = gag
-    scenes.append(_scene("상대는… 젤리 도둑.", role="payoff", act="결말", image=6, gag="콜백"))
+    scenes.append(_scene("결국 가장 많은 사건은 가벼운 절도입니다.", role="payoff", act="결말", image=6))
     scenes.append({"duration": 6, "act": "결말", "card": {"question": "?", "options": ["1", "2", "3"]}})
     keyframes = [{"id": i, "desc": f"그림 {i}", "prompt": f"scene {i}, vertical 9:16, no text"} for i in range(1, 7)]
-    return {"genre": "satire", "keyframes": keyframes, "scenes": scenes}
+    facts = ["송치 21,095명 — https://example.com/a", "절도 약 48% — https://example.com/b", "21,095 ÷ 25 ≈ 843건 (계산)"]
+    return {"genre": "satire", "keyframes": keyframes, "facts_to_check": facts, "scenes": scenes}
 
 
 def test_retention_good_structure_passes():
@@ -380,31 +378,39 @@ def test_plan_sends_genre_and_angle(monkeypatch):
     t = planner.pick_topics("4")[0]
     planner.plan(t["title"], 60, interactive=False, review_pass=False, log=lambda *a: None,
                  genre=t["genre"], angle=t["angle"], punchup=False, tangents=t["tangents"])
-    assert len(sent) == 1 and "과학 — 흥미롭게" in sent[0] and "방향 힌트" in sent[0] and "전개 아이디어" in sent[0] and "사람 이름 금지" in sent[0]
+    assert len(sent) == 1 and "과학 — 정확하게" in sent[0] and "진중한" in sent[0] and "방향 힌트" in sent[0] and "전개 아이디어" in sent[0] and "사람 이름 금지" in sent[0]
 
 
-# ------------------------------------------------------------------ 웃음 설계 (현실적인 연쇄 + 가벼운 유머, 이름 금지)
-def test_humor_flags_missing_steps_and_gags():
+# ------------------------------------------------------------------ 진중한 정보 다큐 (결과의 연쇄 · 개그 금지 · 출처, 이름 금지)
+def test_chain_flags_missing_steps_and_any_gag():
     spec = _retention_spec()
     for s in spec["scenes"]:
-        s.pop("gag", None)
         if s.get("tangent") == 2:
             s.pop("tangent")
     issues = " / ".join(planner.retention_issues(spec))
-    assert "2단계" in issues and "웃음 장치" in issues
+    assert "2단계" in issues and "웃음 장치" not in issues
+    spec = _retention_spec()
+    spec["scenes"][3]["gag"] = "정색 반전"
+    issues = " / ".join(planner.retention_issues(spec))
+    assert "gag" in issues and "진중한" in issues
 
 
-def test_humor_rejects_tangent_3_and_wrong_order():
+def test_chain_rejects_tangent_3_and_wrong_order():
     spec = _retention_spec()
     spec["scenes"][4]["tangent"], spec["scenes"][6]["tangent"] = 2, 1
-    spec["scenes"][0]["gag"] = "슬랩스틱"
-    issues = " / ".join(planner.retention_issues(spec))
-    assert "순서" in issues and "슬랩스틱" in issues
+    assert "순서" in " / ".join(planner.retention_issues(spec))
     spec = _retention_spec()
     spec["scenes"][6]["tangent"] = 3
-    spec["scenes"][5]["gag"] = "삼천포"
+    assert "tangent는 1" in " / ".join(planner.retention_issues(spec))
+
+
+def test_accuracy_needs_sourced_facts():
+    spec = _retention_spec()
+    spec["facts_to_check"] = ["판사는 25명"]
     issues = " / ".join(planner.retention_issues(spec))
-    assert "삼천포" in issues and "tangent는 1" in issues
+    assert "facts_to_check가 1개" in issues and "출처" in issues
+    assert "개그" not in planner.POLISH_SYSTEM.split("\n")[0] and "진중" in planner.POLISH_SYSTEM
+    assert "웃음 장치(gag:)는 쓰지 않는다" in planner.system_prompt(planner.catalog())
 
 
 def test_no_person_names():
@@ -446,14 +452,14 @@ def test_plan_runs_punchup_with_light_prompt(monkeypatch):
         systems.append(body["system"])
         if len(systems) == 1:
             return _resp(good)
-        return _resp(json.dumps([{"n": 6, "caption": "회의도 줄고 야근도 줄고 잔소리도 줄었는데, 이혼은 늘었습니다."}], ensure_ascii=False))
+        return _resp(json.dumps([{"n": 6, "caption": "회의와 야근은 줄었지만, 이혼 건수는 늘어난 것으로 추정됩니다."}], ensure_ascii=False))
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
     monkeypatch.setattr(planner, "smoke_test", lambda y: [])
     ytxt, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
-    assert len(systems) == 2 and systems[1] == planner.PUNCHUP_SYSTEM
-    assert len(systems[1]) < len(systems[0]) / 10            # 개그 다듬기는 짧은 지시문으로
-    assert spec["scenes"][5]["caption"].endswith("이혼은 늘었습니다.")
+    assert len(systems) == 2 and systems[1] == planner.POLISH_SYSTEM
+    assert len(systems[1]) < len(systems[0]) / 10            # 편집자 다듬기는 짧은 지시문으로
+    assert spec["scenes"][5]["caption"].endswith("추정됩니다.")
     assert yaml.safe_load(ytxt)["scenes"][5]["caption"] == spec["scenes"][5]["caption"]

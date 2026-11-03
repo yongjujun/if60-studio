@@ -24,10 +24,10 @@ layout:
 facts_to_check:
   - "촉법소년 = 만 10세 이상 14세 미만, 보호처분 — https://www.newsis.com/view/NISX20260714_0003708015"
   - "송치 2021년 11,677명 → 2025년 21,095명 — https://www.fnnews.com/news/202607160631094884"
-  - "2025년 절도 10,110건(약 48%), 살인 0건 — 위 두 기사"
-  - "소년원 수용률 평균 112% — 뉴시스 위 기사"
-  - "소년부 판사 약 25명(전문가 지적) → 1인당 약 843건 (계산)"
-  - "정부안: 강력·중대·반복 범죄 13세 하향 추진, 아직 법 개정 전 (2026.7 기준) — 최신 상황 재확인"
+  - "2025년 절도 10,110건(약 48%), 살인 0건 — https://www.newsis.com/view/NISX20260714_0003708015 , https://www.fnnews.com/news/202607160631094884"
+  - "소년원 수용률 평균 112% — https://www.newsis.com/view/NISX20260714_0003708015"
+  - "소년부 판사 약 25명(전문가 지적) → 21,095 ÷ 25 ≈ 843건 (계산)"
+  - "정부안: 강력·중대·반복 범죄 13세 하향 추진, 아직 법 개정 전 (2026.7 기준, 올리기 전 재확인) — https://www.newsis.com/view/NISX20260714_0003708015"
 
 keyframes:  # AI 이미지로 만들 때 쓰는 그림 9장 — 장면의 image 번호가 가리킴
   - {id: 1, desc: "거대한 판사석 앞, 책 더미를 밟고 선 작은 아이 피고인", prompt: "a tiny child defendant standing on a stack of books in front of a towering wooden judge's bench, dramatic low angle, isometric 3D voxel diorama, soft studio lighting, muted colors, vertical 9:16, no text"}
@@ -46,11 +46,10 @@ scenes:
   - duration: 3.5
     act: 도입
     image: 1
-    gag: 과잉 진지
     role: hook
     visual: 거대한 판사석 앞에 책 더미를 밟고 선 작은 아이, 판사석 위로 빨간 '유죄' 도장이 쾅
-    caption: 만 10세, 지우개 절도. 판결은…
-    narration: 만 열 살, 지우개 절도. 판결은…
+    caption: 만 10세 절도, 형사 재판으로.
+    narration: 만 열 살 절도, 형사 재판으로.
     world: {template: studio, seed: 11, params: {color: "#2a2230"}}
     shot: {from: [1.3, 1.9, -3.9], to: [1.1, 1.8, -3.4], target: [0, 0.85, 0.4], fov: 48}
     props:
@@ -167,9 +166,9 @@ scenes:
     act: 전개
     image: 4
     tangent: 1
-    gag: 정색 반전
     visual: 성문 앞까지 이어진 작은 아이들의 긴 줄, 부모들이 옆에 서 있음, 우측 상단 D+1
-    caption: 폐지 첫날. 법원 앞에 줄이 섰습니다. 책가방을 멘 채로요.
+    caption: 폐지 첫날. 만 10~13세 사건이 형사 절차로 넘어갑니다.
+    narration: 폐지 첫날. 만 십 세에서 십삼 세 사건이 형사 절차로 넘어갑니다.
     hud: "D+1"
     world: {template: plaza, seed: 17}
     time: "08:30"
@@ -185,7 +184,6 @@ scenes:
     act: 전개
     image: 5
     tangent: 2
-    gag: 숫자 개그
     visual: 판사 한 명이 앉은 책상 옆으로 흰 서류 더미가 점점 높이 솟아오름, 대시보드에 1인당 843건
     caption: 문제는 판사예요. 소년부 판사는 약 25명. 1명당 843건.
     narration: 문제는 판사예요. 소년부 판사는 약 스물다섯 명. 한 명당 팔백사십삼 건.
@@ -207,10 +205,9 @@ scenes:
     act: 전개
     image: 5
     tangent: 2
-    gag: 한 박자 늦은 펀치
-    visual: 서류 더미에 파묻힌 판사 클로즈업, '야근' 도장이 쾅, 순간 줌인
-    caption: 하루 2.3건씩 1년이면 끝나긴 합니다. 주말을 반납하면요.
-    narration: 하루 이 점 삼 건씩, 일 년이면 끝나긴 합니다. 주말을 반납하면요.
+    visual: 서류 더미에 둘러싸인 판사 클로즈업, '과부하' 도장, 순간 줌인
+    caption: 하루 2.3건씩, 주말 없이 1년 내내 처리해야 하는 양입니다.
+    narration: 하루 이 점 삼 건씩, 주말 없이 일 년 내내 처리해야 하는 양입니다.
     beat: 0.8
     world: {template: studio, seed: 18, params: {color: "#e9e4da"}}
     shot: {from: [0, 1.5, -3.4], to: [0, 1.4, -2.9], target: [0, 1.0, 0.3], fov: 50}
@@ -220,7 +217,7 @@ scenes:
       - {shape: box, size: [0.4, 1.6, 0.35], at: [-0.45, 0.75, 0.25], color: "#f6f6f2"}
       - {shape: box, size: [0.4, 1.9, 0.35], at: [0.45, 0.75, 0.25], color: "#f6f6f2"}
     big_text:
-      - {text: "주말 반납", style: stamp, from: 3.4, pos: [0.5, 0.4], angle: 7}
+      - {text: "과부하", style: stamp, from: 3.4, pos: [0.5, 0.4], angle: 7}
     effects:
       - punch: {at: 3.4, length: 2.4, zoom: 1.25}
 
@@ -229,7 +226,6 @@ scenes:
     act: 전개
     image: 6
     tangent: 2
-    gag: 숫자 개그
     visual: 방 안에 작은 아이들이 빼곡히 들어찬 모습, 대시보드 막대가 정원선을 넘어 빨갛게
     caption: 갈 곳은요? 소년원은 이미 정원의 112%가 차 있어요.
     narration: 갈 곳은요? 소년원은 이미 정원의 백십이 퍼센트가 차 있어요.
@@ -295,7 +291,6 @@ scenes:
   - duration: 6
     act: 반전
     image: 8
-    gag: 의외의 비교
     visual: 대시보드에 절도 48%, 살인 0건, 무대 위 작은 지우개·젤리·필통
     caption: 그런데 작년 촉법소년 사건의 절반 가까이는 절도. 살인은 0건이었어요.
     narration: 그런데 작년 촉법소년 사건의 절반 가까이는 절도. 살인은 영 건이었어요.
@@ -317,11 +312,10 @@ scenes:
   - duration: 6
     act: 결말
     image: 8
-    gag: 콜백
     role: payoff
     visual: 젤리 세 알에 노란 표적 링, '재판 회부' 도장 + 순간 줌인
-    caption: 그러니까 이 거대한 법원과 교도소가 주로 맞서게 될 상대는… 젤리 도둑.
-    narration: 그러니까 이 거대한 법원과 교도소가 주로 맞서게 될 상대는… 젤리 도둑.
+    caption: 결국 새 제도가 가장 많이 다루게 될 사건은 가벼운 절도입니다.
+    narration: 결국 새 제도가 가장 많이 다루게 될 사건은 가벼운 절도입니다.
     beat: 0.9
     world: {template: tabletop, seed: 22}
     shot: close

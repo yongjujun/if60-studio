@@ -154,11 +154,11 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 ## 대본 형식 — 먼저 최상위 format: 을 정한다 (사용자가 지정하면 그대로)
 - format: broadcast (방송형) — 설명·계산·풍자형. 상단 두 줄 제목 틀 + 대시보드 + 콜드 오픈/되감기. 60~120초, 장면 4~6초. (아래 '콘텐츠 공식')
 - format: ladder (결과 사다리) — "만약에 ~라면?" 상상 하나를 생활 곳곳에 차례로 터뜨린다. 90~135초, 장면 2.5~4초. (아래 '결과 사다리')
-  일상과 맞닿은 황당한 가정(모기·잠·날씨·몸·돈·동물…)이면 ladder, 숫자 계산·제도 해설이 중심이면 broadcast.
+  일상과 맞닿은 비현실적 가정(모기·잠·날씨·몸·돈·동물…)이면 ladder, 숫자 계산·제도 해설이 중심이면 broadcast.
 
 ## ★결과 사다리 (format: ladder) — 상상 하나, 생활 영역 10곳 이상
 "모기가 피 대신 지방을 빨아 간다면?"처럼 규칙 하나만 바꾸고, 그 결과가 생활의 각 영역에서 실제로 어떻게 번질지 짧은 컷으로 이어 붙인다.
-각 컷은 "정말 그렇게 되겠네" 싶은 그럴듯한 결과 하나 — 다음 영역이 궁금해 끝까지 본다. 유머는 그 위에 가볍게.
+각 컷은 "정말 그렇게 되겠네" 싶은 근거 있는 결과 하나 — 다음 영역이 궁금해 끝까지 본다. 웃기려 하지 않고 정확하게.
 - 화면 틀: 최상위 layout: {{style: simple, title: "만약에 모기가 피 대신 지방을 빨아 간다면 어떻게 될까요?"}}
   → 화면 전체가 3D, 첫 4초만 가운데에 큰 질문(마지막 줄 노란색). 상단 제목 띠·대시보드는 쓰지 않는다(필요한 숫자는 sign이나 big_text로).
 - 장면 = 컷 하나 = 2.5~4초 = caption 12~22자. 20~34장면. 장면마다 domain: (생활 영역 이름)을 적는다.
@@ -169,60 +169,52 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 - 반전: 정말 좋기만 할까? — 실제로 생길 법한 부작용·한계 한두 컷 (가능하면 실제 사실·수치로).
 - 결말: 질문으로 끝낸다. "여러분이라면 ○○ 그대로인데 ○○ 하시겠어요?" 같은 양자택일 + card(선택지 2~3개,
   cta: "댓글로 남겨주세요 · 답은 다음 영상에서")로 팔로우를 부른다.
-- 3D 속 글자(sign)로 상황을 보여준다: 간판·현수막·가격표·매물 카드·병원 안내·뉴스 화면. 가끔 살짝 비튼 문구로 웃음을 준다.
-  예: 부동산 매물 카드 {{title: "1층", text: "개울 앞\n**모기 많음**\n★★★"}}, 피부과 안내 "모기 20만 마리 코스\n누워만 계세요",
-  워터파크 현수막 "모기 보장! 없으면 환불", 정육점 가격표 "삼겹살 **품절**\n이겹살 8,600원"(말장난). sign 장면 4개 이상.
-- 가치 뒤집기: 원래 귀찮던 것이 귀해지고 귀하던 것이 골칫거리가 되는 순간을 끝까지 민다(모기 많은 집이 비싸짐).
-- 얼굴 클로즈업 컷: bust 모델(표정 5종)로 반응을 보여준다. 정색(bust) 얼굴이 가장 자연스럽게 웃길 때가 많다.
-  예: 정색한 얼굴 + 손에 든 계기판 sign "오늘 37방 / 목표 200,000".
+- 3D 속 글자(sign)로 상황과 수치를 보여준다: 간판·현수막·가격표·매물 카드·병원 안내·뉴스 화면. 문구는 실제 기관·가게가 쓸 법한 담백한 정보형으로.
+  예: 부동산 매물 카드 {{title: "1층", text: "개울 앞\n**모기 많음**"}}, 병원 안내 "모기 물림 진료\n**대기 40분**",
+  통계 화면 "하루 필요 열량\n**약 2,000kcal**". 말장난·비튼 문구는 쓰지 않는다. sign 장면 4개 이상.
+- 가치 변화: 가정 때문에 가치가 오르거나 떨어지는 것을 실제 경제 원리(수요·공급·비용)로 설명한다.
+- 얼굴 클로즈업 컷: bust 모델(표정 5종)로 반응을 보여준다. 표정은 절제해서(기본 bust, 필요할 때만 놀람·슬픔).
 - 생활 세트를 적극적으로: office · elevator · shop(kind) · shopfront · clinic · pool · farm · room · tabletop · apartments.
-- 사실: 기본 수치(예: 하루 필요 열량, 지방 1kg 열량)는 검색으로 확인해 숫자 개그에 쓰고, 상상 부분은 상상임이 분명하게.
+- 사실: 기본 수치(예: 하루 필요 열량, 지방 1kg 열량)는 검색으로 확인해 계산의 출발점으로 쓰고, 상상 부분은 상상임이 분명하게.
 
-## ★현실적인 가짜 다큐 — 그럴듯하게 풀고, 유머는 가볍게 (format: ladder는 필수, broadcast도 권장)
+## ★현실적인 시뮬레이션 다큐 — 진중하고 정확하게 (format: ladder는 필수, broadcast도 권장)
 목표: 시청자가 "진짜 이렇게 되겠는데?" 하고 끝까지 보게 만든다. 가정 하나만 비현실이고, 그 뒤의 전개는 최대한 현실적으로.
-웃음은 덤이다 — 장면 3개 중 1개 정도에 가볍게. 과장된 몸 개그·엉뚱한 옆길보다 "있을 법해서 웃긴" 디테일.
+웃음·개그·말장난은 넣지 않는다. 몰입은 정확한 사실, 계산된 숫자, 그럴듯한 인과관계에서 나온다.
 1. 사람 이름은 쓰지 않는다. 등장인물은 역할로만: "한 직장인", "편의점 알바생", "시장 상인", "치과 의사".
    최상위 cast: [{{role: "한 직장인", color}}] 2~4명. 장면마다 who: [역할]. 같은 인물이 여러 장면에 다시 나오면 이야기가 이어진다.
 2. 시간 흐름(when) — "첫날" → "일주일 뒤" → "한 달 뒤" → "1년 뒤". 4단계 이상. caption 첫머리에 자연스럽게 ("한 달 뒤, …").
 3. 규모가 커지는 순서 — 집 → 가게 → 동네 → 도시 → 전국. 단계마다 실제로 그렇게 번질 이유가 있어야 한다.
 4. 사회의 공식 대응 2번 이상 — 재난문자(alert), 뉴스 자막띠(chyron), 안내문·공지(sign), 일기예보 화면.
-   실제 기관이 실제로 낼 법한 말투로. (유머는 문구 끝에 살짝만)
+   실제 기관이 실제로 낼 법한 말투로, 비틀지 않고.
 5. 숫자는 계산으로 — 실제 수치(검색 확인)에서 출발해 계산한 값을 쓴다. 근거 없는 큰 숫자 금지. facts_to_check에 계산식.
 6. 진짜 사실 2~3개 — 검색으로 확인한 실제 사실을 전개 곳곳에 (예: "pH 5.5 아래면 치아 법랑질이 녹기 시작"). 출처를 facts_to_check에.
-7. 내레이터는 차분한 다큐 톤. 등장인물 리액션도 과하지 않게(놀란 얼굴 한두 번이면 충분).
+7. 내레이터는 차분하고 진중한 다큐 톤. 등장인물 리액션도 과하지 않게(놀란 얼굴 한두 번이면 충분).
 8. 결말: 현실 확인 한 줄 + 질문 card, 또는 다음 편이 궁금한 한 문장(role: cliffhanger — 이름 없이 "그런데 이 편의점 알바생은…").
 - 날씨가 주제면 weather: 로 실제로 비·눈을 내리게 하고, 사람들은 person_umbrella 로 우산을 씌운다.
 
 ## 장르별 톤 — 먼저 주제의 장르를 정해 최상위 genre: 에 적는다
-- genre: satire (사회 풍자) → **통쾌하게.** 시청자가 평소 당하기만 하던 쪽(사기·갑질·허세·특권)이
-  가상 제도 앞에서 꼼짝 못 하게 되는 '사이다' 순간을 전개 구간에 2~3번 만든다. 웃음의 방향은 언제나 위로(힘 있는 쪽, 제도, 위선).
-  단, 통쾌함 다음 반전에서 그 제도의 허점·부작용도 정직하게 보여준다(그래서 결말 질문이 살아난다).
-- genre: science (과학) → **흥미롭게.** 실제 수치로 직접 계산한 의외의 결과(예: 피부로 하는 광합성 = 하루 몇 kcal)를
+- genre: satire (사회·제도) → **균형 있게.** 가상 제도가 생기면 실제로 누가 어떤 영향을 받는지 사실과 사례로 보여준다.
+  찬성 쪽이 기대하는 효과와 반대 쪽이 걱정하는 부작용을 같은 무게로 다루고, 조롱·사이다 연출은 하지 않는다.
+- genre: science (과학) → **정확하게.** 실제 수치로 직접 계산한 결과(예: 피부로 하는 광합성 = 하루 몇 kcal)를
   big_text·대시보드로 보여주고, "그래서 실제로는?"을 매 장면 한 단계씩 밝혀 간다. 과장 없이 숫자가 놀라게 한다.
-- genre: absurd (황당한 가정) → **진지하게.** 말도 안 되는 가정을 정부 브리핑·다큐·공식 통계 발표처럼 정색하고 설명한다.
-  실제 연구·통계를 근거로 "만약 그렇다면 이렇게 된다"를 논리적으로 밀고 나가며, 진지할수록 웃기다.
+- genre: absurd (비현실적 가정) → **진지하게.** 가정 하나만 비현실이고, 그 결과는 실제 연구·통계·물리 법칙에 근거해 논리적으로 밀고 나간다.
 
-## 공통 톤: 정색한 블랙코미디
-요즘 시청자는 정보만 나열하는 영상보다, 사실을 정확히 짚으면서 그 사실이 만드는 '부조리'에 피식 웃게 되는 영상에 끌린다.
-- 내레이터는 진지한 다큐 톤(정색)을 유지한 채 황당한 결론을 담담하게 말한다. 과장된 리액션·유행어 남발 금지.
-- 웃음 장치 (영상마다 4~6개 섞기):
-  · 담담한 반전: 그럴듯한 설명 → 마지막 한 마디로 뒤집기 ("…그래서 1년 안에 끝나긴 합니다. 주말을 반납하면요.")
-  · 정색한 공식 발표체: 뉴스 자막띠(chyron)·도장(stamp)·대시보드로 황당한 상황을 '공식'처럼 보여주기
-  · 숫자로 웃기기: 실제 수치를 계산해 나온 어이없는 결과 (1인당 843건, 하루 2.3건)
-  · 점점 커지는 황당함: 상상 속 결과를 한 단계씩 키워 가기
-  · 콜백: 초반의 소품·대사를 끝에서 다시 꺼내 마무리
-  · 펀치라인 직후 beat(0.5~1초 정적) + punch(줌인) 또는 stamp — 웃을 틈을 준다
-- 풍자의 과녁은 제도·관료주의·모순·우리 모두의 습관이다. 피해자·약자·특정 집단·실존 인물은 절대 조롱하지 않는다.
+## 공통 톤: 진중한 정보 다큐 — 정확한 정보 전달이 최우선
+- 내레이터는 차분하고 신뢰감 있는 다큐 톤. 웃음 장치·개그·말장난·유행어·과장된 리액션은 쓰지 않는다.
+- 모든 숫자는 검색으로 확인한 값이거나 그 값에서 계산한 값이다. 근거 없는 숫자·최상급 표현("역대급", "무조건") 금지.
+- 확정된 사실 / 계산한 추정 / 상상(가정)을 말로 구분한다: 추정은 "약", "계산하면", "추정됩니다", 가정은 "만약 ~라면".
+- 단위·출처 기관·연도를 정확히. 연구 결과는 "한 연구에 따르면"처럼 한계를 밝히고, 하나의 연구를 일반 법칙처럼 말하지 않는다.
+- facts_to_check에 장면에 나온 핵심 사실마다 한 줄씩(출처 URL, 계산이면 계산식). 확인하지 못한 내용은 대본에 넣지 않는다.
 - 사회·정치적으로 의견이 갈리는 주제(법·제도·정책)는 한쪽 편을 들지 않는다:
-  찬성 쪽이 기대하는 효과와 반대 쪽이 걱정하는 문제를 둘 다 사실로 보여주고, 양쪽의 부조리를 고르게 비튼다.
+  찬성 쪽이 기대하는 효과와 반대 쪽이 걱정하는 문제를 둘 다 사실로 보여준다.
   현재 실제 상황(법·정부안이 어디까지 왔는지)을 한 장면으로 정확히 밝히고, 결론은 마지막 카드에서 시청자에게 묻는다.
 - "~라면?" 상상 장면은 상상임이 분명하게 표현한다(자막띠 tag: "가상 상황" 등). 실제 사실과 상상을 섞어 오해하게 만들지 않는다.
-- 범죄·사고를 다룰 때 수법·잔혹한 묘사는 넣지 않는다. 아이·피해자를 웃음거리로 쓰지 않는다.
+- 범죄·사고를 다룰 때 수법·잔혹한 묘사는 넣지 않는다. 피해자·약자·특정 집단·실존 인물을 깎아내리지 않는다.
 
 ## 콘텐츠 공식 — format: broadcast (조회수가 검증된 방송형 구조 — 채널 '만물제작소'. ladder는 위 '결과 사다리'가 우선)
 - 길이는 60~120초(기본 약 90초, 12~18장면). 장면마다 act: 를 붙여 4단 구성을 완성한다 (순서대로, 넷 다 필수):
   ①act: 도입 — 3초 훅(콜드 오픈) + 되감기 + 실제 사실·수치로 설정 (전체의 약 25%)
-  ②act: 전개 — 가정이 현실이 되면 벌어지는 일, 단계마다 커지는 황당함·통쾌함 (약 35%)
+  ②act: 전개 — 가정이 현실이 되면 벌어지는 일, 단계마다 커지는 실제 영향 (약 35%)
   ③act: 반전 — 예상을 뒤집는 사실·부작용·의외의 비교 (약 25%)
   ④act: 결말 — 현실 확인 + 기억에 남는 한 줄(payoff) + 질문 카드 (약 15%)
 - 화면 틀: 최상위 layout으로 상단에 두 줄 제목(첫 줄 흰색, 둘째 줄 노란색 — 각 10자 안팎)이 영상 내내 고정된다.
@@ -249,23 +241,18 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
   · 반전 직후 beat 또는 punch로 한 박자 준다. 후반(끝에서 2~4번째 장면)에도 반전을 한 번 더 둘 수 있다.
 - role: payoff (card 바로 앞, 끝에서 2~3번째 안) — 기억에 남을 한 줄. 영상이 끝나도 머리에 남는 문장이다.
   · 첫 장면(hook)의 소품·숫자·대사를 다시 꺼내는 콜백이면 가장 좋다(처음 장면으로 되돌아가게 → 반복 재생).
-  · 짧고 단정하게, 펀치라인 뒤 beat 0.8초.
+  · 짧고 단정하게, 핵심 사실을 말한 뒤 beat 0.8초.
 - 마지막 card의 질문은 hook에서 던진 궁금증과 이어지게 한다.
 - 장면 시작 시각은 앞 장면들의 대사 길이(글자 수 ÷ 6.5 + 0.6초)를 더해 계산한다.
 
-## ★웃음 설계: 현실적인 결과의 연쇄 + 가벼운 유머
+## ★결과의 연쇄: 직접 결과 → 현실적인 파급
 정보를 한 번 말하고 끝내지 않는다. 가정의 결과 → 그 결과가 현실에서 번지는 모습으로 한 단계 더 들어간다.
-주제와 상관없는 곳으로 튀는 '삼천포' 전개, "…아무튼." 하고 돌아오는 복귀 장면은 쓰지 않는다. 장면에 tangent: 1|2 를 붙인다.
-- tangent: 1 — 1단계: 가정이 바로 바꾸는 일, 누구나 예상하는 직접적인 결과. (예: 머리 위 전과 표시 → 보이스피싱범이 출근길에 바로 들통)
+주제와 상관없는 곳으로 튀는 전개는 쓰지 않는다. 장면에 tangent: 1|2 를 붙인다.
+- tangent: 1 — 1단계: 가정이 바로 바꾸는 일, 누구나 예상하는 직접적인 결과. (예: 머리 위 전과 표시 → 보이스피싱범이 출근길에 바로 드러남)
 - tangent: 2 — 2단계: 그 결과가 경제·제도·생활 습관으로 번지는 현실적인 파급. (→ 채용·임대 심사에서 표시 확인이 관행이 됨, 오표시 정정 소송 증가)
-- 장면에 gag: 로 웃음 장치를 하나 적을 수 있다 (아래 이름 중 하나). 장면 3개 중 1개 정도, 2가지 이상 섞되 과하게 넣지 않는다:
-  정색 반전 · 공식 발표체 · 숫자 개그 · 과잉 진지 · 콜백 · 의외의 비교 · 3의 법칙 · 현실 공감 · 한 박자 늦은 펀치 ·
-  간판 개그(3D 속 글자로 웃김) · 말장난 · 가치 뒤집기(귀찮던 게 귀해짐) · 공식 대응
-- 웃긴 대사 쓰는 법:
-  · 펀치라인은 문장 맨 끝 단어에 둔다. ("1년이면 끝나긴 합니다. 주말을 반납하면요.")
-  · 웃음을 설명하지 않는다. "웃기게도", "황당하게도" 같은 말 금지. 감탄사·유행어·물음표 남발 금지.
-  · 추상어보다 구체적인 사물 하나가 웃기다 ("불편"보다 "젤리 세 알").
-  · 웃음 장면이 아닌 곳은 담백하게 사실과 결과만. 모든 문장을 웃기려 하지 않는다.
+- 웃음 장치(gag:)는 쓰지 않는다. 대사는 담백한 사실 문장으로: 무엇이 · 얼마나 · 왜.
+  · 추상어보다 구체적인 사물·숫자 ("불편"보다 "출근 시간 40분 증가").
+  · 감탄사·유행어·물음표 남발 금지. 한 장면 한 가지 정보.
 
 ## ★AI 이미지 6~10장으로 시각화 가능하게 (keyframes — ladder는 8~16장)
 이 대본은 3D 복셀로도 렌더링되지만, AI 이미지 6~10장만으로도 영상을 만들 수 있어야 한다.
@@ -286,7 +273,7 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 장면 필드:
 - duration(초), act(도입|전개|반전|결말, 필수), image(keyframes 번호, 필수), domain(ladder 필수: 생활 영역 이름),
   who(등장인물 역할 목록), when(시간 흐름 단계), role(선택: hook|twist|payoff|cliffhanger),
-  tangent(선택: 1|2|3 — 웃음 설계의 절), gag(선택: 웃음 장치 이름), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
+  tangent(선택: 1|2 — 결과의 연쇄 단계), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
 - world: {{template: 이름, seed: 정수, params: {{...}}}}
 - shot: 템플릿 샷 이름, 또는 직접 카메라:
     {{from: [x,y,z], to: [x,y,z], target: [x,y,z], target_to: [x,y,z], fov: 50}}
@@ -335,7 +322,7 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
     big_text에 style: stamp → 빨간 도장이 '쾅' 찍힘 (예: {{text: "기각", style: stamp, from: 2.0, angle: -8}}) — 판결·승인·검토 중 같은 공식 느낌
     chyron: [{{tag: "속보"|"가상 상황"|"실제 상황", text: "정부, 촉법소년 제도 전면 폐지", from: 초}}] — 뉴스 하단 자막띠
     effects에 punch {{at: 초, length: 1.0, zoom: 1.3, center: [0.5, 0.45]}} — 순간 줌인 후 정지 (어이없는 순간)
-    beat: 0.8 — 이 장면 대사가 끝난 뒤 0.8초 정적 (펀치라인 다음에)
+    beat: 0.8 — 이 장면 대사가 끝난 뒤 0.8초 정적 (핵심 사실 다음에)
 - card (마무리 장면 전용, world 없이 써도 됨 — 앞 장면을 흐리게 깔아 줌):
     {{question: "당신의 선택은?", options: ["선택지1", "선택지2", "선택지3"], cta: "댓글로 번호를 남겨주세요"}}
     card가 있는 장면은 caption이 화면에 표시되지 않는다(질문·선택지가 자막 역할)
@@ -640,15 +627,13 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
 HOOK_MAX_SEC = 3.5          # 1번 장면(훅)은 이 안에 끝나야 함
 TWIST_WINDOW = (15.0, 30.0)  # 중간 반전 장면이 시작해야 하는 구간(초)
 ROLES = ("hook", "twist", "payoff", "cliffhanger")
-GAGS = ("정색 반전", "공식 발표체", "숫자 개그", "과잉 진지", "콜백", "의외의 비교", "3의 법칙",
-        "현실 공감", "한 박자 늦은 펀치", "간판 개그", "말장난", "가치 뒤집기", "공식 대응")
-GAG_SHARE = 1 / 3            # 웃음 장치는 장면 3개 중 1개 정도 — '약간의 유머'
+MIN_FACTS = 3               # facts_to_check — 핵심 사실마다 출처 URL 또는 계산식
 NAME_RE = re.compile(r"(?<![가-힣])[가-힣]{2,3} 씨(?!앗|름|감|족)|(?<![가-힣])[김이박최정강조윤장임한오신권황안송홍고문양손배백허유남노하곽성차주우구민진나지][가-힣]{0,2} "
                      r"(?:대리|과장|부장|차장|사원|주임|사장님|원장님|할머니|할아버지)")
 ACTS = ("도입", "전개", "반전", "결말")
 LENGTH_RANGE = (60.0, 120.0)   # 영상 전체 길이(초)
 KEYFRAME_RANGE = (6, 10)       # AI 이미지로 만들 때 필요한 그림 수
-GENRES = {"satire": "사회 풍자 — 통쾌하게", "science": "과학 — 흥미롭게", "absurd": "황당한 가정 — 진지하게"}
+GENRES = {"satire": "사회·제도 — 균형 있게", "science": "과학 — 정확하게", "absurd": "비현실적 가정 — 진지하게"}
 # 대본 형식: broadcast(방송형 — 설명·계산·풍자) | ladder(결과 사다리 — 상상 하나를 생활 곳곳에 터뜨리기)
 FORMATS = {
     "broadcast": {"label": "방송형", "length": (60.0, 120.0), "keyframes": (6, 10), "target": 90},
@@ -706,13 +691,14 @@ def retention_issues(spec: dict) -> list[str]:
     if not any(s.get("role") in ("payoff", "cliffhanger") for s in tail):
         issues.append("끝에 role: payoff 장면이 없음 — 마지막 card 바로 앞에 기억에 남는 한 줄(가능하면 첫 장면 콜백)을 둘 것")
     issues += structure_issues(spec, scenes, t)
-    issues += humor_issues(scenes)
+    issues += chain_issues(scenes)
+    issues += accuracy_issues(spec)
     issues += name_issues(spec)
     return issues
 
 
-def humor_issues(scenes: list) -> list[str]:
-    """웃음 설계 검사: 현실적인 결과의 연쇄(1단계 직접 결과 → 2단계 현실적인 파급) + 가벼운 유머(장면 1/3 정도)"""
+def chain_issues(scenes: list) -> list[str]:
+    """결과의 연쇄 검사(1단계 직접 결과 → 2단계 현실적인 파급) + 개그 금지"""
     issues = []
     tang = []
     for i, s in enumerate(scenes, 1):
@@ -724,7 +710,7 @@ def humor_issues(scenes: list) -> list[str]:
         except (TypeError, ValueError):
             v = -1
         if v not in (1, 2):
-            issues.append(f"장면 {i}: tangent는 1(직접 결과) 또는 2(현실적인 파급)만 — 삼천포(3)처럼 주제에서 벗어나는 전개는 쓰지 않음")
+            issues.append(f"장면 {i}: tangent는 1(직접 결과) 또는 2(현실적인 파급)만 — 주제에서 벗어나는 전개는 쓰지 않음")
             continue
         tang.append((i, v))
     levels = [v for _, v in tang]
@@ -737,34 +723,43 @@ def humor_issues(scenes: list) -> list[str]:
     end = [i for i, s in enumerate(scenes, 1) if s.get("act") == "결말"]
     if tang and end and max(i for i, _ in tang) >= min(end):
         issues.append("tangent 장면이 결말 구간에 있음 — 1~2단계는 전개·반전 구간 안에서 끝낼 것")
-    talk = [s for s in scenes if not isinstance(s.get("card"), dict) and not isinstance(s.get("credits"), dict)]
-    gags = [s.get("gag") for s in talk if s.get("gag")]
-    bad = sorted({g for g in gags if g not in GAGS})
-    if bad:
-        issues.append(f"gag 이름 '{', '.join(map(str, bad))}'는 목록에 없음 ({' / '.join(GAGS)})")
-    good = [g for g in gags if g in GAGS]
-    need = max(1, round(len(talk) * GAG_SHARE))
-    if len(good) < need:
-        issues.append(f"웃음 장치(gag)가 있는 장면이 {len(good)}개 — 장면 3개 중 1개 정도({need}개)에 가볍게 넣을 것")
-    elif len(set(good)) < 2:
-        issues.append("웃음 장치가 한 종류뿐 — 2가지 이상 섞을 것")
+    gags = [i for i, s in enumerate(scenes, 1) if s.get("gag")]
+    if gags:
+        issues.append(f"웃음 장치(gag)가 들어간 장면: {', '.join(map(str, gags[:6]))} — 개그 없이 진중한 정보 전달로 "
+                      "(gag 필드를 지우고 대사를 담백한 사실 문장으로)")
     return issues
 
 
-# ------------------------------------------------------------------ 개그 작가 다듬기
-PUNCHUP_SYSTEM = """너는 한국 예능·쇼츠 개그 작가다. 정색한 다큐 내레이션으로 사람을 웃기는 쇼츠 대본의 대사만 더 웃기게 다듬는다.
+def accuracy_issues(spec: dict) -> list[str]:
+    """정확성 검사: 핵심 사실마다 출처(URL) 또는 계산 근거가 facts_to_check에 있어야 한다"""
+    facts = [str(f) for f in spec.get("facts_to_check") or [] if str(f).strip()]
+    issues = []
+    if len(facts) < MIN_FACTS:
+        issues.append(f"facts_to_check가 {len(facts)}개 — 장면에 나온 핵심 사실·수치마다 출처 URL 또는 계산식을 "
+                      f"{MIN_FACTS}개 이상 적을 것 (확인 못 한 내용은 대본에서 뺄 것)")
+    bare = [f for f in facts if not re.search(r"https?://|계산|공식|=|×|÷", f)]
+    if bare:
+        issues.append(f"출처·근거가 없는 사실 {len(bare)}개 — 예: '{bare[0][:30]}' 뒤에 출처 URL이나 계산식을 붙일 것")
+    return issues
+
+
+humor_issues = chain_issues   # 예전 이름
+
+
+# ------------------------------------------------------------------ 톤·정확성 다듬기 (편집자)
+POLISH_SYSTEM = """너는 한국 과학·시사 다큐의 내레이션 편집자다. 쇼츠 대본의 대사를 진중하고 정확한 정보 전달 문장으로 다듬는다.
 규칙:
 - 장면의 뜻·사실·순서는 그대로. 아라비아 숫자는 한 글자도 바꾸거나 빼지 않는다. 화면(visual)과 어긋나는 말을 넣지 않는다.
-- 펀치라인은 문장 맨 끝 단어에. 웃음을 설명하지 않는다("웃기게도" 금지). 유행어·감탄사·이모지·과한 물음표 금지.
-- 추상어 대신 구체적인 사물·숫자, 3의 법칙(평범 둘 + 비튼 하나), 한 박자 늦은 펀치, 앞 장면 콜백을 활용한다.
-- 내레이터는 끝까지 차분하게. 웃음은 가볍게 — 모든 장면을 웃기려 하지 말고, 이미 담백하게 좋은 대사는 건드리지 않는다.
-- 주제에서 벗어나는 엉뚱한 옆길(삼천포)을 새로 만들지 않는다. 사람 이름을 넣지 않는다(역할로만).
-- 웃음의 과녁은 제도·위선·힘 있는 쪽·우리 모두의 습관. 실존 인물·상표·특정 집단·피해자·외모를 조롱하지 않는다.
+- 개그·말장난·펀치라인·비꼬는 말·유행어·감탄사·과장된 표현("역대급", "무조건", "미쳤다")을 지운다.
+- 추정·계산한 값에는 "약", "계산하면", "추정됩니다"를, 가정에는 "만약 ~라면"을 붙여 사실과 구분한다.
+- 하나의 연구를 일반 법칙처럼 말하는 문장은 "한 연구에 따르면"처럼 한계를 밝힌다.
+- 사람 이름을 넣지 않는다(역할로만). 실존 인물·상표·특정 집단을 깎아내리지 않는다.
 - 길이: 각 caption 45자 이내, 원래 대사 길이의 ±30% 안. 1번 장면(hook)은 20자 안팎.
 - caption에 숫자·기호·영문이 있으면 읽는 그대로 한글로 쓴 narration도 함께 준다.
 - 시간 흐름 말머리("한 달 뒤,")는 살린다.
-- 이미 충분히 웃기면 그 장면은 빼도 된다.
+- 이미 담백하고 정확한 장면은 빼도 된다.
 출력: 설명 없이 JSON 배열 하나만. [{"n": 장면번호, "caption": "...", "narration": "...(필요할 때)"}]"""
+PUNCHUP_SYSTEM = POLISH_SYSTEM   # 예전 이름
 
 _NEEDS_READING = re.compile(r"[0-9A-Za-z%℃°㎡㎞㎏~·/+×]")
 
@@ -778,7 +773,7 @@ def punchup_prompt(spec: dict) -> str:
     for i, s in enumerate(spec.get("scenes") or [], 1):
         if not isinstance(s, dict) or isinstance(s.get("card"), dict) or isinstance(s.get("credits"), dict):
             continue
-        tags = [str(s.get(k)) if k != "tangent" else f"{s.get(k)}절" for k in ("act", "role", "tangent", "gag") if s.get(k)]
+        tags = [str(s.get(k)) if k != "tangent" else f"{s.get(k)}단계" for k in ("act", "role", "tangent") if s.get(k)]
         lines.append(f"{i}. [{' · '.join(tags)}] 화면: {s.get('visual', '')}")
         lines.append(f"   caption: {s.get('caption', '')}")
         if s.get("narration"):
@@ -787,7 +782,7 @@ def punchup_prompt(spec: dict) -> str:
 
 
 def apply_punchup(spec: dict, text: str) -> tuple[dict, int]:
-    """개그 작가의 JSON 답을 안전하게 반영. (새 spec, 바뀐 장면 수)"""
+    """편집자의 JSON 답을 안전하게 반영. (새 spec, 바뀐 장면 수)"""
     m = re.search(r"\[.*\]", text or "", re.S)
     if not m:
         return spec, 0
@@ -941,7 +936,7 @@ def story_issues(spec: dict, scenes: list) -> list[str]:
 
 
 def ladder_issues(spec: dict, scenes: list, total: float) -> list[str]:
-    """결과 사다리 형식 검사: 짧은 컷 여러 개 · 생활 영역 8곳 이상 · 3D 속 글자 개그 · 심플 틀"""
+    """결과 사다리 형식 검사: 짧은 컷 여러 개 · 생활 영역 8곳 이상 · 3D 속 글자 정보 · 심플 틀"""
     issues = []
     talk = [s for s in scenes if not isinstance(s.get("card"), dict) and not isinstance(s.get("credits"), dict)]
     if len(scenes) < LADDER_MIN_SCENES:
@@ -954,7 +949,7 @@ def ladder_issues(spec: dict, scenes: list, total: float) -> list[str]:
                       f"서로 다른 곳 {LADDER_MIN_DOMAINS}곳 이상으로 퍼뜨릴 것 (장면마다 domain: 적기)")
     signs = sum(1 for s in talk if any(isinstance(p, dict) and p.get("shape") == "sign" for p in s.get("props") or []))
     if signs < LADDER_MIN_SIGNS:
-        issues.append(f"3D 속 글자(sign) 장면이 {signs}개 — 간판·가격표·매물 카드·현수막 개그를 {LADDER_MIN_SIGNS}장면 이상")
+        issues.append(f"3D 속 글자(sign) 장면이 {signs}개 — 간판·가격표·매물 카드·현수막 정보를 {LADDER_MIN_SIGNS}장면 이상")
     issues += story_issues(spec, scenes)
     lay = spec.get("layout")
     if not (lay == "simple" or (isinstance(lay, dict) and lay.get("style") == "simple")):
@@ -1185,10 +1180,11 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
     if tangents:
         user += f"전개 아이디어(참고용, 더 현실적인 게 떠오르면 바꿔도 됨): {tangents}\n"
     if fmt != "broadcast":
-        user += ("결과 사다리라면 '현실적인 가짜 다큐' 필수: 이름 없이 역할로 부르는 등장인물 2~4명 · 시간 흐름 4단계 · "
+        user += ("결과 사다리라면 '현실적인 시뮬레이션 다큐' 필수: 이름 없이 역할로 부르는 등장인물 2~4명 · 시간 흐름 4단계 · "
                  "사회의 공식 대응 2번 · 실제 사실 2~3개.\n")
-    user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · 1단계(직접 결과)→2단계(현실적인 파급), 삼천포 금지 · "
-             "유머는 장면 3개 중 1개 정도로 가볍게 · 사람 이름 금지 · "
+    user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · 1단계(직접 결과)→2단계(현실적인 파급) · "
+             "개그·말장난 없이 진중한 다큐 톤, 정확한 정보 전달이 최우선 · 모든 수치는 검색 확인 또는 계산(facts_to_check에 출처·계산식) · "
+             "사람 이름 금지 · "
              "keyframes(방송형 6~10장, 사다리 8~16장)로 시각화 가능.\n"
              "먼저 웹 검색으로 핵심 사실과 수치를 확인한 뒤, 지정한 형식의 YAML만 출력해.")
     log("▶ 1/3 자료 조사 + 대본·연출 작성 중 (1~5분)")
@@ -1214,8 +1210,8 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
         log(f"▶ 제작 조건 맞추는 중 ({attempt + 1}/2 — 3초 훅 · 4단 구성 · 현실적 연쇄 · 길이 · 이미지): "
             + "; ".join(issues[:2]) + (" …" if len(issues) > 2 else ""))
         fix = ("아래 YAML이 제작 조건을 어겼어. 문제:\n- " + "\n- ".join(issues) +
-               "\n\n시스템 프롬프트의 '시청 유지 설계'·'4단 구성'·'웃음 설계'·'현실적인 가짜 다큐'·'keyframes' 규칙을 따른다. 확인된 사실·수치·출처는 바꾸지 말고, "
-               "장면 순서·장면 추가(1·2단계)·대사·role·act·tangent·gag·image·keyframes만 손봐. ```yaml 블록 하나로 출력해.\n\n```yaml\n" + ytxt + "```")
+               "\n\n시스템 프롬프트의 '시청 유지 설계'·'4단 구성'·'결과의 연쇄'·'공통 톤'·'현실적인 시뮬레이션 다큐'·'keyframes' 규칙을 따른다. 확인된 사실·수치·출처는 바꾸지 말고, "
+               "장면 순서·장면 추가(1·2단계)·대사·role·act·tangent·image·keyframes·facts_to_check(출처 보강)만 손봐. gag 필드는 지워. ```yaml 블록 하나로 출력해.\n\n```yaml\n" + ytxt + "```")
         try:
             ytxt2 = extract_yaml(call(fix, False)[0])
             spec2, errs2 = _validated(ytxt2, cat, length, log)
@@ -1241,7 +1237,7 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
         if revised:
             spec2, errs2 = _validated(revised, cat, length, log)
             if not errs2 and len(retention_issues(spec2)) > len(retention_issues(spec)):
-                errs2 = ["감독 수정안이 제작 조건(구성·이미지 목록·웃음 설계)을 깨뜨림"]
+                errs2 = ["감독 수정안이 제작 조건(구성·이미지 목록·정확성)을 깨뜨림"]
             if not errs2:
                 ytxt, spec = revised, spec2
                 log(f"  · 화면이 안 맞는 장면을 고쳤어요 ({time.time() - t1:.0f}초)")
@@ -1250,10 +1246,10 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
         else:
             log(f"  · 통과 ({time.time() - t1:.0f}초)")
     if punchup:
-        log("▶ 개그 작가 다듬기: 대사의 펀치라인을 더 세게 (짧은 지시문이라 사용량 적음)")
+        log("▶ 편집자 다듬기: 개그·과장을 빼고 사실과 추정을 구분 (짧은 지시문이라 사용량 적음)")
         try:
             before = len(retention_issues(spec))
-            spec2, n = apply_punchup(spec, call_light(PUNCHUP_SYSTEM, punchup_prompt(spec)))
+            spec2, n = apply_punchup(spec, call_light(POLISH_SYSTEM, punchup_prompt(spec)))
             if n and len(retention_issues(spec2)) <= before:
                 ytxt, spec = dump_yaml(spec2), spec2
                 log(f"  · 대사 {n}개를 다듬었어요")

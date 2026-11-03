@@ -20,6 +20,7 @@ layout:
   style: simple
   title: 만약에 잠을 통장처럼 저축할 수 있다면?
 facts_to_check:
+  - "주말 몰아 자기는 평일 수면 부족을 다 회복하지 못하고 생체 리듬(서캐디언 리듬)도 늦춘다 (2019 연구) — https://www.nih.gov/news-events/nih-research-matters/weekend-catch-cant-counter-chronic-sleep-deprivation"
   - "성인 권장 수면 하루 7시간 이상 — https://www.cdc.gov/sleep/about/index.html"
   - "8시간 × 3.5% ≈ 17분 (계산)"
   - "3년 × 365일 × 8시간 = 8,760시간 (계산)"
@@ -61,7 +62,6 @@ scenes:
     act: 도입
     image: 1
     domain: 침실
-    gag: 과잉 진지
     visual: 같은 침대, 우측 상단 시계가 토요일 밤에서 일요일 새벽으로 휙휙 넘어감
     caption: 토요일 밤, 한 직장인이 30시간을 잡니다.
     who: [한 직장인]
@@ -79,7 +79,6 @@ scenes:
     act: 도입
     image: 2
     domain: 침실
-    gag: 정색 반전
     visual: 정색한 직장인 얼굴 클로즈업, 머리 위 '평일 수면 0시간' 종이
     caption: 그리고 평일엔 한숨도 안 잡니다.
     who: [한 직장인]
@@ -96,12 +95,10 @@ scenes:
     tangent: 1
     image: 3
     domain: 출근길
-    gag: 숫자 개그
     visual: 출근길 엘리베이터 안, 꼿꼿이 선 사람들, 문 위 화면 '오늘 하품 0회'
-    caption: 출근길 엘리베이터, 하품 소리 0회.
+    caption: 출근길 엘리베이터에는 하품하는 사람이 없습니다.
     who: [한 직장인]
     when: 월요일 아침
-    narration: 출근길 엘리베이터, 하품 소리 영 회.
     world: {template: elevator, seed: 4}
     shot: front
     crowds:
@@ -114,10 +111,8 @@ scenes:
     tangent: 1
     image: 9
     domain: 편의점
-    gag: 과잉 진지
     visual: 편의점 계산대, 알람시계 50개가 쌓여 있고 노란 옷의 알바생이 계산대에 섬
-    caption: 그 시각, 한 편의점 알바생은 알람시계 50개를 샀습니다.
-    narration: 그 시각, 한 편의점 알바생은 알람시계 오십 개를 샀습니다.
+    caption: 그 시각, 한 편의점 알바생은 야간 근무를 늘리려 잠을 미리 모읍니다.
     who: [편의점 알바생]
     when: 그 시각
     world: {template: shop, seed: 11, params: {kind: store}}
@@ -125,14 +120,13 @@ scenes:
     props:
       - {model: person, at: [0.4, 0, 0.5], yaw: 0, color: "#f2c94c"}
       - {shape: box, size: [0.9, 0.4, 0.35], at: [-0.6, 1.06, 1.2], color: "#e0473f"}
-      - {shape: sign, style: price, text: "알람시계 × 50\n**결제 완료**", size: [3.0, 0.85], at: [0, 1.72, 3.4]}
+      - {shape: sign, style: price, text: "야간 근무\n**주 6일**", size: [3.0, 0.85], at: [0, 1.72, 3.4]}
 
   - duration: 3.5
     act: 전개
     tangent: 1
     image: 4
     domain: 회사
-    gag: 공식 발표체
     visual: 넓은 사무실, 뒷벽 현수막 '회의 중 졸음 0건 달성'
     caption: 회의 중 조는 사람도 0명입니다.
     who: [한 직장인]
@@ -150,9 +144,8 @@ scenes:
     tangent: 1
     image: 2
     domain: 회사
-    gag: 한 박자 늦은 펀치
     visual: 눈을 부릅뜬 정색 얼굴 클로즈업 (밤새 안 잔 얼굴)
-    caption: 다들 눈이 조금 무섭긴 합니다.
+    caption: 다만 몰아 자는 습관은 생체 리듬을 흐트러뜨립니다.
     who: [한 직장인]
     when: 월요일 아침
     beat: 0.6
@@ -166,7 +159,6 @@ scenes:
     tangent: 1
     image: 13
     domain: 아파트
-    gag: 3의 법칙
     visual: 밤의 아파트 단지 항공샷, 불 꺼진 창이 대부분
     caption: 주말엔 단지 전체가 조용하고, 평일엔 불이 안 꺼집니다.
     world: {template: apartments, seed: 6}
@@ -180,9 +172,8 @@ scenes:
     tangent: 2
     image: 5
     domain: 은행
-    gag: 정색 반전
     visual: 길가 은행 외관, 위쪽 간판 '수면은행', 사람들이 줄 섬
-    caption: 그런데 문제는, 잠이 돈이 된다는 거죠.
+    caption: 그리고 저축할 수 있는 잠은 곧 돈처럼 거래됩니다.
     alert: {title: 긴급재난문자, sender: 금융위원회, text: "오늘부터 잠 저축이 가능합니다. 과다 수면에 유의하세요.", from: 0.3}
     when: 다음 달
     world: {template: shopfront, seed: 7, params: {color: "#e2e6ec"}}
@@ -199,7 +190,6 @@ scenes:
     tangent: 2
     image: 5
     domain: 은행
-    gag: 숫자 개그
     visual: 은행 창에 붙은 적금 안내 카드 '수면 적금 연 3.5% / 8시간 넣으면 이자 17분' 클로즈업
     caption: 수면 적금 연 3.5%. 8시간 넣으면 이자는 17분.
     when: 다음 달
@@ -215,7 +205,6 @@ scenes:
     tangent: 2
     image: 4
     domain: 회사
-    gag: 공식 발표체
     visual: 책상 모니터에 '내 수면 잔고 -42시간' 빨간 글씨
     caption: 연봉 협상도 이제 수면 잔고로 합니다.
     who: [한 직장인]
@@ -230,7 +219,6 @@ scenes:
     tangent: 2
     image: 2
     domain: 회사
-    gag: 숫자 개그
     visual: 울상인 직장인 얼굴 클로즈업, '승진 보류' 빨간 도장
     caption: 잔고 마이너스 42시간. 승진 보류.
     who: [한 직장인]
@@ -247,14 +235,13 @@ scenes:
     tangent: 2
     image: 6
     domain: 병원
-    gag: 간판 개그
     visual: 피부과 접수대 뒤 안내판 '수면 대출 한도 조회 / 당일 8시간 입금', 대기 의자에 사람들
-    caption: 피부과에는 수면 대출 창구가 생겼고,
+    caption: 병원에는 수면 잔고 상담 창구가 생겼고,
     when: 몇 달 뒤
     world: {template: clinic, seed: 8}
     shot: {from: [0, 2.0, -1.2], to: [0, 1.95, -0.8], target: [0, 1.8, 3.9], fov: 52}
     props:
-      - {shape: sign, style: board, title: "상담 안내", text: "수면 대출 한도 조회\n**당일 8시간 입금**", size: [3.4, 0.95], at: [0, 1.6, 3.88]}
+      - {shape: sign, style: board, title: "상담 안내", text: "수면 잔고 상담\n**예약제**", size: [3.4, 0.95], at: [0, 1.6, 3.88]}
     crowds:
       - {agent: person, count: 8, area: [-3.4, -2.4, 3.4, -2.2], facing: 0}
 
@@ -263,15 +250,14 @@ scenes:
     tangent: 2
     image: 7
     domain: 부동산
-    gag: 말장난
     visual: 부동산 창에 매물 카드 '숙면권 ★★★ 층간소음 0' 과 '역세권 급매'
-    caption: 집값 기준도 바뀝니다. 역세권 말고 숙면권.
+    caption: 집값 기준도 바뀝니다. 역 가까운 집보다 조용한 집이 비싸집니다.
     when: 몇 달 뒤
     world: {template: shopfront, seed: 9, params: {color: "#efe6d6"}}
     shot: window
     props:
       - {shape: sign, style: shop, text: "행복 부동산", size: [5.6, 0.7], at: [0, 2.8, -0.07]}
-      - {shape: sign, style: card, title: "숙면권", text: "층간소음 0\n**★★★**", size: [0.75, 0.95], at: [-1.0, 1.2, -0.01]}
+      - {shape: sign, style: card, title: "조용한 집", text: "층간소음 적음\n**시세 상승**", size: [0.75, 0.95], at: [-1.0, 1.2, -0.01]}
       - {shape: sign, style: card, title: "역세권", text: "지하철 소음\n**급매**", size: [0.65, 0.85], at: [-1.95, 1.25, -0.01], color: "#7a7a84"}
 
   - duration: 3.8
@@ -279,22 +265,19 @@ scenes:
     tangent: 2
     image: 8
     domain: 카페
-    gag: 가치 뒤집기
     visual: 텅 빈 카페 계산대, 메뉴판 '폐업 정리 아메리카노 1+1'
-    caption: 카페는 문을 닫습니다. 아메리카노 1+1도 안 팔려요.
+    caption: 카페 매출은 줄어듭니다. 졸음을 쫓을 이유가 줄었으니까요.
     when: 몇 달 뒤
-    narration: 카페는 문을 닫습니다. 아메리카노 원 플러스 원도 안 팔려요.
     world: {template: shop, seed: 10, params: {kind: cafe}}
     shot: counter
     props:
-      - {shape: sign, style: price, text: "폐업 정리\n**아메리카노 1+1**", size: [3.0, 0.85], at: [0, 1.72, 3.4]}
+      - {shape: sign, style: price, text: "매출 감소\n**영업시간 단축**", size: [3.0, 0.85], at: [0, 1.72, 3.4]}
 
   - duration: 3.4
     act: 전개
     tangent: 2
     image: 9
     domain: 편의점
-    gag: 의외의 비교
     visual: 편의점 계산대 위 가격표 '판매 1위 귀마개 / 2위 안대'
     caption: 그 편의점 판매 1위는 귀마개.
     who: [편의점 알바생]
@@ -310,16 +293,15 @@ scenes:
     tangent: 2
     image: 10
     domain: 놀이시설
-    gag: 간판 개그
     visual: 워터파크 선베드마다 자는 사람들, 뒤 현수막 '단체 낮잠장 성수기 할증 30%'
-    caption: 워터파크는 단체 낮잠장이 됐습니다.
+    caption: 워터파크 같은 넓은 시설은 낮잠 공간으로 바뀝니다.
     when: 여름
     world: {template: pool, seed: 12}
     shot: deck
     crowds:
       - {agent: person, count: 16, area: loungers}
     props:
-      - {shape: sign, style: banner, text: "단체 낮잠장 · 성수기 할증 30%", size: [11.6, 1.2], at: [0, 1.4, 13.9], color: "#2f6fd6"}
+      - {shape: sign, style: banner, text: "낮잠 공간 운영 · 예약제", size: [11.6, 1.2], at: [0, 1.4, 13.9], color: "#2f6fd6"}
 
   # ── 전개: 2단계 계속 (제도로 번짐) ─────────────────
   - duration: 3.8
@@ -327,7 +309,6 @@ scenes:
     tangent: 2
     image: 12
     domain: 관공서
-    gag: 공식 발표체
     visual: 주민센터 외관, 창에 '수면 잔고 인증 · 신분증 지참' 안내 카드, 줄 선 사람들
     caption: 1년 뒤, 잔고를 부풀리는 앱이 퍼지자 정부는 수면 잔고 인증제를 만듭니다.
     when: 1년 뒤
@@ -358,7 +339,7 @@ scenes:
     image: 1
     domain: 침실
     visual: 다시 그 직장인의 침대, 벽 화면 '출금 방법 — 누워서 자기'
-    caption: 문제는, 모아 둔 잠을 꺼내 쓰려면…
+    caption: 하지만 모아 둔 잠도 결국 누워서 자야 꺼내 쓸 수 있습니다.
     world: {template: room, seed: 1}
     time: "23:00"
     shot: inside
@@ -370,21 +351,19 @@ scenes:
     act: 반전
     image: 2
     domain: 침실
-    gag: 정색 반전
     visual: 울상 얼굴 클로즈업 + '결국 자야 함' 도장
-    caption: 결국 누워서 자야 한다는 겁니다.
+    caption: 몸이 회복되는 데 필요한 시간 자체는 줄지 않는 겁니다.
     beat: 0.8
     world: {template: studio, seed: 2, params: {color: "#cfe0ee"}}
     shot: face
     props:
       - {model: bust_sad, at: [0, 0, 0], yaw: 180, color: "#f4f4f4", color2: "#1c1a22"}
-    big_text: [{text: "결국 잠", style: stamp, from: 1.4, pos: [0.5, 0.36]}]
+    big_text: [{text: "회복 시간", style: stamp, from: 1.4, pos: [0.5, 0.36]}]
 
   - duration: 3.8
     act: 반전
     image: 6
     domain: 현실
-    gag: 현실 공감
     visual: 병원 안내판 '성인 권장 수면 하루 7시간 이상 (CDC)'
     caption: 참고로 성인 권장 수면은 하루 7시간 이상입니다.
     narration: 참고로 성인 권장 수면은 하루 일곱 시간 이상입니다.
@@ -397,7 +376,6 @@ scenes:
     act: 반전
     image: 6
     domain: 현실
-    gag: 현실 공감
     visual: 병원 안내판 '실제 연구 — 주말 몰아 자기로는 평일 수면 부족이 다 회복되지 않음'
     caption: 실제로 주말에 몰아 자도, 평일 수면 부족은 다 회복되지 않는다는 연구가 있죠.
     world: {template: clinic, seed: 8}
@@ -411,12 +389,10 @@ scenes:
     role: payoff
     image: 1
     domain: 침실
-    gag: 콜백
     visual: 토요일 밤 침대로 돌아온 그 직장인, 벽 화면 '빚 상환 중 -42시간'
-    caption: 그래서 그 직장인은 오늘도 30시간을 잡니다. 빚 갚느라.
+    caption: 그래서 그 직장인은 마이너스 잔고를 채우려 주말을 잠으로 보냅니다.
     who: [한 직장인]
     when: 3년 뒤
-    narration: 그래서 그 직장인은 오늘도 서른 시간을 잡니다. 빚 갚느라.
     beat: 0.8
     world: {template: room, seed: 1}
     time: "23:00"
@@ -431,10 +407,9 @@ scenes:
     role: cliffhanger
     image: 9
     domain: 편의점
-    gag: 숫자 개그
     visual: 텅 빈 편의점, 알바생의 놀란 얼굴, 뒤 화면 '수면 잔고 -8,760시간'
-    caption: 그런데 3년 동안 한숨도 안 잔 그 알바생, 잔고는 마이너스 8,760시간.
-    narration: 그런데 삼 년 동안 한숨도 안 잔 그 알바생, 잔고는 마이너스 팔천칠백육십 시간.
+    caption: 그 알바생이 3년 동안 하루 8시간씩 미뤘다면, 잔고는 마이너스 8,760시간.
+    narration: 그 알바생이 삼 년 동안 하루 여덟 시간씩 미뤘다면, 잔고는 마이너스 팔천칠백육십 시간.
     who: [편의점 알바생]
     when: 3년 뒤
     world: {template: shop, seed: 11, params: {kind: store}}
@@ -450,7 +425,6 @@ scenes:
     role: cliffhanger
     image: 5
     domain: 은행
-    gag: 공식 발표체
     visual: 수면은행 앞, 노란 옷의 알바생이 문 앞에 서 있고 창에 '수면 대출 8,760시간' 신청 카드
     caption: 그 알바생이 수면 대출을 신청한 날, 은행은 어떻게 됐을까요? 다음 영상에서.
     who: [편의점 알바생]

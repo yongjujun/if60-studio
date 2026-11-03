@@ -51,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
     mk.add_argument("--no-open", action="store_true", help="완성 후 영상을 자동으로 열지 않기")
     mk.add_argument("--no-search", action="store_true", help="웹 검색 없이 작성 (비추천)")
     mk.add_argument("--no-review", action="store_true", help="감독 검수(미리보기로 화면·자막 일치 확인) 건너뛰기")
-    mk.add_argument("--no-punchup", action="store_true", help="개그 작가 다듬기(대사 펀치라인 강화) 건너뛰기")
+    mk.add_argument("--no-punchup", action="store_true", help="편집자 다듬기(개그·과장 제거, 사실·추정 구분) 건너뛰기")
     mk.add_argument("--voice", help="이번 영상의 목소리 (기본: voice use로 정한 것)")
     mk.add_argument("--no-voice", action="store_true", help="내레이션 없이 무음으로")
 

@@ -156,7 +156,7 @@ class Scene:
     markers: list = field(default_factory=list)  # 빛나는 표적 링 {at: [x,y,z], from, to, text, color}
     card: dict | None = None                     # 마무리 카드 {question, options, cta}
     chyron: list = field(default_factory=list)   # 뉴스 자막띠 {tag: 속보, text, from, to}
-    beat: float = 0.0                            # 대사 뒤 '정적'(초) — 펀치라인 뒤 웃음 틈
+    beat: float = 0.0                            # 대사 뒤 '정적'(초) — 핵심 사실을 곱씹을 틈
     weather: object = None                       # rain | snow | {type, color, density, wind, puddles}
     alert: dict | None = None                    # 휴대폰 재난문자 팝업 {title, text, from, to}
     credits: dict | None = None                  # 엔딩 크레딧 {title, heading: 카메오 출연, cast: [{name, color, color2}]}
