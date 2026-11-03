@@ -271,6 +271,9 @@ def _retention_spec(hook="만 10세, 지우개 절도. 판결은…", twist_at=4
     for s, act, img in zip(scenes, acts, images):
         s["act"], s["image"] = act, img
     scenes[twist_at - 1]["role"] = "twist"
+    for s, src in zip(scenes[2:5], ("경찰청 2025", "통계청 2024", "정부 자료 2026")):   # 화면 출처
+        s["source"] = src
+    scenes[6]["uncertainty"] = True
     for s, tang in zip(scenes[4:7], (1, 2, 2)):                 # 전개~반전: 1단계(직접 결과) → 2단계(현실적인 파급)
         s["tangent"] = tang
     scenes.append(_scene("결국 가장 많은 사건은 가벼운 절도입니다.", role="payoff", act="결말", image=6))
@@ -312,7 +315,7 @@ def test_plan_restructures_for_retention(monkeypatch):
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
     monkeypatch.setattr(planner, "smoke_test", lambda y: [])
-    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None, punchup=False)
+    _, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None, punchup=False, factcheck=False)
     assert len(sent) == 2 and "시청 유지" in sent[1]
     assert spec["scenes"][0]["role"] == "hook"
 
@@ -377,7 +380,7 @@ def test_plan_sends_genre_and_angle(monkeypatch):
     monkeypatch.setattr(planner, "smoke_test", lambda y: [])
     t = planner.pick_topics("4")[0]
     planner.plan(t["title"], 60, interactive=False, review_pass=False, log=lambda *a: None,
-                 genre=t["genre"], angle=t["angle"], punchup=False, tangents=t["tangents"])
+                 genre=t["genre"], angle=t["angle"], punchup=False, tangents=t["tangents"], factcheck=False)
     assert len(sent) == 1 and "과학 — 정확하게" in sent[0] and "진중한" in sent[0] and "방향 힌트" in sent[0] and "전개 아이디어" in sent[0] and "사람 이름 금지" in sent[0]
 
 
@@ -458,8 +461,66 @@ def test_plan_runs_punchup_with_light_prompt(monkeypatch):
     monkeypatch.setenv("IF60_BACKEND", "api")
     monkeypatch.setattr(planner, "_post", fake_post)
     monkeypatch.setattr(planner, "smoke_test", lambda y: [])
-    ytxt, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None)
+    ytxt, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, log=lambda *a: None, factcheck=False)
     assert len(systems) == 2 and systems[1] == planner.POLISH_SYSTEM
     assert len(systems[1]) < len(systems[0]) / 10            # 편집자 다듬기는 짧은 지시문으로
     assert spec["scenes"][5]["caption"].endswith("추정됩니다.")
     assert yaml.safe_load(ytxt)["scenes"][5]["caption"] == spec["scenes"][5]["caption"]
+
+
+# ------------------------------------------------------------------ 전문가식 전개 · 화면 출처 · 팩트 재검증
+def test_sources_and_uncertainty_required():
+    spec = _retention_spec()
+    for s in spec["scenes"]:
+        s.pop("source", None)
+        s.pop("uncertainty", None)
+    issues = " / ".join(planner.retention_issues(spec))
+    assert "source" in issues and "uncertainty" in issues
+    spec = _retention_spec()
+    spec["scenes"][2]["source"] = "https://example.com/very/long/link"
+    assert any("URL" in i for i in planner.retention_issues(spec))
+    assert "전문가식 전개" in planner.system_prompt(planner.catalog())
+
+
+def test_source_label_drawn():
+    from if60 import overlay, text
+    import numpy as np
+    img = np.full((640, 360, 3), 200, np.uint8)
+    overlay.draw_source(img, "경찰청 2025", text.find_font(), 1 / 3)
+    band = img[int(640 * 0.64):int(640 * 0.69)]
+    assert (band[:, 200:] < 120).mean() > 0.2 and (band[:, :100] == 200).all()   # 오른쪽에 어두운 띠
+
+
+def test_factcheck_prompt_is_tiny_and_parsed():
+    spec = {"facts_to_check": ["송치 21,095명 — https://www.example.com/news/123456789?ref=abc",
+                               "나머지는 상상", "21,095 ÷ 25 ≈ 843건 (계산)"]}
+    prompt, facts = planner.factcheck_prompt(spec)
+    assert len(facts) == 2 and "example.com" in prompt and "123456789" not in prompt
+    assert len(planner.FACTCHECK_SYSTEM) < 400
+    warns = planner.parse_factcheck('결과: [{"n": 2, "note": "843.8 → 844건"}, {"n": 9, "note": "x"}]', facts)
+    assert len(warns) == 1 and "844" in warns[0]
+    assert planner.parse_factcheck("[]", facts) == [] and planner.parse_factcheck("모름", facts) == []
+
+
+def test_plan_runs_light_factcheck(monkeypatch):
+    good = "```yaml\n" + yaml.safe_dump({"title": "t", "style": "voxel", **_retention_spec()}, allow_unicode=True) + "```"
+    bodies = []
+
+    def fake_post(body, key):
+        bodies.append(body)
+        if len(bodies) == 1:
+            return _resp(good)
+        return _resp('[{"n": 1, "note": "2025년 실제 값은 21,094명"}]')
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
+    monkeypatch.setattr(planner, "_post", fake_post)
+    monkeypatch.setattr(planner, "smoke_test", lambda y: [])
+    ytxt, spec, _ = planner.plan("주제", 60, interactive=False, review_pass=False, punchup=False, log=lambda *a: None)
+    chk = bodies[-1]
+    assert chk["system"] == planner.FACTCHECK_SYSTEM and chk["max_tokens"] <= 1000
+    assert chk["tools"][0]["max_uses"] <= 3 and len(chk["messages"][0]["content"]) < 600
+    assert spec["fact_warnings"] and "21,094" in yaml.safe_load(ytxt)["fact_warnings"][0]
+    bodies.clear()
+    planner.plan("주제", 60, interactive=False, review_pass=False, punchup=False, factcheck=False, log=lambda *a: None)
+    assert len(bodies) == 1

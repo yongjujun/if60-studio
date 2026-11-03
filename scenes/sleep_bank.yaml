@@ -146,6 +146,7 @@ scenes:
     domain: 회사
     visual: 눈을 부릅뜬 정색 얼굴 클로즈업 (밤새 안 잔 얼굴)
     caption: 다만 몰아 자는 습관은 생체 리듬을 흐트러뜨립니다.
+    source: "미국 국립보건원 연구 2019"
     who: [한 직장인]
     when: 월요일 아침
     beat: 0.6
@@ -366,6 +367,7 @@ scenes:
     domain: 현실
     visual: 병원 안내판 '성인 권장 수면 하루 7시간 이상 (CDC)'
     caption: 참고로 성인 권장 수면은 하루 7시간 이상입니다.
+    source: "미국 질병통제예방센터"
     narration: 참고로 성인 권장 수면은 하루 일곱 시간 이상입니다.
     world: {template: clinic, seed: 8}
     shot: {from: [0, 2.0, -1.2], to: [0, 1.95, -0.8], target: [0, 1.8, 3.9], fov: 52}
@@ -377,7 +379,9 @@ scenes:
     image: 6
     domain: 현실
     visual: 병원 안내판 '실제 연구 — 주말 몰아 자기로는 평일 수면 부족이 다 회복되지 않음'
-    caption: 실제로 주말에 몰아 자도, 평일 수면 부족은 다 회복되지 않는다는 연구가 있죠.
+    caption: 한 연구에 따르면, 주말에 몰아 자도 평일 수면 부족은 다 회복되지 않습니다.
+    source: "미국 국립보건원 연구 2019"
+    uncertainty: true
     world: {template: clinic, seed: 8}
     shot: {from: [0, 2.0, -1.2], to: [0, 1.95, -0.8], target: [0, 1.8, 3.9], fov: 52}
     props:

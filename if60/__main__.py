@@ -51,6 +51,7 @@ def main(argv: list[str] | None = None) -> int:
     mk.add_argument("--no-open", action="store_true", help="완성 후 영상을 자동으로 열지 않기")
     mk.add_argument("--no-search", action="store_true", help="웹 검색 없이 작성 (비추천)")
     mk.add_argument("--no-review", action="store_true", help="감독 검수(미리보기로 화면·자막 일치 확인) 건너뛰기")
+    mk.add_argument("--no-factcheck", action="store_true", help="팩트 재검증(수치만 짧게 다시 확인) 건너뛰기")
     mk.add_argument("--no-punchup", action="store_true", help="편집자 다듬기(개그·과장 제거, 사실·추정 구분) 건너뛰기")
     mk.add_argument("--voice", help="이번 영상의 목소리 (기본: voice use로 정한 것)")
     mk.add_argument("--no-voice", action="store_true", help="내레이션 없이 무음으로")
@@ -173,7 +174,7 @@ def make_one(a, job: dict) -> int:
           + (f", {GENRE_LABEL.get(genre, genre)}" if genre else "") + ")\n")
     try:
         ytxt, spec, cites = plan(topic, a.length, web_search=not a.no_search, review_pass=not a.no_review,
-                                 genre=genre, angle=job.get("angle"), punchup=not a.no_punchup,
+                                 genre=genre, angle=job.get("angle"), punchup=not a.no_punchup, factcheck=not a.no_factcheck,
                                  tangents=job.get("tangents"), fmt=fmt)
     except RuntimeError as e:
         print(f"\n✖ {e}")
@@ -197,6 +198,10 @@ def make_one(a, job: dict) -> int:
     print("\n▶ 3/3 확인할 사실 (올리기 전에 꼭 확인!)")
     for f in spec.get("facts_to_check") or []:
         print(f"  - {f}")
+    if spec.get("fact_warnings"):
+        print("  ⚠ 팩트 재검증에서 다시 확인하라고 한 것:")
+        for w in spec["fact_warnings"]:
+            print(f"    · {w}")
     print(f"\n🎉 완성: {out.resolve()}")
     print("   대본을 고치고 싶으면 장면 파일을 수정한 뒤:")
     print(f"   python -m if60 render {scene_path.relative_to(Path.cwd()) if scene_path.is_relative_to(Path.cwd()) else scene_path}")

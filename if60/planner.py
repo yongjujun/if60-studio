@@ -211,6 +211,17 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 - "~라면?" 상상 장면은 상상임이 분명하게 표현한다(자막띠 tag: "가상 상황" 등). 실제 사실과 상상을 섞어 오해하게 만들지 않는다.
 - 범죄·사고를 다룰 때 수법·잔혹한 묘사는 넣지 않는다. 피해자·약자·특정 집단·실존 인물을 깎아내리지 않는다.
 
+## ★전문가식 전개 — 근거가 보이는 시나리오
+전문 연구자·기자가 설명하듯, 다음 순서가 대본 안에 드러나게 한다 (형식·장면 수와 상관없이):
+1. 가정 — 무엇이 바뀌는지 한 문장으로 정확히 정의 (범위·조건까지: "만 10~13세 모든 사건").
+2. 원리 — 왜 그런 결과가 생기는지 메커니즘(물리·생물·경제·제도의 작동 방식)을 한 장면 이상 설명.
+3. 시간대별 전개 — 직후 → 며칠 → 몇 달 → 몇 년. 단계마다 실제 수치나 계산.
+4. 실제 수치 비교 — 현재 현실의 통계와 가정 속 결과를 나란히 보여준다.
+5. 불확실성 — 확실하지 않은 부분, 연구마다 다른 부분, 예측의 한계를 정직하게 밝히는 장면 하나 이상 (그 장면에 uncertainty: true).
+- ★화면 출처 표시: 실제 사실·통계·연구가 나오는 장면에는 source: "기관·자료 연도"를 적는다 (예: "경찰청 2025", "통계청 2024", "미국 국립보건원 연구 2019").
+  한국어로, 20자 이내, URL 금지(URL은 facts_to_check에). 화면 자막 위 오른쪽에 '출처 · …'로 작게 뜬다. 계산값은 "경찰청 2025 · 계산".
+  source 장면 3개 이상. 상상(가정) 장면에는 source를 달지 않는다.
+
 ## 콘텐츠 공식 — format: broadcast (조회수가 검증된 방송형 구조 — 채널 '만물제작소'. ladder는 위 '결과 사다리'가 우선)
 - 길이는 60~120초(기본 약 90초, 12~18장면). 장면마다 act: 를 붙여 4단 구성을 완성한다 (순서대로, 넷 다 필수):
   ①act: 도입 — 3초 훅(콜드 오픈) + 되감기 + 실제 사실·수치로 설정 (전체의 약 25%)
@@ -273,7 +284,7 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 장면 필드:
 - duration(초), act(도입|전개|반전|결말, 필수), image(keyframes 번호, 필수), domain(ladder 필수: 생활 영역 이름),
   who(등장인물 역할 목록), when(시간 흐름 단계), role(선택: hook|twist|payoff|cliffhanger),
-  tangent(선택: 1|2 — 결과의 연쇄 단계), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
+  tangent(선택: 1|2 — 결과의 연쇄 단계), source(사실 장면: "기관 연도"), uncertainty(선택: true — 한계·불확실성을 밝히는 장면), visual(화면 설명 한 줄, 필수), caption(자막이자 내레이션), narration(선택: 읽는 방식이 다를 때), title(선택), hud(선택), time(선택: 조명 시각 "14:00")
 - world: {{template: 이름, seed: 정수, params: {{...}}}}
 - shot: 템플릿 샷 이름, 또는 직접 카메라:
     {{from: [x,y,z], to: [x,y,z], target: [x,y,z], target_to: [x,y,z], fov: 50}}
@@ -370,12 +381,13 @@ def _post(body: dict, key: str) -> dict:
         raise RuntimeError(f"Claude API 오류 {e.code}: {detail}") from None
 
 
-def ask(system: str, user: str, key: str, web_search: bool = True, max_tokens: int = 12000) -> tuple[str, list]:
+def ask(system: str, user: str, key: str, web_search: bool = True, max_tokens: int = 12000,
+        max_searches: int = 6, model: str | None = None) -> tuple[str, list]:
     """텍스트 응답과 인용(citations) 목록을 돌려준다. 웹 검색이 거부되면 검색 없이 다시 시도."""
-    model = os.environ.get("IF60_PLANNER_MODEL", DEFAULT_MODEL)
+    model = model or os.environ.get("IF60_PLANNER_MODEL", DEFAULT_MODEL)
     tools_variants = [
-        [{"type": "web_search_20250305", "name": "web_search", "max_uses": 6}],
-        [{"type": "web_search_20250305", "name": "web_search", "max_uses": 6, "allowed_callers": ["direct"]}],
+        [{"type": "web_search_20250305", "name": "web_search", "max_uses": max_searches}],
+        [{"type": "web_search_20250305", "name": "web_search", "max_uses": max_searches, "allowed_callers": ["direct"]}],
         None,
     ] if web_search else [None]
     last_err = None
@@ -436,7 +448,7 @@ def claude_code_logged_in(cli: str) -> bool:
 
 
 def ask_cli(system: str, user: str, web_search: bool = True, tools: str | None = None,
-            workdir: str | None = None) -> tuple[str, list]:
+            workdir: str | None = None, model: str | None = None) -> tuple[str, list]:
     """Claude Code 비대화 모드로 질문. 웹 검색·웹 읽기(또는 검수 때 파일 읽기)만 허용 — 파일 수정·명령 실행 불가."""
     cli = claude_cli()
     if not cli:
@@ -449,7 +461,7 @@ def ask_cli(system: str, user: str, web_search: bool = True, tools: str | None =
         sp.write_text(system, encoding="utf-8")
         cmd = [cli, "-p", user, "--append-system-prompt-file", str(sp), "--tools", tools,
                "--output-format", "text", "--no-session-persistence",
-               "--model", os.environ.get("IF60_PLANNER_MODEL", "sonnet")]
+               "--model", model or os.environ.get("IF60_PLANNER_MODEL", "sonnet")]
         if tools:
             cmd += ["--allowedTools", tools]
         try:
@@ -628,6 +640,8 @@ HOOK_MAX_SEC = 3.5          # 1번 장면(훅)은 이 안에 끝나야 함
 TWIST_WINDOW = (15.0, 30.0)  # 중간 반전 장면이 시작해야 하는 구간(초)
 ROLES = ("hook", "twist", "payoff", "cliffhanger")
 MIN_FACTS = 3               # facts_to_check — 핵심 사실마다 출처 URL 또는 계산식
+MIN_SOURCES = 3             # 화면에 출처(source)가 뜨는 장면 수
+SOURCE_MAX_LEN = 24
 NAME_RE = re.compile(r"(?<![가-힣])[가-힣]{2,3} 씨(?!앗|름|감|족)|(?<![가-힣])[김이박최정강조윤장임한오신권황안송홍고문양손배백허유남노하곽성차주우구민진나지][가-힣]{0,2} "
                      r"(?:대리|과장|부장|차장|사원|주임|사장님|원장님|할머니|할아버지)")
 ACTS = ("도입", "전개", "반전", "결말")
@@ -740,6 +754,18 @@ def accuracy_issues(spec: dict) -> list[str]:
     bare = [f for f in facts if not re.search(r"https?://|계산|공식|=|×|÷", f)]
     if bare:
         issues.append(f"출처·근거가 없는 사실 {len(bare)}개 — 예: '{bare[0][:30]}' 뒤에 출처 URL이나 계산식을 붙일 것")
+    scenes = [x for x in spec.get("scenes") or [] if isinstance(x, dict)]
+    if len(scenes) < 4:
+        return issues
+    srcs = [str(x.get("source")).strip() for x in scenes if x.get("source")]
+    if len(srcs) < MIN_SOURCES:
+        issues.append(f"화면 출처(source)가 있는 장면이 {len(srcs)}개 — 실제 사실·통계가 나오는 장면에 "
+                      f"source: \"경찰청 2025\"처럼 {MIN_SOURCES}장면 이상")
+    bad = [x for x in srcs if len(x) > SOURCE_MAX_LEN or re.search(r"https?://|www\.", x)]
+    if bad:
+        issues.append(f"source '{bad[0][:30]}' — 화면용이라 '기관 연도'만 {SOURCE_MAX_LEN}자 이내로 (URL은 facts_to_check에)")
+    if not any(x.get("uncertainty") for x in scenes):
+        issues.append("불확실성 장면이 없음 — 확실하지 않은 부분·예측의 한계를 밝히는 장면 하나에 uncertainty: true (반전·결말 구간)")
     return issues
 
 
@@ -822,6 +848,39 @@ def apply_punchup(spec: dict, text: str) -> tuple[dict, int]:
             s.pop("narration", None)
         changed += 1
     return new, changed
+
+
+# ------------------------------------------------------------------ 팩트 재검증 (사용량 최소)
+FACTCHECK_SYSTEM = """사실 확인 담당. 번호 붙은 사실 목록을 받는다. 숫자·연도·기관이 틀렸거나 확인되지 않는 것만 골라라.
+검색은 꼭 필요할 때만 최대 3번. 계산 줄은 산수만 확인. 설명 없이 JSON 배열 하나만 출력:
+[{"n": 번호, "note": "무엇이 다른지 한 줄 (맞는 값과 근거)"}]  — 모두 맞으면 []"""
+FACTCHECK_MAX = 12            # 한 번에 보내는 사실 수 상한 (사용량 제한)
+
+
+def factcheck_prompt(spec: dict) -> tuple[str, list[str]]:
+    """facts_to_check 중 숫자가 있는 줄만, 짧게 (URL은 도메인만 남겨 토큰 절약)"""
+    facts = [str(f).strip() for f in spec.get("facts_to_check") or [] if re.search(r"\d", str(f))][:FACTCHECK_MAX]
+    short = [re.sub(r"https?://(?:www\.)?([^/\s]+)\S*", r"\1", f)[:160] for f in facts]
+    return "\n".join(f"{i}. {f}" for i, f in enumerate(short, 1)), facts
+
+
+def parse_factcheck(text: str, facts: list[str]) -> list[str]:
+    m = re.search(r"\[.*\]", text or "", re.S)
+    if not m:
+        return []
+    try:
+        items = json.loads(m.group(0))
+    except json.JSONDecodeError:
+        return []
+    out = []
+    for it in items if isinstance(items, list) else []:
+        try:
+            n = int(it.get("n"))
+        except (TypeError, ValueError, AttributeError):
+            continue
+        if 1 <= n <= len(facts) and str(it.get("note") or "").strip():
+            out.append(f"{facts[n - 1][:60]} → {str(it['note']).strip()[:120]}")
+    return out
 
 
 def dump_yaml(spec: dict) -> str:
@@ -1145,7 +1204,7 @@ def _validated(ytxt: str, cat: dict, length, log) -> tuple[dict | None, list]:
 def plan(topic: str, length: int | None = None, *, interactive: bool = True, web_search: bool = True,
          review_pass: bool = True, log=print, genre: str | None = None,
          angle: str | None = None, punchup: bool = True, tangents: str | None = None,
-         fmt: str = "auto") -> tuple[str, dict, list]:
+         fmt: str = "auto", factcheck: bool = True) -> tuple[str, dict, list]:
     """주제 → 검증된 장면 YAML 텍스트, 파싱된 spec, 인용 목록"""
     backend = choose_backend(interactive)
     if backend == "api":
@@ -1153,10 +1212,14 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
         call = lambda u, ws: ask(system, u, key, web_search=ws)
         call_light = lambda sysm, u: ask(sysm, u, key, web_search=False, max_tokens=6000)[0]
         call_image = lambda u, png: ask_with_image(system, u, png, key)
+        call_check = lambda sysm, u: ask(sysm, u, key, web_search=True, max_tokens=800, max_searches=3,
+                                         model=os.environ.get("IF60_CHECK_MODEL"))[0]
         log("  · Claude API 사용 (사용량만큼 별도 과금)")
     else:
         call = lambda u, ws: ask_cli(system, u, web_search=ws)
         call_light = lambda sysm, u: ask_cli(sysm, u, web_search=False)[0]
+        call_check = lambda sysm, u: ask_cli(sysm, u, tools="WebSearch",
+                                             model=os.environ.get("IF60_CHECK_MODEL", "haiku"))[0]
 
         def call_image(u, png):
             with tempfile.TemporaryDirectory() as wd:
@@ -1257,6 +1320,23 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
                 log("  · 바꿀 만한 대사가 없어 그대로 둠")
         except Exception as e:
             log(f"  · 다듬기 중 문제가 있어 그대로 진행: {e}")
+    if factcheck and web_search:
+        prompt, facts = factcheck_prompt(spec)
+        if facts:
+            log(f"▶ 팩트 재검증: 수치 {len(facts)}개만 짧게 확인 (가벼운 모델 · 검색 최대 3번)")
+            try:
+                warns = parse_factcheck(call_check(FACTCHECK_SYSTEM, prompt), facts)
+            except Exception as e:
+                warns = []
+                log(f"  · 재검증 중 문제가 있어 건너뜀: {e}")
+            if warns:
+                spec = {**spec, "fact_warnings": warns}
+                ytxt = dump_yaml(spec)
+                log("  ⚠ 다시 확인할 사실 (장면 파일의 fact_warnings에도 저장):")
+                for w in warns:
+                    log(f"     - {w}")
+            else:
+                log("  · 이상 없음")
     return ytxt, spec, cites
 
 

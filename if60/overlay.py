@@ -516,6 +516,28 @@ def _stamp(text: str, px: int, color: tuple, angle: float, font_path: str) -> np
     return np.asarray(Image.fromarray(arr).rotate(angle, expand=True, resample=Image.Resampling.BICUBIC))
 
 
+def draw_source(img: np.ndarray, source: str, font_path: str, u: float, y_frac: float = 0.645) -> None:
+    """출처 표시: 자막 위 오른쪽에 작은 반투명 띠 '출처 · 경찰청 2025' — 시청자가 근거를 눈으로 확인"""
+    txt = safe_text(str(source or "")).strip()
+    if not txt:
+        return
+    if not txt.startswith("출처"):
+        txt = "출처 · " + txt
+    H, W = img.shape[:2]
+    f = font(font_path, int(30 * u))
+    tw = f.getlength(txt)
+    pad_x, pad_y = 14 * u, 7 * u
+    x1 = W - 36 * u
+    x0 = max(8 * u, x1 - tw - pad_x * 2)
+    y0 = H * y_frac
+    y1 = y0 + f.size + pad_y * 2
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    d.rounded_rectangle([x0, y0, x1, y1], radius=int(8 * u), fill=(12, 14, 20, 150))
+    d.text((x0 + pad_x, y0 + pad_y - f.size * 0.08), txt, font=f, fill=(232, 236, 242, 255))
+    paste_rgba(img, np.asarray(layer), 0, 0)
+
+
 def draw_stamp(img: np.ndarray, item: dict, t: float, duration: float, font_path: str, u: float,
                point=None) -> None:
     """'쾅' 찍히는 도장 (판결·기각·승인 같은 풍자 포인트). 크게 떨어져 내려와 꽝 박힌다."""

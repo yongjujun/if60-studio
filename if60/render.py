@@ -159,6 +159,7 @@ class Scene:
     beat: float = 0.0                            # 대사 뒤 '정적'(초) — 핵심 사실을 곱씹을 틈
     weather: object = None                       # rain | snow | {type, color, density, wind, puddles}
     alert: dict | None = None                    # 휴대폰 재난문자 팝업 {title, text, from, to}
+    source: str = ""                             # 화면 출처 표시 "경찰청 2025" (사실이 나오는 장면)
     credits: dict | None = None                  # 엔딩 크레딧 {title, heading: 카메오 출연, cast: [{name, color, color2}]}
     look: str = "voxel"                          # voxel | smooth
     # --- 내레이션 (TTS)
@@ -347,6 +348,7 @@ def load_project(path: str, style_override: str | None = None,
             markers=_as_list(s.get("markers")), card=s.get("card"), narration=s.get("narration"),
             chyron=_as_list(s.get("chyron")), beat=float(s.get("beat", 0) or 0),
             weather=s.get("weather"), alert=s.get("alert"), credits=s.get("credits"),
+            source=str(s.get("source") or ""),
             look=str(s.get("look", spec.get("look", "voxel"))),
             bloom=float(s.get("bloom", spec.get("bloom", 0.7 if spec.get("look") == "smooth" else 0.45)))))
     return spec, style, scenes
@@ -451,6 +453,8 @@ class Composer:
         if sc.alert:
             overlay.draw_alert(big, sc.alert, t, sc.duration, self.font, self.u,
                                top if self.broadcast else int(self.h * 0.06))
+        if sc.source and sc.card is None and sc.credits is None:
+            overlay.draw_source(big, sc.source, self.font, self.u)
         if sc.card is not None:
             if prep is not None:
                 big = overlay.darken(big, 0.45)
