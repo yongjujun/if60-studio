@@ -33,6 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--preview", action="store_true", help="1/3 해상도로 빠르게 확인")
     r.add_argument("--stills", help="장면별 대표 프레임 PNG를 저장할 폴더")
     r.add_argument("--fps", type=int, help="초당 프레임 수 (기본: 스타일 설정, 3D 미리보기는 15)")
+    r.add_argument("--guide", action="store_true", help="인스타·쇼츠 앱 UI가 가리는 자리를 붉게 표시한 확인용 영상")
     r.add_argument("--voice", help="목소리 (예: supertonic:F3, typecast:tc_xxx, google:Charon)")
     r.add_argument("--no-voice", action="store_true", help="내레이션 없이 무음으로")
 
@@ -77,9 +78,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if a.cmd == "render":
         from .render import render
-        out = a.out or f"out/{Path(a.scenes).stem}{'_preview' if a.preview else ''}.mp4"
+        out = a.out or f"out/{Path(a.scenes).stem}{'_preview' if a.preview else ''}{'_guide' if a.guide else ''}.mp4"
         render(a.scenes, out, style_override=a.style, length=a.length, provider=a.provider,
-               preview=a.preview, stills_dir=a.stills, fps=a.fps, voice=a.voice, narrate=not a.no_voice)
+               preview=a.preview, stills_dir=a.stills, fps=a.fps, voice=a.voice, narrate=not a.no_voice,
+               guide=a.guide)
     elif a.cmd == "pixelate":
         from .render import pixelate_file
         pixelate_file(a.src, a.out, a.style, a.preview)

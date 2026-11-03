@@ -104,7 +104,7 @@ def test_satire_devices_render():
     assert red > 200                                              # 빨간 도장이 찍힘
     ch = img.copy()
     overlay.draw_chyron(ch, {"tag": "속보", "text": "정부 발표"}, 1.0, 5, font, 1 / 3)
-    assert (ch != img).any(axis=-1)[int(640 * 0.815):].mean() > 0.01
+    assert (ch != img).any(axis=-1)[int(640 * overlay.CHYRON_Y):int(640 * (overlay.CHYRON_Y + 0.05))].mean() > 0.01
     z = overlay.punch_zoom(np.arange(640 * 360 * 3, dtype=np.uint8).reshape(640, 360, 3), {"at": 0, "zoom": 1.5}, 0.5)
     assert z.shape == (640, 360, 3)
 

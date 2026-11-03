@@ -382,11 +382,13 @@ def _text_layer(scene: Scene, t: float, style: Style, font: str, layout: bool = 
             vis = int(len(cap_text) * min(1.0, t / max(0.6, scene.duration * 0.45))) + 1
         size = style.caption_size if (scene.typewriter or scene.caption_mode != "chunk") \
             else int(style.caption_size * 1.25)  # 덩어리 자막은 짧으니 더 크게
-        merge(text.render_text((tw, th), cap_text, font_path=font, size=size, y=0.74,
+        merge(text.render_text((tw, th), cap_text, font_path=font, size=size, y=overlay.CAPTION_Y,
+                               wrap_frac=2 * (overlay.SAFE_RIGHT - 0.5),   # 오른쪽 버튼 열을 피해 가운데 76% 안에
                                visible_chars=vis))
     label = hud_label(scene.hud, t, scene.duration)
     if label:
-        merge(text.render_badge((tw, th), label, font_path=font, y=0.185 if layout else 0.075,
+        merge(text.render_badge((tw, th), label, font_path=font, y=0.215 if layout else overlay.SAFE_TOP + 0.01,
+                                x=overlay.SAFE_RIGHT + 0.04,
                                 size=int(style.caption_size * 0.8)))
     return out
 
@@ -395,8 +397,9 @@ class Composer:
     """장면 한 프레임을 최종 화면으로: 3D/2D 바탕 → 빛 번짐 → 표적·큰 글자·대시보드·카드 → 자막 → 전환 효과 → 방송 레이아웃.
     렌더링·시험 렌더·감독 검수 시트가 모두 이 순서를 그대로 쓴다."""
 
-    def __init__(self, spec: dict, style: Style, font: str, size: tuple[int, int], vr=None):
+    def __init__(self, spec: dict, style: Style, font: str, size: tuple[int, int], vr=None, guide: bool = False):
         self.spec, self.style, self.font = spec, style, font
+        self.guide = guide                     # 인스타·쇼츠 UI가 덮는 자리를 붉게 표시 (확인용)
         self.w, self.h = size
         self.u = self.w / 1080
         self.vr = vr
@@ -446,19 +449,20 @@ class Composer:
             pt = self.vr.project([bt["at"]])[0] if (prep is not None and bt.get("at") is not None) else None
             overlay.draw_big_text(big, bt, t, sc.duration, self.font, self.u, pt)
         for ch in sc.chyron:
-            overlay.draw_chyron(big, ch, t, sc.duration, self.font, self.u,
-                                y_frac=(bottom - int(64 * self.u) - int(14 * self.u)) / self.h)
+            overlay.draw_chyron(big, ch, t, sc.duration, self.font, self.u)
         if sc.panel:
-            overlay.draw_panel(big, sc.panel, t, sc.duration, self.font, top + int(28 * self.u), self.u)
+            overlay.draw_panel(big, sc.panel, t, sc.duration, self.font,
+                               max(top + int(28 * self.u), int(self.h * overlay.SAFE_TOP + 52 * self.u)), self.u)
         if sc.alert:
             overlay.draw_alert(big, sc.alert, t, sc.duration, self.font, self.u,
-                               top if self.broadcast else int(self.h * 0.06))
+                               top if self.broadcast else int(self.h * overlay.SAFE_TOP))
         if sc.source and sc.card is None and sc.credits is None:
             overlay.draw_source(big, sc.source, self.font, self.u)
         if sc.card is not None:
             if prep is not None:
                 big = overlay.darken(big, 0.45)
-            overlay.draw_card(big, sc.card, t, sc.duration, self.font, self.u, (top, bottom))
+            overlay.draw_card(big, sc.card, t, sc.duration, self.font, self.u,
+                              (max(top, int(self.h * overlay.SAFE_TOP)), min(bottom, int(self.h * overlay.SAFE_BOTTOM))))
         tl = _text_layer(sc, t, self.style, self.font, layout=self.broadcast)
         if tl is not None:
             th, tw = tl.shape[:2]
@@ -481,6 +485,8 @@ class Composer:
         elif self.layout is not None:
             big = self.layout.apply(big, t, first=id(sc) == self._first)
         self.prev = big
+        if self.guide:
+            return overlay.draw_safe_guide(big)
         return big
 
 
@@ -560,7 +566,8 @@ def apply_voice(scenes: list[Scene], voice, log=print) -> np.ndarray:
 
 def render(project_path: str, out_path: str, *, style_override: str | None = None,
            length: float | None = None, provider: str | None = None, preview: bool = False,
-           stills_dir: str | None = None, fps: int | None = None, voice=None, narrate: bool = True) -> str:
+           stills_dir: str | None = None, fps: int | None = None, voice=None, narrate: bool = True,
+           guide: bool = False) -> str:
     """장면 YAML → mp4. 내레이션을 켜면 목소리를 먼저 만들고 그 길이에 맞춰 장면·자막을 맞춘다.
     목소리만 따로 담은 _voice.wav도 함께 저장한다 (편집 앱에서 쓰기 좋게)."""
     require_ffmpeg()
@@ -596,7 +603,7 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
         vr = VoxelRenderer(ow, oh, samples=2 if preview else 4)
     if stills_dir:
         Path(stills_dir).mkdir(parents=True, exist_ok=True)
-    comp = Composer(spec, style, font, (ow, oh), vr)
+    comp = Composer(spec, style, font, (ow, oh), vr, guide=guide)
     n_frames_total = 0
     for si, sc in enumerate(scenes):
         n = max(1, int(round(sc.duration * style.fps)))
@@ -618,6 +625,14 @@ def render(project_path: str, out_path: str, *, style_override: str | None = Non
           f"{'목소리 ' + v.label if audio_path else '무음'})")
     if audio_path:
         print(f"  · 목소리만 따로: {audio_path}")
+    if not preview and not guide:
+        from .media import upload_check
+        probs = upload_check(out_path)
+        if probs:
+            print("  ⚠ 업로드 규격 확인: " + "; ".join(probs))
+        else:
+            print("  · 인스타 릴스·쇼츠 업로드 규격 OK (1080x1920 9:16 · H.264 · 화소 1:1 · 30fps · AAC 스테레오)")
+            print("    올릴 땐 편집 앱에서 다시 자르지 말고 이 파일을 그대로 올리세요 (미리보기·_small 파일 말고)")
         from . import tts
         credit = tts.credit_text(v)
         if credit:

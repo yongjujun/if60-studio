@@ -111,7 +111,7 @@ def render_badge(canvas: tuple[int, int], label: str, *, font_path: str, size: i
 def render_text(canvas: tuple[int, int], text: str, *, font_path: str, size: int = 22,
                 y: float = 0.72, color=(255, 255, 255), outline=(10, 8, 24),
                 box: tuple[int, int, int] | None = None, align: str = "center",
-                visible_chars: int | None = None) -> np.ndarray:
+                visible_chars: int | None = None, wrap_frac: float = 0.86) -> np.ndarray:
     """canvas 크기의 RGBA(0/255 알파) 자막 레이어를 돌려준다.
 
     visible_chars: 타자기 효과용. 앞에서부터 이 개수만 보인다.
@@ -121,7 +121,7 @@ def render_text(canvas: tuple[int, int], text: str, *, font_path: str, size: int
     d = ImageDraw.Draw(img)
     font = _font(font_path, size)
     text = safe_text(text)
-    lines = wrap(text, font, int(w * 0.86))
+    lines = wrap(text, font, int(w * wrap_frac))
     lh = int(size * 1.35)
     total_h = lh * len(lines)
     top = int(h * y - total_h / 2)

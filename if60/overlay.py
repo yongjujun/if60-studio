@@ -24,8 +24,17 @@ YELLOW = (255, 210, 63)
 WHITE = (255, 255, 255)
 INK = (14, 14, 20)
 CHANNEL = "만물제작소"
-HEADER = 0.158     # 상단 띠 높이 (화면 높이 비율)
+HEADER = 0.19      # 상단 띠 높이 (화면 높이 비율) — 위쪽 0.08은 인스타·쇼츠 상단 UI 자리라 비워 둠
 FOOTER = 0.08      # 하단 띠 높이
+# 인스타 릴스·유튜브 쇼츠 앱 UI(상단 계정·'릴스' 글자, 하단 설명·계정, 오른쪽 좋아요·댓글 버튼)에 가리지 않는 영역.
+# 앱은 이 바깥에 어두운 그라데이션을 덮어 글자가 흐리게 보이므로, 중요한 글자·숫자는 모두 이 안에 둔다. (화면 비율)
+SAFE_TOP = 0.11
+SAFE_BOTTOM = 0.70
+SAFE_LEFT = 0.06
+SAFE_RIGHT = 0.88   # 오른쪽 12%는 버튼 열 (세로 0.55~0.9 구간)
+CAPTION_Y = 0.60     # 자막 가운데 높이
+SOURCE_Y = 0.495     # 출처 띠 위쪽 높이 (자막 바로 위)
+CHYRON_Y = 0.672     # 뉴스 자막띠 높이 (자막 바로 아래, 안전 영역 끝)
 CIRCLED = "①②③④⑤⑥"
 
 
@@ -200,7 +209,7 @@ class Layout:
         im = Image.fromarray(bg)
         d = ImageDraw.Draw(im)
         # 채널 아이콘: 노란 칸 안의 작은 상자(만물을 '제작'하는 공방) — 채널명은 작게만
-        s, x0, y0 = int(64 * u), int(36 * u), int(22 * u)
+        s, x0, y0 = int(56 * u), int(36 * u), int(self.h * 0.08)
         d.rounded_rectangle([x0, y0, x0 + s, y0 + s], radius=int(14 * u), fill=self.accent)
         cx, cy, r = x0 + s / 2, y0 + s / 2 + 2 * u, s * 0.27
         top = [(cx, cy - r), (cx + r, cy - r / 2), (cx, cy), (cx - r, cy - r / 2)]
@@ -209,16 +218,17 @@ class Layout:
         d.polygon(top, fill=(255, 255, 255))
         d.polygon(left, fill=(40, 36, 30))
         d.polygon(right, fill=(92, 80, 52))
-        nf = font(self.font_path, int(30 * u))
+        nf = font(self.font_path, int(28 * u))
         bold(d, (x0 + s + 16 * u, y0 + 2 * u), self.channel, nf, (236, 236, 242))
         if self.series:
-            sf = font(self.font_path, int(21 * u))
-            d.text((x0 + s + 16 * u, y0 + 38 * u), safe_text(str(self.series)), font=sf, fill=(150, 150, 168))
-        # 두 줄 제목: 첫 줄 흰색, 둘째 줄 노란색
-        ys = [int(104 * u), int(180 * u)] if len(self.lines) == 2 else [int(132 * u)]
+            sf = font(self.font_path, int(20 * u))
+            d.text((x0 + s + 16 * u, y0 + 34 * u), safe_text(str(self.series)), font=sf, fill=(150, 150, 168))
+        # 두 줄 제목: 첫 줄 흰색, 둘째 줄 노란색 (인스타 상단 UI 아래에 오도록 채널 줄 바로 밑)
+        base = y0 + s + int(10 * u)
+        ys = [base, base + int(72 * u)] if len(self.lines) == 2 else [base + int(30 * u)]
         for i, (line, y) in enumerate(zip(self.lines, ys)):
             line = safe_text(str(line))
-            f = fit(self.font_path, line, 62 * u, w - 80 * u)
+            f = fit(self.font_path, line, 58 * u, w - 160 * u)
             tw = f.getlength(line)
             col = WHITE if (i == 0 and len(self.lines) == 2) else self.accent
             bold(d, ((w - tw) / 2, y), line, f, col)
@@ -310,7 +320,7 @@ class SimpleLayout:
         return np.asarray(im)
 
     def apply(self, img: np.ndarray, t: float, first: bool = False) -> np.ndarray:
-        paste_rgba(img, self._mark, int(28 * self.u), int(28 * self.u), opacity=0.75)
+        paste_rgba(img, self._mark, int(self.w * SAFE_LEFT), int(self.h * SAFE_TOP), opacity=0.75)
         if first and self._title_img is not None and t < self.seconds:
             k = min(1.0, t / 0.25) * min(1.0, (self.seconds - t) / 0.35)
             y = int(self.h * 0.3 - self._title_img.shape[0] / 2)
@@ -516,7 +526,7 @@ def _stamp(text: str, px: int, color: tuple, angle: float, font_path: str) -> np
     return np.asarray(Image.fromarray(arr).rotate(angle, expand=True, resample=Image.Resampling.BICUBIC))
 
 
-def draw_source(img: np.ndarray, source: str, font_path: str, u: float, y_frac: float = 0.645) -> None:
+def draw_source(img: np.ndarray, source: str, font_path: str, u: float, y_frac: float = SOURCE_Y) -> None:
     """출처 표시: 자막 위 오른쪽에 작은 반투명 띠 '출처 · 경찰청 2025' — 시청자가 근거를 눈으로 확인"""
     txt = safe_text(str(source or "")).strip()
     if not txt:
@@ -527,7 +537,7 @@ def draw_source(img: np.ndarray, source: str, font_path: str, u: float, y_frac: 
     f = font(font_path, int(30 * u))
     tw = f.getlength(txt)
     pad_x, pad_y = 14 * u, 7 * u
-    x1 = W - 36 * u
+    x1 = W * SAFE_RIGHT
     x0 = max(8 * u, x1 - tw - pad_x * 2)
     y0 = H * y_frac
     y1 = y0 + f.size + pad_y * 2
@@ -536,6 +546,20 @@ def draw_source(img: np.ndarray, source: str, font_path: str, u: float, y_frac: 
     d.rounded_rectangle([x0, y0, x1, y1], radius=int(8 * u), fill=(12, 14, 20, 150))
     d.text((x0 + pad_x, y0 + pad_y - f.size * 0.08), txt, font=f, fill=(232, 236, 242, 255))
     paste_rgba(img, np.asarray(layer), 0, 0)
+
+
+def draw_safe_guide(img: np.ndarray) -> np.ndarray:
+    """확인용: 인스타 릴스·쇼츠 앱 UI가 덮는 자리를 붉게 칠한다 (--guide). 글자가 붉은 곳에 있으면 앱에서 가려짐"""
+    H, W = img.shape[:2]
+    out = img.astype(np.float32)
+    red = np.array([230, 40, 60], np.float32)
+    mask = np.zeros((H, W), bool)
+    mask[:int(H * SAFE_TOP)] = True
+    mask[int(H * SAFE_BOTTOM):] = True
+    mask[int(H * 0.55):, int(W * SAFE_RIGHT):] = True
+    mask[:, :int(W * SAFE_LEFT)] = True
+    out[mask] = out[mask] * 0.55 + red * 0.45
+    return out.astype(np.uint8)
 
 
 def draw_stamp(img: np.ndarray, item: dict, t: float, duration: float, font_path: str, u: float,
@@ -564,7 +588,7 @@ def draw_stamp(img: np.ndarray, item: dict, t: float, duration: float, font_path
 
 # ------------------------------------------------------------------ 뉴스 자막띠
 def draw_chyron(img: np.ndarray, item: dict, t: float, duration: float, font_path: str, u: float,
-                y_frac: float = 0.815) -> None:
+                y_frac: float = CHYRON_Y) -> None:
     """뉴스 하단 자막띠: [속보] 빨간 꼬리표 + 흰 띠 문구. 왼쪽에서 밀려 들어온다."""
     a, b = window(item, duration)
     if not (a <= t <= b) or not item.get("text"):
@@ -576,7 +600,7 @@ def draw_chyron(img: np.ndarray, item: dict, t: float, duration: float, font_pat
     h = int(64 * u)
     tf = font(font_path, int(34 * u))
     tag_w = int(tf.getlength(tag) + 34 * u)
-    xf = fit(font_path, txt, 34 * u, W - tag_w - 60 * u)
+    xf = fit(font_path, txt, 34 * u, W * SAFE_RIGHT - tag_w - 40 * u)   # 오른쪽 버튼 열에 글자가 가리지 않게
     im = Image.new("RGBA", (W, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     d.rectangle([0, 0, W, h], fill=(250, 250, 250, 240))

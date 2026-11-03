@@ -347,7 +347,7 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
     {{type: mushroom, at, from, to, radius: 15, height: 45}}             솟아오르는 버섯구름
     {{type: embers, at, radius, height, count: 200, color, from}}       빛나는 불티·입자가 솟아오름
 - big_text: [{{text: "×1억", from: 초, to: 초, pos: [0.5, 0.42](화면 비율) 또는 at: [x,y,z], color: "#ffd23f", size: 1.0}}]
-    — 장면 속에 크고 빛나는 글자. 한 장면에 1개, 6자 이내. caption(자막, 화면 74% 높이)과 겹치지 않게 pos y는 0.35~0.62
+    — 장면 속에 크고 빛나는 글자. 한 장면에 1개, 6자 이내. caption(자막, 화면 60% 높이)과 겹치지 않게 pos y는 0.25~0.48 (인스타·쇼츠 앱 UI가 화면 위 11%·아래 30%·오른쪽 12%를 가리므로 글자는 그 안쪽에)
 - markers: [{{at: [x,y,z], from: 초, text: "낙뢰 지점", color}}]  — 3D 지점에 빛나는 표적 링
 - panel (데이터 대시보드, 화면 왼쪽 위):
     {{title: "중심 온도", value: {{from: 0, to: 15000000, unit: "℃", format: kr|"{{:,.0f}}", scale: log|linear, at: 초, length: 초}},

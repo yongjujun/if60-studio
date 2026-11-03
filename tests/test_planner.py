@@ -487,8 +487,31 @@ def test_source_label_drawn():
     import numpy as np
     img = np.full((640, 360, 3), 200, np.uint8)
     overlay.draw_source(img, "경찰청 2025", text.find_font(), 1 / 3)
-    band = img[int(640 * 0.64):int(640 * 0.69)]
-    assert (band[:, 200:] < 120).mean() > 0.2 and (band[:, :100] == 200).all()   # 오른쪽에 어두운 띠
+    y = overlay.SOURCE_Y
+    band = img[int(640 * y):int(640 * (y + 0.025))]
+    assert (band[:, 200:300] < 120).mean() > 0.2 and (band[:, :100] == 200).all()   # 오른쪽(버튼 열 앞)에 어두운 띠
+    assert (band[:, int(360 * overlay.SAFE_RIGHT) + 2:] == 200).all()
+
+
+def test_text_stays_inside_reels_safe_zone():
+    """인스타·쇼츠 UI가 덮는 위·아래·오른쪽 버튼 열에 자막·출처·제목이 들어가지 않는다"""
+    from if60 import overlay, text
+    from if60 import render as R
+    import numpy as np
+    font = text.find_font()
+    st = R.Style.from_preset("voxel")
+    sc = R.Scene(duration=3, layers=[], caption="겨울엔 차가운 공기를 데워도 물기는 늘지 않아, 실내가 더 건조해져요.")
+    tl = R._text_layer(sc, 1.0, st, font)
+    h, w = tl.shape[:2]
+    ys, xs = np.nonzero(tl[..., 3])
+    assert ys.min() > h * overlay.SAFE_TOP and ys.max() < h * overlay.SAFE_BOTTOM
+    assert xs.max() < w * overlay.SAFE_RIGHT + 2
+    lay = overlay.make_layout({"title": ["촉법소년이", "사라진다면?"]}, "", font, (360, 640))
+    hd = lay.header
+    rows = np.nonzero((hd.max(-1) > 200).any(axis=1))[0]
+    assert rows.min() > 640 * 0.075                                   # 상단 앱 UI 아래부터 글자
+    g = overlay.draw_safe_guide(np.full((640, 360, 3), 100, np.uint8))
+    assert g[10, 180, 0] > g[300, 180, 0] and (g[300, 180] == 100).all()
 
 
 def test_factcheck_prompt_is_tiny_and_parsed():
