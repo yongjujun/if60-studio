@@ -413,7 +413,7 @@ def test_accuracy_needs_sourced_facts():
     issues = " / ".join(planner.retention_issues(spec))
     assert "facts_to_check가 1개" in issues and "출처" in issues
     assert "개그" not in planner.POLISH_SYSTEM.split("\n")[0] and "진중" in planner.POLISH_SYSTEM
-    assert "웃음 장치(gag:)는 쓰지 않는다" in planner.system_prompt(planner.catalog())
+    assert "웃음 장치(gag:)는 쓰지 않는다" in planner.system_prompt(planner.catalog(), "broadcast")
 
 
 def test_no_person_names():
@@ -524,3 +524,56 @@ def test_plan_runs_light_factcheck(monkeypatch):
     bodies.clear()
     planner.plan("주제", 60, interactive=False, review_pass=False, punchup=False, factcheck=False, log=lambda *a: None)
     assert len(bodies) == 1
+
+
+# ------------------------------------------------------------------ 쉬운 해설 (기본 형식)
+EXP = planner.ROOT / "scenes" / "static_winter.yaml"
+
+
+def test_explainer_example_passes_everything():
+    ytxt = EXP.read_text(encoding="utf-8")
+    spec = yaml.safe_load(ytxt)
+    assert spec["format"] == "explainer"
+    assert planner.validate(spec, planner.catalog(), None) == []
+    assert planner.retention_issues(spec) == []
+    assert planner.smoke_test(ytxt) == []
+
+
+def test_explainer_checks():
+    import copy
+    spec = yaml.safe_load(EXP.read_text(encoding="utf-8"))
+    s2 = copy.deepcopy(spec)
+    for sc in s2["scenes"]:
+        sc.pop("analogy", None)
+        if sc.get("role") == "answer":
+            sc.pop("role")
+    s2["scenes"][3]["caption"] = "가" * 60
+    s2["cast"] = [{"role": "한 직장인"}]
+    issues = " / ".join(planner.retention_issues(s2))
+    assert "answer" in issues and "analogy" in issues and "너무 긴" in issues and "cast" in issues
+    assert not any("1단계" in i for i in planner.retention_issues(spec))     # 해설형엔 결과의 연쇄 강제 없음
+
+
+def test_explainer_is_default_and_prompt_is_focused():
+    p = planner.system_prompt(planner.catalog(), "explainer")
+    assert "제0 원칙" in p and "쉬운 해설" in p and "static_winter" not in p
+    assert "## ★결과 사다리" not in p and "## 콘텐츠 공식" not in p
+    assert "겨울엔 왜 정전기가" in p                                         # 해설형 예시 포함
+    assert "## ★결과 사다리" in planner.system_prompt(planner.catalog(), "ladder")
+
+
+def test_plan_auto_uses_explainer(monkeypatch):
+    sent = []
+
+    def fake_post(body, key):
+        sent.append(body)
+        return _resp("```yaml\n" + EXP.read_text(encoding="utf-8") + "```")
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("IF60_BACKEND", "api")
+    monkeypatch.setattr(planner, "_post", fake_post)
+    _, spec, _ = planner.plan("겨울엔 왜 정전기가 더 잘 생길까?", interactive=False, review_pass=False, punchup=False,
+                              factcheck=False, log=lambda *a: None)
+    msg = sent[0]["messages"][0]["content"]
+    assert "format: explainer" in msg and "전문가" in msg and "answer" in msg
+    assert spec["format"] == "explainer"

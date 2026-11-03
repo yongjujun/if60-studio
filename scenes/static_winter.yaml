@@ -1,0 +1,225 @@
+# 쉬운 해설 예시 — 겨울엔 왜 정전기가 더 잘 생길까? (약 75초, 14장면)
+# 구조: 훅 → 답 먼저 → 원리(비유) → 궁금증 하나 → 실제 수치(출처) → 생활 팁 → 한 줄 정리 → 질문 카드
+title: 겨울엔 왜 정전기가 더 잘 생길까?
+format: explainer
+genre: science
+style: voxel
+layout: {style: simple, title: "겨울엔 왜\n정전기가 더 잘 생길까?"}
+facts_to_check:
+  - "두 물체가 닿았다 떨어지면 전하가 한쪽에 남는다 — https://www.pa.uky.edu/sciworks/THE/heat/static.htm"
+  - "습하면 물체 표면의 얇은 물막이 전하를 흘려보낸다 — https://www.pa.uky.edu/sciworks/THE/heat/static.htm"
+  - "차가운 공기를 난방으로 데워도 수분 양은 그대로라 실내가 건조해진다 — https://www.pa.uky.edu/sciworks/THE/heat/static.htm"
+  - "습도 10~20%에서 카펫 위를 걸으면 약 35,000V, 습도 60~90%에선 약 1,500V — https://www.sciencetimes.co.kr/news/%EC%A0%95%EC%A0%84%EA%B8%B0-%EA%B2%A8%EC%9A%B8%EC%9D%B4%EB%A9%B4-%EC%B0%BE%EC%95%84%EC%98%A4%EB%8A%94-%EB%B6%88%EC%B2%AD%EA%B0%9D/"
+  - "사람은 약 2,500~4,000V부터 정전기를 느낀다, 전압은 높아도 전류가 매우 작아 위험하지 않다 — 위 사이언스타임즈 기사 https://www.sciencetimes.co.kr/news/%EC%A0%95%EC%A0%84%EA%B8%B0-%EA%B2%A8%EC%9A%B8%EC%9D%B4%EB%A9%B4-%EC%B0%BE%EC%95%84%EC%98%A4%EB%8A%94-%EB%B6%88%EC%B2%AD%EA%B0%9D/"
+  - "예방: 가습기·젖은 빨래로 습도 올리기, 보습, 금속은 손가락 끝이나 열쇠로 먼저 대기 — 위 기사 https://www.sciencetimes.co.kr/news/%EC%A0%95%EC%A0%84%EA%B8%B0-%EA%B2%A8%EC%9A%B8%EC%9D%B4%EB%A9%B4-%EC%B0%BE%EC%95%84%EC%98%A4%EB%8A%94-%EB%B6%88%EC%B2%AD%EA%B0%9D/"
+keyframes:
+  - {id: 1, desc: "문고리에 손을 대는 순간 튀는 작은 불꽃", prompt: "close-up of a hand reaching a metal door knob with a tiny blue static spark, winter indoor light, isometric 3D voxel diorama, vertical 9:16, no text"}
+  - {id: 2, desc: "스웨터를 입은 사람과 몸에 쌓이는 작은 빛 알갱이", prompt: "a person in a wool sweater on a carpet, tiny glowing particles gathering on the body, isometric 3D voxel diorama, vertical 9:16, no text"}
+  - {id: 3, desc: "물방울 막이 덮인 표면에서 빛 알갱이가 빠져나감", prompt: "a surface covered with a thin film of water droplets, glowing particles draining away along it, isometric 3D voxel diorama, vertical 9:16, no text"}
+  - {id: 4, desc: "겨울 창밖 눈, 난방 중인 건조한 방", prompt: "a warm heated room with snow outside the window, dry air, isometric 3D voxel diorama, vertical 9:16, no text"}
+  - {id: 5, desc: "두 개의 막대 — 건조한 날 높고 습한 날 낮음", prompt: "two glowing bars comparing static voltage on a dry day and a humid day, clean studio, isometric 3D voxel diorama, vertical 9:16, no text"}
+  - {id: 6, desc: "가습기와 젖은 빨래가 있는 방", prompt: "a cozy room with a humidifier mist and wet laundry drying on a rack, isometric 3D voxel diorama, vertical 9:16, no text"}
+  - {id: 7, desc: "열쇠 끝으로 문고리를 먼저 건드림", prompt: "a hand touching a metal door knob with the tip of a key first, isometric 3D voxel diorama, vertical 9:16, no text"}
+scenes:
+  # ── 도입: 경험으로 던지고, 답을 먼저 ─────────────────
+  - duration: 3
+    act: 도입
+    role: hook
+    image: 1
+    visual: 갈색 문 앞, 금색 문고리에서 하얀 불꽃이 '팍' 튐
+    caption: 문고리 찌릿, 그 순간 수천 볼트.
+    narration: 문고리 찌릿, 그 순간 수천 볼트.
+    world: {template: studio, seed: 1, params: {color: "#2b3140"}}
+    shot: {from: [1.6, 1.4, -5.2], to: [1.3, 1.35, -4.6], target: [0.25, 1.0, 0], fov: 42}
+    props:
+      - {shape: box, size: [1.0, 2.1, 0.08], at: [0, 0, 0], color: "#8a5a3a"}
+      - {shape: sphere, r: 0.05, at: [0.35, 1.0, -0.08], color: "#e0b84a"}
+      - {model: spark, at: [0.35, 0.95, -0.16], scale: 0.6, grow: {from: 0.9, to: 1.1, scale: [0, 1]}}
+    effects: [{flash: {at: 0.95, length: 0.25}}, {shake: {at: 0.95, length: 0.3, amp: 3}}]
+  - duration: 5
+    act: 도입
+    role: answer
+    image: 4
+    visual: 창밖에 눈이 내리고, 방 안 습도계가 '습도 20%'를 가리킴
+    caption: 겨울에 유독 심한 이유는 하나, 공기가 건조해서예요.
+    world: {template: room, seed: 2}
+    time: "19:00"
+    shot: inside
+    props:
+      - {shape: sign, style: screen, text: "실내 습도\n**20%**", size: [0.6, 0.4], at: [0, 1.3, 2.5]}
+  # ── 전개: 원리를 단계별로, 비유와 함께 ───────────────
+  - duration: 6
+    act: 전개
+    image: 2
+    visual: 스웨터 입은 사람 주변에서 작은 노란 빛 알갱이들이 몸 쪽으로 모여듦
+    caption: 옷과 몸이 스치면 전자, 즉 아주 작은 전기 알갱이가 옮겨 가요.
+    narration: 옷과 몸이 스치면 전자, 즉 아주 작은 전기 알갱이가 옮겨 가요.
+    world: {template: studio, seed: 3, params: {color: "#d9dfe8"}}
+    shot: front
+    props:
+      - {model: person, at: [0, 0, 0], yaw: 180, color: "#c0392b", color2: "#2b2b2b"}
+    crowds:
+      - {agent: spark, count: 30, area: [-0.6, -0.4, 0.6, 0.4], y_range: [0.3, 1.7], wander: 0.15, scale: 0.12}
+    labels:
+      - {text: "전자 = 작은 전기 알갱이", at: [0.35, 1.6, 0], from: 1.0}
+  - duration: 5
+    act: 전개
+    analogy: true
+    image: 2
+    visual: 같은 사람의 몸 주위에 빛 알갱이가 점점 많아지고, 옆에 풍선이 부풀어 오름
+    caption: 그 전기가 몸에 조금씩 쌓입니다. 풍선에 바람이 차듯이요.
+    world: {template: studio, seed: 3, params: {color: "#d9dfe8"}}
+    shot: front
+    props:
+      - {model: person, at: [-0.25, 0, 0], yaw: 180, color: "#c0392b", color2: "#2b2b2b"}
+      - {shape: sphere, r: 0.22, at: [0.5, 1.3, 0], color: "#e74c3c", grow: {from: 0.3, to: 4.0, scale: [0.4, 1]}}
+    crowds:
+      - {agent: spark, count: 60, area: [-0.6, -0.3, 0.1, 0.3], y_range: [0.3, 1.7], wander: 0.12, scale: 0.12, grow: {from: 0, to: 4, scale: [0.3, 1]}}
+  - duration: 5
+    act: 전개
+    image: 1
+    visual: 손이 문고리에 가까워지자, 쌓인 빛 알갱이가 한꺼번에 불꽃으로 빠져나감
+    caption: 그러다 금속에 닿는 순간, 한꺼번에 빠져나가며 따끔한 거예요.
+    world: {template: studio, seed: 1, params: {color: "#2b3140"}}
+    shot: {from: [1.6, 1.4, -5.2], to: [1.3, 1.35, -4.6], target: [0.25, 1.0, 0], fov: 42}
+    props:
+      - {shape: box, size: [1.0, 2.1, 0.08], at: [0, 0, 0], color: "#8a5a3a"}
+      - {shape: sphere, r: 0.05, at: [0.35, 1.0, -0.08], color: "#e0b84a"}
+      - {model: spark, at: [0.35, 0.95, -0.16], scale: 0.6, grow: {from: 2.0, to: 2.2, scale: [0, 1]}}
+    effects: [{flash: {at: 2.0, length: 0.25}}]
+  # ── 반전: 자연스러운 궁금증 하나 + 실제 수치 ─────────
+  - duration: 5
+    act: 반전
+    role: twist
+    image: 3
+    visual: 여름 장면 — 물방울 막이 덮인 판 위에서 빛 알갱이가 흘러 나감
+    caption: 그런데 여름엔 왜 덜할까요? 공기 속 물기 덕분이에요.
+    world: {template: studio, seed: 4, params: {color: "#1d2b3d"}}
+    shot: {from: [0, 1.25, -1.1], to: [0, 1.15, -0.95], target: [0, 0.4, 0.15], fov: 48}
+    props:
+      - {shape: box, size: [1.4, 0.05, 0.8], at: [0, 0.4, 0], color: "#4aa3df", mat: glass}
+    labels:
+      - {text: "얇은 물막", at: [-0.3, 0.45, 0], from: 0.5}
+    crowds:
+      - {agent: raindrop, count: 40, area: [-0.6, -0.3, 0.6, 0.3], y_range: [0.46, 0.5], scale: 0.3}
+      - {agent: spark, count: 20, area: [-0.6, -0.3, 0.6, 0.3], y_range: [0.5, 0.55], velocity: [0.4, 0], scale: 0.1}
+  - duration: 6
+    act: 반전
+    analogy: true
+    image: 3
+    visual: 물방울 막을 따라 빛 알갱이가 한 방향으로 줄지어 빠져나감, 끝에 배수구 모양
+    caption: 습하면 물체 표면에 얇은 물막이 생겨, 빗물이 배수로로 빠지듯 전기가 흘러 나가요.
+    world: {template: studio, seed: 4, params: {color: "#1d2b3d"}}
+    shot: {from: [0, 1.25, -1.1], to: [0, 1.15, -0.95], target: [0, 0.4, 0.15], fov: 48}
+    source: "미국 켄터키대 물리학과"
+    props:
+      - {shape: box, size: [1.4, 0.05, 0.8], at: [0, 0.4, 0], color: "#4aa3df", mat: glass}
+      - {shape: cylinder, r: 0.08, h: 0.05, at: [0.62, 0.42, 0], color: "#3a3f4a"}
+    labels:
+      - {text: "얇은 물막", at: [-0.3, 0.45, 0], from: 0.5}
+      - {text: "빠져나가는 곳", at: [0.62, 0.47, 0], from: 1.5}
+    crowds:
+      - {agent: spark, count: 30, area: [-0.6, -0.1, 0.5, 0.1], y_range: [0.45, 0.5], velocity: [0.5, 0], scale: 0.1}
+  - duration: 6
+    act: 반전
+    image: 4
+    visual: 눈 오는 창밖, 난방기 앞 공기가 데워지지만 습도계 숫자는 그대로 낮음
+    caption: 겨울엔 차가운 공기를 데워도 물기는 늘지 않아, 실내가 더 건조해져요.
+    world: {template: room, seed: 2}
+    time: "19:00"
+    shot: inside
+    source: "미국 켄터키대 물리학과"
+    props:
+      - {shape: box, size: [0.8, 0.5, 0.2], at: [-1.2, 0, 2.3], color: "#e8e8e8"}
+      - {shape: sign, style: screen, text: "실내 습도\n**20%**", size: [0.6, 0.4], at: [0, 1.3, 2.5]}
+  - duration: 6
+    act: 반전
+    image: 5
+    visual: 빨간 막대 하나가 높이 솟음, 대시보드에 3만 5천 V
+    caption: 습도 10~20%면, 카펫 위를 걷기만 해도 약 3만 5천 볼트가 쌓입니다.
+    narration: 습도 십에서 이십 퍼센트면, 카펫 위를 걷기만 해도 약 삼만 오천 볼트가 쌓입니다.
+    world: {template: studio, seed: 5, params: {color: "#1f2430"}}
+    shot: wide
+    source: "사이언스타임즈"
+    props:
+      - {shape: box, size: [0.3, 1.4, 0.3], at: [-0.3, 0, 0], color: "#e74c3c", mat: glow, grow: {from: 0.3, to: 3.0, scale: [0, 1]}}
+      - {shape: box, size: [0.3, 0.06, 0.3], at: [0.3, 0, 0], color: "#3498db", mat: glow}
+    labels:
+      - {text: "습도 10~20%", at: [-0.3, 1.45, 0], from: 1.0}
+      - {text: "습도 60% 이상", at: [0.3, 0.12, 0], from: 1.0}
+    panel: {title: "건조한 날 정전기", value: {from: 0, to: 35000, unit: "V", at: 0.3, length: 3}}
+  - duration: 6
+    act: 반전
+    image: 5
+    visual: 파란 막대가 아주 낮게, 대시보드에 1,500 V
+    caption: 습도가 60%를 넘으면 약 1,500볼트. 그래서 거의 못 느껴요.
+    narration: 습도가 육십 퍼센트를 넘으면 약 천오백 볼트. 그래서 거의 못 느껴요.
+    world: {template: studio, seed: 5, params: {color: "#1f2430"}}
+    shot: wide
+    source: "사이언스타임즈"
+    props:
+      - {shape: box, size: [0.3, 1.4, 0.3], at: [-0.3, 0, 0], color: "#e74c3c", mat: glow}
+      - {shape: box, size: [0.3, 0.06, 0.3], at: [0.3, 0, 0], color: "#3498db", mat: glow, grow: {from: 0.3, to: 1.5, scale: [0, 1]}}
+    labels:
+      - {text: "습도 60% 이상", at: [0.3, 0.12, 0], from: 0.5}
+    panel: {title: "습한 날 정전기", value: {from: 0, to: 1500, unit: "V", at: 0.3, length: 2}}
+  - duration: 6
+    act: 반전
+    uncertainty: true
+    image: 1
+    visual: 문고리 불꽃 장면을 다시, 화면 아래 '전류는 아주 작고 짧음'
+    caption: 전압은 높아도 전기 양이 아주 적어 위험하진 않아요. 느낌은 사람마다 달라요.
+    world: {template: studio, seed: 1, params: {color: "#2b3140"}}
+    shot: {from: [1.6, 1.4, -5.2], to: [1.3, 1.35, -4.6], target: [0.25, 1.0, 0], fov: 42}
+    source: "사이언스타임즈"
+    props:
+      - {shape: box, size: [1.0, 2.1, 0.08], at: [0, 0, 0], color: "#8a5a3a"}
+      - {shape: sphere, r: 0.05, at: [0.35, 1.0, -0.08], color: "#e0b84a"}
+      - {model: spark, at: [0.35, 0.95, -0.16], scale: 0.4}
+  # ── 결말: 생활 팁 + 한 줄 정리 ───────────────────────
+  - duration: 6
+    act: 결말
+    image: 6
+    visual: 방 안에 가습기에서 흰 김이 오르고, 빨래 건조대에 젖은 빨래
+    caption: 줄이려면 가습기나 젖은 빨래로 습도를 올리고, 손에 로션을 발라 주세요.
+    world: {template: room, seed: 6}
+    time: "20:00"
+    shot: inside
+    props:
+      - {shape: cylinder, r: 0.18, h: 0.45, at: [-0.4, 0, 1.2], color: "#f2f2f2"}
+      - {shape: box, size: [0.9, 0.9, 0.05], at: [0.6, 0, 1.6], color: "#a8c6e8"}
+      - {shape: sign, style: board, text: "가습기 켜기\n**습도 올리기**", size: [0.6, 0.4], at: [0, 1.3, 2.5]}
+    crowds:
+      - {agent: foam, count: 30, area: [-0.5, 1.1, -0.3, 1.3], y_range: [0.5, 1.1], wander: 0.1, scale: 0.15}
+  - duration: 5
+    act: 결말
+    image: 7
+    visual: 열쇠 끝으로 문고리를 먼저 톡 건드리는 모습
+    caption: 문고리는 손바닥 대신 열쇠나 손가락 끝으로 먼저 대면 덜 따끔해요.
+    world: {template: studio, seed: 1, params: {color: "#2b3140"}}
+    shot: {from: [1.6, 1.4, -5.2], to: [1.3, 1.35, -4.6], target: [0.25, 1.0, 0], fov: 42}
+    source: "사이언스타임즈"
+    props:
+      - {shape: box, size: [1.0, 2.1, 0.08], at: [0, 0, 0], color: "#8a5a3a"}
+      - {shape: sphere, r: 0.05, at: [0.35, 1.0, -0.08], color: "#e0b84a"}
+      - {shape: box, size: [0.25, 0.04, 0.02], at: [0.5, 0.98, -0.12], color: "#c0c0c0"}
+  - duration: 5
+    act: 결말
+    role: payoff
+    image: 3
+    visual: 물막 위로 빛 알갱이가 조용히 빠져나가는 첫 원리 장면
+    caption: 정리하면, 겨울엔 전기가 빠져나갈 물길이 없어서 몸에 쌓이는 거예요.
+    world: {template: studio, seed: 4, params: {color: "#1d2b3d"}}
+    shot: {from: [0, 1.25, -1.1], to: [0, 1.15, -0.95], target: [0, 0.4, 0.15], fov: 48}
+    props:
+      - {shape: box, size: [1.4, 0.05, 0.8], at: [0, 0.4, 0], color: "#4aa3df", mat: glass}
+    labels:
+      - {text: "얇은 물막", at: [-0.3, 0.45, 0], from: 0.5}
+    crowds:
+      - {agent: spark, count: 30, area: [-0.6, -0.1, 0.5, 0.1], y_range: [0.45, 0.5], velocity: [0.5, 0], scale: 0.1}
+  - duration: 6
+    act: 결말
+    card:
+      question: 오늘 정전기, 몇 번 느끼셨나요?
+      options: ["0번", "1~3번", "4번 이상"]
+      cta: 댓글로 번호를 남겨주세요

@@ -131,15 +131,27 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
     ex0 = ROOT / "scenes" / "juvenile_law_abolished.yaml"
     ex1 = ROOT / "scenes" / "lightning_power.yaml"
     ex2 = ROOT / "scenes" / "nitrogen_snack.yaml"
+    exE = ROOT / "scenes" / "static_winter.yaml"
     examples = (("예시 0 — 결과 사다리(format: ladder) + 오바 스토리텔링 — 등장인물·시간 점프·공식 대응·클리프행어·크레딧", exL),
          ("예시 1 — 사회 풍자(satire) + 4단 구성 + keyframes 9장 (사회·제도 주제, 찬반 균형)", ex0),
          ("예시 2 — 방송형 연출 (콜드 오픈·대시보드·VFX·마무리 카드)", ex1),
-         ("예시 3 — 사물을 화면에 직접 만들어 보여주기", ex2))
-    pick = {"ladder": (0,), "broadcast": (1, 2, 3), "auto": (0, 1)}.get(fmt, (0, 1))   # 프롬프트 길이(사용량) 절약
+         ("예시 3 — 사물을 화면에 직접 만들어 보여주기", ex2),
+         ("예시 4 — 쉬운 해설(format: explainer) — 질문 → 답 먼저 → 원리를 비유로 → 실제 수치 → 생활 팁 → 한 줄 정리", exE))
+    pick = {"ladder": (0,), "broadcast": (1, 2, 3), "explainer": (4, 3)}.get(fmt, (4,))   # 프롬프트 길이(사용량) 절약
     example_txt = "\n".join(f"### {label}\n```yaml\n{p.read_text(encoding='utf-8')}```"
                              for k, (label, p) in enumerate(examples) if k in pick and p.exists())
-    return f"""너는 쇼츠 채널 '만물제작소'(유튜브 'IF 60')의 작가 겸 연출가다. 주제는 무엇이든 올 수 있다(사물, 음식, 몸, 동물, 우주, 사회, 제도, 상상).
+    text = f"""너는 쇼츠 채널 '만물제작소'(유튜브 'IF 60')의 작가 겸 연출가다. 주제는 무엇이든 올 수 있다(사물, 음식, 몸, 동물, 우주, 사회, 제도, 상상).
 주제를 받으면 (1) 웹 검색으로 핵심 사실과 수치를 확인하고 (2) 3D 복셀 렌더러용 장면 YAML을 쓴다.
+
+## 제0 원칙: 전문가가 처음 듣는 사람에게 쉽게 설명한다
+너의 역할은 그 주제를 잘 아는 전문가가, 그 주제를 처음 듣는 평범한 시청자(중학생 수준)에게 1분 동안 설명해 주는 것이다.
+- 시청자가 영상이 끝난 뒤 "아, 그래서 그렇구나" 하고 다른 사람에게 한 문장으로 설명할 수 있어야 성공이다.
+- 혼자만 아는 설정·가상 인물·세계관·내부 용어를 만들지 않는다. 시청자가 이미 아는 것(일상 물건·경험)에서 출발한다.
+- 주제가 묻는 것에 정면으로 답한다. 주제와 상관없는 곁가지·상상 전개로 새지 않는다.
+- 한 장면 = 한 가지 생각. 앞 장면과 "그래서 / 왜냐하면 / 그런데"로 이어져 논리가 끊기지 않게.
+- 전문 용어는 꼭 필요할 때만 쓰고, 처음 나올 때 바로 쉬운 말로 풀이한다 ("전자, 즉 아주 작은 전기 알갱이").
+- 어려운 원리는 일상 비유로 한 번 더 보여준다 ("빗물이 배수로로 빠지듯").
+- 문장은 짧게(한 장면 40자 안팎), 말하듯 자연스럽게. 숫자는 한 장면에 하나만, 감이 오게 비교와 함께.
 
 ## 제1 원칙: 화면이 자막을 직접 보여준다
 시청자가 소리 없이 화면만 봐도 그 장면 자막이 무슨 말인지 알 수 있어야 한다.
@@ -151,10 +163,23 @@ def system_prompt(cat: dict, fmt: str = "auto") -> str:
 - 화면은 세로 9:16이라 좁다. 카메라와 거리 d일 때 보이는 가로 폭은 약 0.45×d, 세로 높이는 약 0.9×d (fov 50 기준). 주인공 물체가 화면 가운데 크게 보이게 거리·scale을 정한다.
 - 좌표: 미터, x는 화면 오른쪽(+z를 바라볼 때), y 위, z 앞(카메라 반대쪽). 템플릿 샷들은 대부분 +z를 바라본다.
 
-## 대본 형식 — 먼저 최상위 format: 을 정한다 (사용자가 지정하면 그대로)
+## 대본 형식 — 먼저 최상위 format: 을 정한다 (사용자가 지정하면 그대로, 지정이 없으면 explainer)
+- format: explainer (쉬운 해설, 기본) — 주제 질문에 전문가가 쉽게 답한다. 55~100초, 장면 4~7초. (아래 '쉬운 해설')
 - format: broadcast (방송형) — 설명·계산·풍자형. 상단 두 줄 제목 틀 + 대시보드 + 콜드 오픈/되감기. 60~120초, 장면 4~6초. (아래 '콘텐츠 공식')
 - format: ladder (결과 사다리) — "만약에 ~라면?" 상상 하나를 생활 곳곳에 차례로 터뜨린다. 90~135초, 장면 2.5~4초. (아래 '결과 사다리')
   일상과 맞닿은 비현실적 가정(모기·잠·날씨·몸·돈·동물…)이면 ladder, 숫자 계산·제도 해설이 중심이면 broadcast.
+
+## ★쉬운 해설 (format: explainer) — 기본 형식
+순서 (장면마다 act·role을 붙인다):
+1. act: 도입, role: hook — 주제를 시청자 경험으로 던진다. 3초 안. ("문고리 찌릿, 그 순간 수천 볼트.")
+2. act: 도입, role: answer — 답을 먼저 한 문장으로 말한다. 결론을 숨기지 않는다. ("겨울에 심한 이유는 하나, 공기가 건조해서예요.")
+3. act: 전개 — 원리를 2~4장면으로 단계별 설명. 장면마다 하나의 단계, 그중 2장면 이상은 일상 비유(장면에 analogy: true).
+4. act: 반전, role: twist (시작 후 15~30초) — "그런데 왜 ~는 다를까?"처럼 자연스럽게 생기는 궁금증 하나를 풀어 준다.
+5. act: 반전 — 실제 수치로 확인 (source 표시). 확실하지 않은 부분이 있으면 uncertainty: true 장면으로 정직하게.
+6. act: 결말 — 생활에 쓸 수 있는 의미·팁 1~2장면, 그리고 role: payoff로 한 줄 정리("정리하면, …").
+7. 마지막 card: 시청자 경험을 묻는 질문 + 선택지 3개.
+- 가상 인물(cast)·시간 점프·재난문자 같은 연출은 쓰지 않는다. 화면은 설명하는 대상 자체(사물·몸·분자·장소)를 크게 보여준다.
+- 주제가 "만약 ~라면?" 같은 가정이면: 답(answer)에서 "결론부터 말하면 ~입니다"로 시작하고, 실제 과학·통계로 한 단계씩 설명한다.
 
 ## ★결과 사다리 (format: ladder) — 상상 하나, 생활 영역 10곳 이상
 "모기가 피 대신 지방을 빨아 간다면?"처럼 규칙 하나만 바꾸고, 그 결과가 생활의 각 영역에서 실제로 어떻게 번질지 짧은 컷으로 이어 붙인다.
@@ -366,6 +391,11 @@ scenes: [...]
 ## 참고 예시
 {example_txt}
 """
+    if fmt in ("explainer", "auto"):          # 쉬운 해설엔 다른 형식 규칙을 빼서 헷갈리지 않게 (사용량도 절약)
+        drop = ("★결과 사다리", "★현실적인 시뮬레이션 다큐", "콘텐츠 공식", "★결과의 연쇄")
+        parts = text.split("\n## ")
+        text = "\n## ".join([parts[0]] + [p for p in parts[1:] if not p.startswith(drop)])
+    return text
 
 
 # ------------------------------------------------------------------ API 호출
@@ -638,7 +668,7 @@ def validate(spec, cat: dict, target_len: float | None = None) -> list[str]:
 # ------------------------------------------------------------------ 시청 유지 구조
 HOOK_MAX_SEC = 3.5          # 1번 장면(훅)은 이 안에 끝나야 함
 TWIST_WINDOW = (15.0, 30.0)  # 중간 반전 장면이 시작해야 하는 구간(초)
-ROLES = ("hook", "twist", "payoff", "cliffhanger")
+ROLES = ("hook", "answer", "twist", "payoff", "cliffhanger")
 MIN_FACTS = 3               # facts_to_check — 핵심 사실마다 출처 URL 또는 계산식
 MIN_SOURCES = 3             # 화면에 출처(source)가 뜨는 장면 수
 SOURCE_MAX_LEN = 24
@@ -650,9 +680,13 @@ KEYFRAME_RANGE = (6, 10)       # AI 이미지로 만들 때 필요한 그림 수
 GENRES = {"satire": "사회·제도 — 균형 있게", "science": "과학 — 정확하게", "absurd": "비현실적 가정 — 진지하게"}
 # 대본 형식: broadcast(방송형 — 설명·계산·풍자) | ladder(결과 사다리 — 상상 하나를 생활 곳곳에 터뜨리기)
 FORMATS = {
+    "explainer": {"label": "쉬운 해설", "length": (55.0, 100.0), "keyframes": (6, 10), "target": 75},
     "broadcast": {"label": "방송형", "length": (60.0, 120.0), "keyframes": (6, 10), "target": 90},
     "ladder": {"label": "결과 사다리", "length": (90.0, 135.0), "keyframes": (8, 16), "target": 110},
 }
+EXPLAIN_MAX_CAPTION = 48     # 한 장면 자막 글자 수 상한 (한 번 듣고 이해)
+EXPLAIN_MIN_ANALOGY = 2      # 일상 비유 장면 수
+EXPLAIN_ANSWER_BY = 12.0     # 이 시각(초) 안에 답(answer)이 나와야 함
 LADDER_MIN_SCENES = 20       # 3초 안팎 컷이 이어져야 사다리 리듬이 나온다
 LADDER_MIN_DOMAINS = 8       # 서로 다른 생활 영역(집·회사·병원·가게·부동산…) 수
 LADDER_MIN_SIGNS = 4         # 간판·가격표·현수막 등 3D 속 글자가 나오는 장면 수
@@ -705,7 +739,10 @@ def retention_issues(spec: dict) -> list[str]:
     if not any(s.get("role") in ("payoff", "cliffhanger") for s in tail):
         issues.append("끝에 role: payoff 장면이 없음 — 마지막 card 바로 앞에 기억에 남는 한 줄(가능하면 첫 장면 콜백)을 둘 것")
     issues += structure_issues(spec, scenes, t)
-    issues += chain_issues(scenes)
+    if spec.get("format", "broadcast") in ("broadcast", "ladder"):
+        issues += chain_issues(scenes)
+    else:
+        issues += [i for i in chain_issues(scenes) if "gag" in i]
     issues += accuracy_issues(spec)
     issues += name_issues(spec)
     return issues
@@ -777,6 +814,8 @@ POLISH_SYSTEM = """너는 한국 과학·시사 다큐의 내레이션 편집자
 규칙:
 - 장면의 뜻·사실·순서는 그대로. 아라비아 숫자는 한 글자도 바꾸거나 빼지 않는다. 화면(visual)과 어긋나는 말을 넣지 않는다.
 - 개그·말장난·펀치라인·비꼬는 말·유행어·감탄사·과장된 표현("역대급", "무조건", "미쳤다")을 지운다.
+- 처음 듣는 중학생이 한 번 듣고 이해하게: 어려운 단어는 쉬운 말로, 긴 문장은 짧게, 전문 용어는 바로 뒤에 풀이.
+- 앞 장면과 논리가 끊기면 "그래서 / 왜냐하면 / 그런데"로 이어 준다.
 - 추정·계산한 값에는 "약", "계산하면", "추정됩니다"를, 가정에는 "만약 ~라면"을 붙여 사실과 구분한다.
 - 하나의 연구를 일반 법칙처럼 말하는 문장은 "한 연구에 따르면"처럼 한계를 밝힌다.
 - 사람 이름을 넣지 않는다(역할로만). 실존 인물·상표·특정 집단을 깎아내리지 않는다.
@@ -931,6 +970,32 @@ def structure_issues(spec: dict, scenes: list, total: float) -> list[str]:
             issues.append(f"어느 장면도 쓰지 않는 keyframe: {', '.join(unused)}")
     if spec.get("format") == "ladder":
         issues += ladder_issues(spec, scenes, total)
+    if spec.get("format") == "explainer":
+        issues += explainer_issues(spec, scenes)
+    return issues
+
+
+def explainer_issues(spec: dict, scenes: list) -> list[str]:
+    """쉬운 해설 검사: 답을 먼저 · 일상 비유 · 짧은 문장 · 혼자만의 설정 금지"""
+    issues, t = [], 0.0
+    answer_at = None
+    for s in scenes:
+        if s.get("role") == "answer" and answer_at is None:
+            answer_at = t
+        t += spoken_seconds(s)
+    if answer_at is None:
+        issues.append("답 장면(role: answer)이 없음 — 훅 다음에 주제 질문의 답을 한 문장으로 먼저 말할 것")
+    elif answer_at > EXPLAIN_ANSWER_BY:
+        issues.append(f"답(role: answer)이 {answer_at:.0f}초에야 나옴 — {EXPLAIN_ANSWER_BY:.0f}초 안(2~3번째 장면)에 결론부터")
+    talk = [s for s in scenes if not isinstance(s.get("card"), dict) and not isinstance(s.get("credits"), dict)]
+    ana = sum(1 for s in talk if s.get("analogy"))
+    if ana < EXPLAIN_MIN_ANALOGY:
+        issues.append(f"일상 비유 장면(analogy: true)이 {ana}개 — 어려운 원리를 생활 속 비유로 {EXPLAIN_MIN_ANALOGY}장면 이상")
+    long = [i for i, s in enumerate(scenes, 1) if len(str(s.get("caption") or "")) > EXPLAIN_MAX_CAPTION]
+    if long:
+        issues.append(f"자막이 너무 긴 장면: {', '.join(map(str, long[:6]))} — 한 장면 {EXPLAIN_MAX_CAPTION}자 이내, 한 가지 생각만")
+    if spec.get("cast") or any(s.get("who") for s in talk):
+        issues.append("쉬운 해설엔 가상 등장인물(cast·who)을 쓰지 않음 — 설명하는 대상 자체를 보여줄 것")
     return issues
 
 
@@ -1228,7 +1293,9 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
                 return ask_cli(system, u2, tools="Read", workdir=wd)[0]
         log("  · Claude Code + 내 Claude 구독 사용 (추가 비용 없음, 구독 사용량에서 차감)")
     cat = catalog()
-    system = system_prompt(cat, fmt if fmt in FORMATS else "auto")
+    if fmt not in FORMATS:
+        fmt = "explainer"                      # 기본: 전문가가 쉽게 설명하는 해설형
+    system = system_prompt(cat, fmt)
     if fmt in FORMATS:
         lo, hi = FORMATS[fmt]["length"]
         user = (f"주제: {topic}\n대본 형식: format: {fmt} ({FORMATS[fmt]['label']})\n"
@@ -1242,7 +1309,11 @@ def plan(topic: str, length: int | None = None, *, interactive: bool = True, web
         user += f"방향 힌트: {angle}\n"
     if tangents:
         user += f"전개 아이디어(참고용, 더 현실적인 게 떠오르면 바꿔도 됨): {tangents}\n"
-    if fmt != "broadcast":
+    if fmt == "explainer":
+        user += ("역할: 너는 이 주제의 전문가이고, 처음 듣는 시청자에게 1분 동안 쉽게 설명한다. "
+                 "훅 → 답 먼저(role: answer) → 원리를 단계별로(비유 analogy: true 2장면 이상) → 궁금증 하나(twist) → "
+                 "실제 수치(source) → 생활 팁 → 한 줄 정리(payoff) → 질문 카드. 가상 인물·혼자만의 설정 금지.\n")
+    elif fmt == "ladder":
         user += ("결과 사다리라면 '현실적인 시뮬레이션 다큐' 필수: 이름 없이 역할로 부르는 등장인물 2~4명 · 시간 흐름 4단계 · "
                  "사회의 공식 대응 2번 · 실제 사실 2~3개.\n")
     user += ("조건: 첫 3초 훅 · 도입→전개→반전→결말 완성 · 1단계(직접 결과)→2단계(현실적인 파급) · "
